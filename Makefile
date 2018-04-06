@@ -19,7 +19,7 @@
 #
 # ======================================================================
 
-TARGET = exec
+TARGET = main
 OBJS = main.o
 
 CC = arm-none-eabi-gcc
@@ -43,17 +43,18 @@ all: flash
 $(TARGET): $(OBJS)
 	$(CC) -o $(TARGET) $(CFLAGS) $(OBJS) $(LIBS)
 
+$(TARGET).bin: $(TARGET)
+	$(OBJCOPY) -Obinary $(TARGET) $(TARGET).bin
+
 # Different flashing methods for different systems
-flash: $(TARGET)
+flash: $(TARGET).bin
     # Windows Linux Subsystem
     ifdef WINDOWS
-	echo $(WINDOWS)
-	/mnt/c/Windows/System32/cmd.exe /C powershell -Command "Copy-Item $(TARGET).bin (Get-WMIObject Win32_Volume | ? {\$$_.Label -q 'DIS_F303VC'} | %{\$$_.DriveLetter})"
+	/mnt/c/Windows/System32/cmd.exe /C powershell -Command "Copy-Item $(TARGET).bin (Get-WMIObject Win32_Volume | ? {\$$_.Label -eq 'DIS_F303VC'} | %{\$$_.DriveLetter})"
 
     # Linux (RPi probably)
     else
-	echo "No OS Detected"
-	echo $(WINDOWS)
+	echo "No OS Detected. No flash rule provided. . . "
 
     endif
 
