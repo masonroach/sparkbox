@@ -11,14 +11,15 @@
 #define OVER8 0		// Oversampling by 8
 
 #if OVER8	// If oversampling by 8
-#define USARTDIV = 2*CLOCK_F/BAUD
+#define USARTDIV 2*CLOCK_F/BAUD
 #else		// If oversampling by 16
-#define USARTDIV = CLOCK_F/BAUD
+#define USARTDIV CLOCK_F/BAUD
 #endif
 
 void GPIO_Config(void);
 void USART_Config(void);
 void usartSendChar(uint8_t c);
 uint8_t usartGetChar(void);
+void usartSendString(uint8_t *s);
 
 #endif
