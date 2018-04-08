@@ -18,8 +18,8 @@
 
 void gpioConfig(void);
 void usartConfig(void);
-void usartSendChar(uint8_t c);
+void usartSendChar(int8_t c);
 uint8_t usartGetChar(void);
-void usartSendString(uint8_t *s);
+void usartSendString(int8_t *s);
 
 #endif

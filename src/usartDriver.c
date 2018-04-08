@@ -46,6 +46,6 @@ uint8_t usartGetChar(void) {
 }
 
 // Send a string over USART
-void usartSendString(uint8_t *s) {
+void usartSendString(int8_t *s) {
 	while (*s != '\0') usartSendChar(*(s++));
 }
