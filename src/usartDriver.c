@@ -1,7 +1,7 @@
-#include "usartDriver.h"
+#include <usartDriver.h>
 
 // Pulled from cem.itesm.mx
-void GPIO_Config(void) {
+void gpioConfig(void) {
 	// PC4 Config (TX)
 	RCC->AHBENR    |=   1 << 19;	// Enable GPIOC Clock
 	GPIOC->MODER   |=   2 << (4*2);	// GPIO Mode AF
@@ -16,7 +16,7 @@ void GPIO_Config(void) {
 }
 
 // Configure 8N1 USART over USART1 port
-void USART_Config(void) {
+void usartConfig(void) {
 	RCC->APB2ENR |=  RCC_APB2ENR_USART1EN;	// Enable USART Clock
 #if OVER8
 	USART1->CR1  &= ~USART_CR1_OVER8;	// Oversampling mode = 16
@@ -34,7 +34,7 @@ void USART_Config(void) {
 }
 
 // Send a character over USART
-void usartSendChar(uint8_t c) {
+void usartSendChar(int8_t c) {
 	while (!(USART1->ISR & USART_ISR_TXE));	// Wait for transmit buffer to be empty
 	USART1->TDR = c;			// Send the byte
 }
