@@ -10,9 +10,9 @@
 #define BAUD 9600	// BAUD rate
 #define OVER8 0		// Oversampling by 8
 
-#if OVER8	// If oversampling by 8
+#if OVER8		// If oversampling by 8
 #define USARTDIV 2*CLOCK_F/BAUD
-#else		// If oversampling by 16
+#else			// If oversampling by 16
 #define USARTDIV CLOCK_F/BAUD
 #endif
 
