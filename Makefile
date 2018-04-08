@@ -19,32 +19,47 @@
 #
 # ======================================================================
 
-TARGET = main
-OBJS = main.o
+TARGET = exec
 
 CC = arm-none-eabi-gcc
 LD = arm-none-eabi-ld
 AS = arm-none-eabi-as
 OBJCOPY = arm-none-eabi-objcopy
 
-INCDIRS = -Iinclude/ -I.
+# Directories
+SRCDIR    := src
+INCDIR    := include
+OBJDIR    := obj
+TARGETDIR := bin
+
+# Define vpaths
+vpath %.c $(SRCDIR)
+vpath %.h $(INCDIR)
+vpath %.o $(OBJDIR)
+
+INCDIRS = -I$(INCDIR) -I.
 LIBS = 
 
 CFLAGS = -mcpu=cortex-m4 -mthumb -O3 -Wall $(INCDIRS)\
 	--specs=nosys.specs -DARM_MATH_CM4\
 
+# Find if running on a windows subsystem
 WINDOWS := $(if $(shell grep -E "(Microsoft|WSL)" /proc/version),\
 	 "Windows Subsystem",)
+
+# Find source files and declare objects
+SOURCES := $(shell find $(SRCDIR) -type f -name *.c)
+OBJECTS := $(patsubst $(SRCDIR)/%, $(OBJDIR)/%, $(SOURCES:.c=.o))
 
 .PHONY: all clean flash
 
 all: flash
 
-$(TARGET): $(OBJS)
-	$(CC) -o $(TARGET) $(CFLAGS) $(OBJS) $(LIBS)
+$(TARGET): $(OBJECTS)
+	$(CC) -o $@ $(CFLAGS) $^ $(LIBS)
 
 $(TARGET).bin: $(TARGET)
-	$(OBJCOPY) -Obinary $(TARGET) $(TARGET).bin
+	$(OBJCOPY) -Obinary $< $@
 
 # Different flashing methods for different systems
 flash: $(TARGET).bin
@@ -59,4 +74,8 @@ flash: $(TARGET).bin
     endif
 
 clean:
-	rm -f *.o *.bin *.map $(TARGET)
+	rm -f $(OBJDIR)/*.o *.bin *.map $(TARGET)
+
+# Compile objects rule
+$(OBJDIR)/%.o: $(SRCDIR)/%.c
+	$(CC) $(CFLAGS) -c -o $@ $<
