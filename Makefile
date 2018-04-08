@@ -78,4 +78,5 @@ clean:
 
 # Compile objects rule
 $(OBJDIR)/%.o: $(SRCDIR)/%.c
+	@mkdir -p $(@D)		# Make directory if doesn't exist
 	$(CC) $(CFLAGS) -c -o $@ $<
