@@ -21,41 +21,61 @@
 
 TARGET = exec
 
-CC = arm-none-eabi-gcc
-LD = arm-none-eabi-ld
-AS = arm-none-eabi-as
-OBJCOPY = arm-none-eabi-objcopy
+PREFIX = arm-none-eabi-
+CC = $(PREFIX)gcc
+LD = $(PREFIX)ld
+AS = $(PREFIX)as
+OBJCOPY = $(PREFIX)objcopy
+
+# Optimization
+# O3 -> Lots of optimization
+# Os -> Optimize size
+# Og -> Optimize for debugging
+OPTIMIZE = -O3
 
 # Directories
 SRCDIR    := src
-INCDIR    := include
+INCDIR    := inc
 OBJDIR    := obj
+LIBDIR    := lib
 TARGETDIR := bin
 
+# Find source files and declare objects
+CSRC  := $(shell find $(SRCDIR) -type f -name *.c)
+SSRC  := $(shell find $(SRCDIR) -type f -name *.s)
+LDSRC  = $(LIBDIR)/STM32F303VCTx_FLASH.ld
+OBJS   = $(patsubst $(SRCDIR)/%, $(OBJDIR)/%, $(CSRC:.c=.o))
+OBJS  += $(patsubst $(SRCDIR)/%, $(OBJDIR)/%, $(SSRC:.s=.o))
+
 # Define vpaths
-vpath %.c $(SRCDIR)
-vpath %.h $(INCDIR)
-vpath %.o $(OBJDIR)
+vpath %.c  $(SRCDIR)
+vpath %.h  $(INCDIR)
+vpath %.o  $(OBJDIR)
+vpath %.s  $(SRCDIR)
+vpath %.ld $(LIBDIR)
 
 INCDIRS = -I$(INCDIR) -I.
 LIBS = 
 
-CFLAGS = -mcpu=cortex-m4 -mthumb -O3 -Wall $(INCDIRS)\
-	--specs=nosys.specs -DARM_MATH_CM4\
+# CPU defines
+CPU = -mcpu=cortex-m4
+MCFLAGS = $(CPU) -mthumb
+
+CFLAGS = $(MFLAGS) $(OPTIMIZE) -Wall $(INCDIRS) -fdata-sections\
+	--specs=nosys.specs -DARM_MATH_CM4 -ffunction-sections\
+	-T $(LDSRC)\
 
 # Find if running on a windows subsystem
 WINDOWS := $(if $(shell grep -E "(Microsoft|WSL)" /proc/version),\
 	 "Windows Subsystem",)
 
-# Find source files and declare objects
-SOURCES := $(shell find $(SRCDIR) -type f -name *.c)
-OBJECTS := $(patsubst $(SRCDIR)/%, $(OBJDIR)/%, $(SOURCES:.c=.o))
-
 .PHONY: all clean flash
+
+t = $(shell echo $(OBJS))
 
 all: flash
 
-$(TARGET): $(OBJECTS)
+$(TARGET): $(OBJS)
 	$(CC) -o $@ $(CFLAGS) $^ $(LIBS)
 
 $(TARGET).bin: $(TARGET)
@@ -76,7 +96,12 @@ flash: $(TARGET).bin
 clean:
 	rm -f $(OBJDIR)/*.o *.bin *.map $(TARGET)
 
-# Compile objects rule
+# Compile c objects rule
 $(OBJDIR)/%.o: $(SRCDIR)/%.c
-	@mkdir -p $(@D)		# Make directory if doesn't exist
+	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -c -o $@ $<
+
+# Compile s objects rule
+$(OBJDIR)/%.o: $(SRCDIR)/%.s
+	@mkdir -p $(@D)
+	$(AS) -c $(MCFLAGS) -o $@ $<
