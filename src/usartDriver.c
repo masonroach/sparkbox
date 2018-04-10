@@ -1,9 +1,10 @@
-#include <usartDriver.h>
+#include "usartDriver.h"
 
 // Pulled from cem.itesm.mx
 void gpioConfig(void) {
+	RCC->AHBENR    |=   RCC_AHBENR_GPIOCEN;	// Enable GPIOC Clock
+
 	// PC4 Config (TX)
-	RCC->AHBENR    |=   1 << 19;	// Enable GPIOC Clock
 	GPIOC->MODER   |=   2 << (4*2);	// GPIO Mode AF
 	GPIOC->OTYPER  |=   1 << (4*1);	// GPIO OType OD
 	GPIOC->OSPEEDR |=   3 << (4*2);	// GPIO Speed 50MHz

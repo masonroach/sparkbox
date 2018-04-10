@@ -174,28 +174,28 @@ void SystemInit(void)
 
   /* Reset the RCC clock configuration to the default reset state ------------*/
   /* Set HSION bit */
-  RCC->CR |= (uint32_t)0x00000001;
+  RCC->CR |= 0x00000001U;
 
   /* Reset CFGR register */
-  RCC->CFGR &= 0xF87FC00C;
+  RCC->CFGR &= 0xF87FC00CU;
 
   /* Reset HSEON, CSSON and PLLON bits */
-  RCC->CR &= (uint32_t)0xFEF6FFFF;
+  RCC->CR &= 0xFEF6FFFFU;
 
   /* Reset HSEBYP bit */
-  RCC->CR &= (uint32_t)0xFFFBFFFF;
+  RCC->CR &= 0xFFFBFFFFU;
 
   /* Reset PLLSRC, PLLXTPRE, PLLMUL and USBPRE bits */
-  RCC->CFGR &= (uint32_t)0xFF80FFFF;
+  RCC->CFGR &= 0xFF80FFFFU;
 
   /* Reset PREDIV1[3:0] bits */
-  RCC->CFGR2 &= (uint32_t)0xFFFFFFF0;
+  RCC->CFGR2 &= 0xFFFFFFF0U;
 
   /* Reset USARTSW[1:0], I2CSW and TIMs bits */
-  RCC->CFGR3 &= (uint32_t)0xFF00FCCC;
+  RCC->CFGR3 &= 0xFF00FCCCU;
 
   /* Disable all interrupts */
-  RCC->CIR = 0x00000000;
+  RCC->CIR = 0x00000000U;
 
 #ifdef VECT_TAB_SRAM
   SCB->VTOR = SRAM_BASE | VECT_TAB_OFFSET; /* Vector Table Relocation in Internal SRAM */

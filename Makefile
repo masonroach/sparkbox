@@ -19,19 +19,20 @@
 #
 # ======================================================================
 
-TARGET = exec
+TARGET = main
 
-PREFIX = arm-none-eabi-
-CC = $(PREFIX)gcc
-LD = $(PREFIX)ld
-AS = $(PREFIX)as
-OBJCOPY = $(PREFIX)objcopy
+PREFIX = arm-none-eabi
+CC = $(PREFIX)-gcc
+LD = $(PREFIX)-gcc
+AS = $(PREFIX)-as
+CP = $(PREFIX)-objcopy
+OD = $(PREFIX)-objdump
 
 # Optimization
 # O3 -> Lots of optimization
 # Os -> Optimize size
 # Og -> Optimize for debugging
-OPTIMIZE = -O3
+OPTIMIZE = -Os
 
 # Directories
 SRCDIR    := src
@@ -40,13 +41,6 @@ OBJDIR    := obj
 LIBDIR    := lib
 TARGETDIR := bin
 
-# Find source files and declare objects
-CSRC  := $(shell find $(SRCDIR) -type f -name *.c)
-SSRC  := $(shell find $(SRCDIR) -type f -name *.s)
-LDSRC  = $(LIBDIR)/STM32F303VCTx_FLASH.ld
-OBJS   = $(patsubst $(SRCDIR)/%, $(OBJDIR)/%, $(CSRC:.c=.o))
-OBJS  += $(patsubst $(SRCDIR)/%, $(OBJDIR)/%, $(SSRC:.s=.o))
-
 # Define vpaths
 vpath %.c  $(SRCDIR)
 vpath %.h  $(INCDIR)
@@ -54,54 +48,56 @@ vpath %.o  $(OBJDIR)
 vpath %.s  $(SRCDIR)
 vpath %.ld $(LIBDIR)
 
-INCDIRS = -I$(INCDIR) -I.
-LIBS = 
+# Find source files and declare objects
+SRC   := $(shell find $(SRCDIR) -type f -name *.c)
+OBJS   = $(patsubst $(SRCDIR)/%,$(OBJDIR)/%,$(SRC:.c=.o))
 
-# CPU defines
-CPU = -mcpu=cortex-m4
-MCFLAGS = $(CPU) -mthumb
+STARTUP = $(LIBDIR)/startup_stm32f303xc.s
 
-CFLAGS = $(MFLAGS) $(OPTIMIZE) -Wall $(INCDIRS) -fdata-sections\
-	--specs=nosys.specs -DARM_MATH_CM4 -ffunction-sections\
-	-T $(LDSRC)\
+LINKER  = $(LIBDIR)/STM32F303VCTx_FLASH.ld
 
-# Find if running on a windows subsystem
-WINDOWS := $(if $(shell grep -E "(Microsoft|WSL)" /proc/version),\
-	 "Windows Subsystem",)
+MCU = cortex-m4
+MCFLAGS = -mcpu=$(MCU) -mthumb -mlittle-endian -mthumb-interwork
 
-.PHONY: all clean flash
+INCLUDES = -I$(INCDIR) -I.
 
-t = $(shell echo $(OBJS))
+CFLAGS = $(MCFLAGS) $(OPTIMIZE) $(INCLUDES) -Wl,-T,$(LINKER) \
+	-DDEBUG -lnosys
 
-all: flash
+ASFLAGS = $(MCFLAGS)
 
-$(TARGET): $(OBJS)
-	$(CC) -o $@ $(CFLAGS) $^ $(LIBS)
+# ======================================================================
+#   Compilation
+# ======================================================================
 
+all: $(TARGET).bin $(OBJS)
+
+# Objcopy for binary
 $(TARGET).bin: $(TARGET)
-	$(OBJCOPY) -Obinary $< $@
+	$(CP) -O binary $< $@
 
-# Different flashing methods for different systems
-flash: $(TARGET).bin
-    # Windows Linux Subsystem
-    ifdef WINDOWS
-	/mnt/c/Windows/System32/cmd.exe /C powershell -Command "Copy-Item $(TARGET).bin (Get-WMIObject Win32_Volume | ? {\$$_.Label -eq 'DIS_F303VC'} | %{\$$_.DriveLetter})"
+# Objcopy for hex
+$(TARGET).hex: $(TARGET)
+	$(CP) -O ihex $^ $@
 
-    # Linux (RPi probably)
-    else
-	echo "No OS Detected. No flash rule provided. . . "
+# Compile executable
+$(TARGET): $(OBJS) $(STARTUP)
+	echo $(SRC)
+	$(CC) $(CFLAGS) $^ -o $@
 
-    endif
-
+# Remove compiled executables
 clean:
-	rm -f $(OBJDIR)/*.o *.bin *.map $(TARGET)
+	rm -f $(TARGET) $(TARGET).hex $(TARGET).bin
+
+# Remove objects too
+reallyclean: clean
+	rm -f $(OBJS)
+
+# ======================================================================
+#   Rules
+# ======================================================================
 
 # Compile c objects rule
 $(OBJDIR)/%.o: $(SRCDIR)/%.c
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -c -o $@ $<
-
-# Compile s objects rule
-$(OBJDIR)/%.o: $(SRCDIR)/%.s
-	@mkdir -p $(@D)
-	$(AS) -c $(MCFLAGS) -o $@ $<
