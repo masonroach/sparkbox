@@ -20,18 +20,20 @@ void gpioConfig(void) {
 void usartConfig(void) {
 	RCC->APB2ENR |=  RCC_APB2ENR_USART1EN;	// Enable USART Clock
 #if OVER8
-	USART1->CR1  &= ~USART_CR1_OVER8;	// Oversampling mode = 16
-	USART1->BRR   =  USARTDIV;		// Set USART divider
-#else
+	// Oversampling mode 8
 	USART1->CR1  |=  USART_CR1_OVER8;	// Oversampling mode = 8
 	USART1->BRR   = (USARTDIV & 0xFFF0) | ((USARTDIV & 0x000F) >> 1);	// Set USART divider
+#else
+	// Oversampling mode 16
+	USART1->CR1  &= ~USART_CR1_OVER8;	// Oversampling mode = 16
+	USART1->BRR   =  USARTDIV & 0xFFFF;	// Set USART divider
 #endif
 	USART1->CR1  &= ~USART_CR1_M;		// M[1:0] = 8 bit word length
 	USART1->CR1  &= ~USART_CR1_PCE;		// No Parity
 	USART1->CR1  |=  USART_CR1_TE;		// Transmitter enable
 	USART1->CR1  |=  USART_CR1_RE;		// Receiver enable
 	USART1->CR1  |=  USART_CR1_UE;		// USART enable
-	USART1->CR2  &= ~USART_CR2_STOP;	// One stop bit
+	USART1->CR2  &= ~(USART_CR2_STOP_1 | USART_CR2_STOP_0);	// One stop bit
 }
 
 // Send a character over USART
