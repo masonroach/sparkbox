@@ -16,7 +16,6 @@
 #define USARTDIV CLOCK_F/BAUD
 #endif
 
-void gpioConfig(void);
 void usartConfig(void);
 void usartSendChar(int8_t c);
 uint8_t usartGetChar(void);
