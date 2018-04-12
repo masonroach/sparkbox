@@ -3,7 +3,7 @@
 # Mason Roach
 # Patrick Roy
 #
-# ============================ Instructions ============================
+# ================================ Instructions ================================
 #
 # [make]
 # 	Compile the binary file and flash it to the STM Discovery board
@@ -17,7 +17,7 @@
 #	yet been compiled, it is comiled first. Flashing methods are
 #	handled dependant on operating system
 #
-# ======================================================================
+# ==============================================================================
 
 TARGET = main
 
@@ -73,9 +73,9 @@ ASFLAGS = $(MCFLAGS)
 WINDOWS := $(if $(shell grep -E "(Microsoft|WSL)" /proc/version),\
 	 "Windows Subsystem",)
 
-# ======================================================================
+# ==============================================================================
 #   Compilation
-# ======================================================================
+# ==============================================================================
 
 all: flash
 
@@ -97,9 +97,9 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.c
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-# ======================================================================
+# ==============================================================================
 #   Other Commands
-# ======================================================================
+# ==============================================================================
 
 # Remove compiled executables
 clean:
@@ -107,12 +107,14 @@ clean:
 
 # Different flashing methods for different systems
 flash: $(TARGET).bin
-    # Windows Linux Subsystem
-    ifdef WINDOWS
-	/mnt/c/Windows/System32/cmd.exe /C powershell -Command "Copy-Item $(TARGET).bin (Get-WMIObject Win32_Volume | ? {\$$_.Label -eq 'DIS_F303VC'} | %{\$$_.DriveLetter})"
+  # Windows Linux Subsystem
+  ifdef WINDOWS
+	/mnt/c/Windows/System32/cmd.exe /C powershell -Command \
+	"Copy-Item $(TARGET).bin (Get-WMIObject Win32_Volume \
+	| ? {\$$_.Label -eq 'DIS_F303VC'} | %{\$$_.DriveLetter})"
 
-    # Linux (RPi probably)
-    else
+  # Linux (RPi probably)
+  else
 	echo "No OS Detected. No flash rule provided. . . "
 
-    endif
+  endif

@@ -1,4 +1,4 @@
-#include "usartDriver.h"
+#include "usart.h"
 
 // Configure 8N1 USART over USART1 port
 void usartConfig(void) {
