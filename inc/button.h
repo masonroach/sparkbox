@@ -1,5 +1,9 @@
 #include "stm32f3xx.h"
-
+/*
+ * Note: This driver is specifically designed for the STM32F3
+ *	discovery board. On the PCB, these functions will no
+ *	longer work as intended.
+ */
 #ifndef SPARK_BUTTON
 #define SPARK_BUTTON
 
