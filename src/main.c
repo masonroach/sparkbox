@@ -1,7 +1,8 @@
 #include "stm32f3xx.h"
-#include "usartDriver.h"
-#include "ledDriver.h"
+#include "usart.h"
+#include "led.h"
 #include "button.h"
+#include "sd.h"
 
 int main(void) {
 	int8_t i = 0;
@@ -9,6 +10,9 @@ int main(void) {
 	initLeds();
 	usartConfig();
 	initButton();	
+	sdInit();
+
+	sdSendCmd(0xFF, 0x00000000);
 
 	while (1) {
 		while (readButton() == 0);	// Wait while button is not pushed

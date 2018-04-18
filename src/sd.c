@@ -30,6 +30,7 @@ void sdInit(void) {
 					   GPIO_OSPEEDER_OSPEEDR5_0;
 					   GPIO_OSPEEDER_OSPEEDR6_0;
 	GPIOB->OTYPER  &= ~GPIO_OTYPER_OT_6;		// GPIOB6 -> 
+
 	/*
 	 * Configuring SPI1
 	 */
@@ -51,9 +52,9 @@ void sdInit(void) {
 	SPI1->CRCPR  = 0x0089;				// CRC poly = x^7 + x^3 + 1
 }
 
-void sdSendCmd(SDCOMMAND cmd, uint32_t args) {
+void sdSendCmd(SDCOMMAND cmd, uint32_t args, uint32_t) {
 	uint8_t i;
-	uint8_t frame[5];
+	uint8_t frame[6];
 
 	frame[0] = cmd;
 	frame[1] = (uint8_t)(args >> (8 * 3));
@@ -61,13 +62,15 @@ void sdSendCmd(SDCOMMAND cmd, uint32_t args) {
 	frame[3] = (uint8_t)(args >> (8 * 1));
 	frame[4] = (uint8_t)args;
 
-	while (SPI1->SR & SPI_SR_BSY);	// Wait until spi is not busy
-	csLow();						// Pull chip select low
-	for (i = 0; i < 5; i++) {		// Send each byte of data
+	while (SPI1->SR & SPI_SR_BSY);		// Wait until spi is not busy
+	csLow();							// Pull chip select low
+	for (i = 0; i < 5; i++) {			// Send each byte of data
 		sdSendByte(frame[i]);
 	}
-	SPI1->CR1 |= SPI_CR1_CRCNEXT;	// Transmit the CRC
-	csHigh();						// Let chip select go high
+	frame[5] = sdGetCRC(SPI_CRC_TX);	// Get the current CRC register
+	frame[5] 
+
+	csHigh();							// Let chip select go high
 }
 
 void sdSendByte(uint8_t byte) {
