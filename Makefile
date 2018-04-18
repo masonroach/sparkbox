@@ -54,11 +54,13 @@ TARGET = $(TARGETDIR)/main
 
 # Find source files and declare objects
 SRC   := $(shell find $(SRCDIR) -type f -name *.c)
+SRC   += $(LIBSRCDIR)/system_stm32f3xx.c
 OBJS   = $(patsubst $(SRCDIR)/%,$(OBJDIR)/%,$(SRC:.c=.o))
 
 STARTUP = $(LIBDIR)/startup_stm32f303xc.s
 
 LINKER  = $(LIBDIR)/stm32f303vctx_flash.ld
+
 # CPU defines
 MCU = cortex-m4
 MCFLAGS = -mcpu=$(MCU) -mthumb -mthumb-interwork
@@ -91,7 +93,6 @@ $(TARGET).hex: $(TARGET)
 
 # Compile executable
 $(TARGET): $(OBJS) $(STARTUP)
-	echo $(SRC)
 	$(CC) $(CFLAGS) $^ -o $@
 
 # Compile c objects rule
