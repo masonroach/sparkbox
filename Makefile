@@ -19,8 +19,6 @@
 #
 # ==============================================================================
 
-TARGET = main
-
 # Define compilers
 PREFIX = arm-none-eabi
 CC = $(PREFIX)-gcc
@@ -40,14 +38,19 @@ SRCDIR    := src
 INCDIR    := inc
 OBJDIR    := obj
 LIBDIR    := lib
+LIBSRCDIR := lib/src
+LIBINCDIR := lib/inc
 TARGETDIR := bin
 
 # Define vpaths
-vpath %.c  $(SRCDIR)
-vpath %.h  $(INCDIR)
+vpath %.c  $(SRCDIR):$(LIBSRCDIR)
+vpath %.h  $(SRCDIR):$(LIBINCDIR)
 vpath %.o  $(OBJDIR)
 vpath %.s  $(SRCDIR)
 vpath %.ld $(LIBDIR)
+
+# Define target
+TARGET = $(TARGETDIR)/main
 
 # Find source files and declare objects
 SRC   := $(shell find $(SRCDIR) -type f -name *.c)
@@ -55,13 +58,12 @@ OBJS   = $(patsubst $(SRCDIR)/%,$(OBJDIR)/%,$(SRC:.c=.o))
 
 STARTUP = $(LIBDIR)/startup_stm32f303xc.s
 
-LINKER  = $(LIBDIR)/STM32F303VCTx_FLASH.ld
-
+LINKER  = $(LIBDIR)/stm32f303vctx_flash.ld
 # CPU defines
 MCU = cortex-m4
 MCFLAGS = -mcpu=$(MCU) -mthumb -mthumb-interwork
 
-INCLUDES = -I$(INCDIR) -I.
+INCLUDES = -I$(INCDIR) -I$(LIBINCDIR) -I.
 
 # Define compiler flags
 CFLAGS = $(MCFLAGS) $(OPTIMIZE) $(INCLUDES) -Wl,-T,$(LINKER) \
