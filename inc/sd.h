@@ -1,7 +1,7 @@
 #include "stm32f3xx.h"
 
-#ifndef SPARK_SPI
-#define SPARK_SPI
+#ifndef SPARK_SD
+#define SPARK_SD
 
 #ifndef CLOCK_F
 #define CLOCK_F 8000000UL
@@ -46,5 +46,7 @@ typedef enum {
 void sdInit(void);
 void sdSendCmd(SDCOMMAND cmd, uint32_t args);
 void sdSendByte(uint8_t byte);
+uint16_t sdGetCRC(CRCTYPE crcType);
+uint8_t sdReadByte(void);
 
 #endif

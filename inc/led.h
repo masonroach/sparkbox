@@ -14,5 +14,6 @@ void ledToggle(uint8_t led);
 void ledAllOn(void);
 void ledAllOff(void);
 void ledCircle(uint8_t numLeds);
+void ledCircleInverted(uint8_t numLeds);
 
 #endif

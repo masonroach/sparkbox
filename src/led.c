@@ -45,3 +45,13 @@ void ledCircle(uint8_t numLeds) {
 		ledOff(0);
 	}
 }
+
+void ledCircleInverted(uint8_t numLeds) {
+	ledAllOff();
+	GPIOE->BSRR |= ~(0x00FF << numLeds+1) & 0xFF00;
+	if (numLeds > 7) {
+		ledOff(0);
+	} else {
+		ledOn(0);
+	}
+}
