@@ -38,13 +38,14 @@ SRCDIR    := src
 INCDIR    := inc
 OBJDIR    := obj
 LIBDIR    := lib
-LIBSRCDIR := lib/src
-LIBINCDIR := lib/inc
+SYSDIR    := $(LIBDIR)/system
+SYSSRCDIR := $(SYSDIR)/src
+SYSINCDIR := $(SYSDIR)/inc
 TARGETDIR := bin
 
 # Define vpaths
-vpath %.c  $(SRCDIR):$(LIBSRCDIR)
-vpath %.h  $(SRCDIR):$(LIBINCDIR)
+vpath %.c  $(SRCDIR):$(SYSSRCDIR)
+vpath %.h  $(SRCDIR):$(SYSINCDIR)
 vpath %.o  $(OBJDIR)
 vpath %.s  $(SRCDIR)
 vpath %.ld $(LIBDIR)
@@ -54,10 +55,10 @@ TARGET = $(TARGETDIR)/main
 
 # Find source files and declare objects
 SRC   := $(shell find $(SRCDIR) -type f -name *.c)
-SRC   += $(LIBSRCDIR)/system_stm32f3xx.c
+SRC   += $(shell find $(SYSSRCDIR) -type f -name *.c)
 OBJS  := $(addprefix $(OBJDIR)/,$(notdir $(SRC:.c=.o)))
 
-STARTUP = $(LIBDIR)/startup_stm32f303xc.s
+STARTUP = $(SYSDIR)/startup_stm32f303xc.s
 
 LINKER  = $(LIBDIR)/stm32f303vctx_flash.ld
 
@@ -66,7 +67,7 @@ MCU = cortex-m4
 MCFLAGS = -mcpu=$(MCU) -mthumb -mthumb-interwork
 
 # Define include paths
-INCLUDES := . $(INCDIR) $(LIBINCDIR)
+INCLUDES := . $(INCDIR) $(SYSINCDIR)
 INCFLAGS := $(addprefix -I,$(INCLUDES))
 
 # Define compiler flags
