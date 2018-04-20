@@ -55,7 +55,7 @@ TARGET = $(TARGETDIR)/main
 # Find source files and declare objects
 SRC   := $(shell find $(SRCDIR) -type f -name *.c)
 SRC   += $(LIBSRCDIR)/system_stm32f3xx.c
-OBJS   = $(patsubst $(SRCDIR)/%,$(OBJDIR)/%,$(SRC:.c=.o))
+OBJS  := $(addprefix $(OBJDIR)/,$(notdir $(SRC:.c=.o)))
 
 STARTUP = $(LIBDIR)/startup_stm32f303xc.s
 
@@ -65,10 +65,12 @@ LINKER  = $(LIBDIR)/stm32f303vctx_flash.ld
 MCU = cortex-m4
 MCFLAGS = -mcpu=$(MCU) -mthumb -mthumb-interwork
 
-INCLUDES = -I$(INCDIR) -I$(LIBINCDIR) -I.
+# Define include paths
+INCLUDES := . $(INCDIR) $(LIBINCDIR)
+INCFLAGS := $(addprefix -I,$(INCLUDES))
 
 # Define compiler flags
-CFLAGS = $(MCFLAGS) $(OPTIMIZE) $(INCLUDES) -Wl,-T,$(LINKER) \
+CFLAGS = $(MCFLAGS) $(OPTIMIZE) $(INCFLAGS) -Wl,-T,$(LINKER) \
 	-lnosys
 
 ASFLAGS = $(MCFLAGS)
@@ -96,7 +98,7 @@ $(TARGET): $(OBJS) $(STARTUP)
 	$(CC) $(CFLAGS) $^ -o $@
 
 # Compile c objects rule
-$(OBJDIR)/%.o: $(SRCDIR)/%.c
+$(OBJDIR)/%.o: %.c
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
@@ -113,11 +115,11 @@ flash: $(TARGET).bin
   # Windows Linux Subsystem
   ifdef WINDOWS
 	/mnt/c/Windows/System32/cmd.exe /C powershell -Command \
-	"Copy-Item $(TARGET).bin (Get-WMIObject Win32_Volume \
+	"Copy-Item $< (Get-WMIObject Win32_Volume \
 	| ? {\$$_.Label -eq 'DIS_F303VC'} | %{\$$_.DriveLetter})"
 
   # Linux (RPi probably)
   else
-	echo "No OS Detected. No flash rule provided. . . "
+	cp $< $(shell mount|grep DIS_F303VC|awk '{print $$3}')
 
   endif
