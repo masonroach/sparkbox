@@ -96,6 +96,7 @@ $(TARGET).hex: $(TARGET)
 
 # Compile executable
 $(TARGET): $(OBJS) $(STARTUP)
+	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) $^ -o $@
 
 # Compile c objects rule
