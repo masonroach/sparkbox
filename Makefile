@@ -34,18 +34,21 @@ OD = $(PREFIX)-objdump
 OPTIMIZE = -Os
 
 # Directories
-SRCDIR    := src
-INCDIR    := inc
-OBJDIR    := obj
-LIBDIR    := lib
-SYSDIR    := $(LIBDIR)/system
-SYSSRCDIR := $(SYSDIR)/src
-SYSINCDIR := $(SYSDIR)/inc
-TARGETDIR := bin
+SRCDIR        := src
+INCDIR        := inc
+OBJDIR        := obj
+LIBDIR        := lib
+  SYSDIR      := $(LIBDIR)/system
+    SYSSRCDIR := $(SYSDIR)/src
+    SYSINCDIR := $(SYSDIR)/inc
+  HALDIR      := $(LIBDIR)/HAL
+    HALSRCDIR := $(HALDIR)/src
+    HALINCDIR := $(HALDIR)/inc
+TARGETDIR     := bin
 
 # Define vpaths
-vpath %.c  $(SRCDIR):$(SYSSRCDIR)
-vpath %.h  $(SRCDIR):$(SYSINCDIR)
+vpath %.c  $(SRCDIR):$(SYSSRCDIR):$(HALSRCDIR)
+vpath %.h  $(SRCDIR):$(SYSINCDIR):$(HALINCDIR)
 vpath %.o  $(OBJDIR)
 vpath %.s  $(SRCDIR)
 vpath %.ld $(LIBDIR)
@@ -53,9 +56,10 @@ vpath %.ld $(LIBDIR)
 # Define target
 TARGET = $(TARGETDIR)/main
 
-# Find source files and declare objects
-SRC   := $(shell find $(SRCDIR) -type f -name *.c)
-SRC   += $(shell find $(SYSSRCDIR) -type f -name *.c)
+# Find source files and declare objects. Does not include hidden files.
+SRC   := $(shell find $(SRCDIR) -type f -name [^.]*.c)
+SRC   += $(shell find $(SYSSRCDIR) -type f -name [^.]*.c)
+SRC   += $(shell find $(HALSRCDIR) -type f -name [^.]*.c)
 OBJS  := $(addprefix $(OBJDIR)/,$(notdir $(SRC:.c=.o)))
 
 STARTUP = $(SYSDIR)/startup_stm32f303xc.s
@@ -67,7 +71,7 @@ MCU = cortex-m4
 MCFLAGS = -mcpu=$(MCU) -mthumb -mthumb-interwork
 
 # Define include paths
-INCLUDES := . $(INCDIR) $(SYSINCDIR)
+INCLUDES := . $(INCDIR) $(SYSINCDIR) $(HALINCDIR)
 INCFLAGS := $(addprefix -I,$(INCLUDES))
 
 # Define compiler flags
