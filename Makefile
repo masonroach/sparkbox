@@ -34,35 +34,44 @@ OD = $(PREFIX)-objdump
 OPTIMIZE = -Os
 
 # Directories
-SRCDIR        := src
-INCDIR        := inc
-OBJDIR        := obj
-LIBDIR        := lib
-  SYSDIR      := $(LIBDIR)/system
-    SYSSRCDIR := $(SYSDIR)/src
-    SYSINCDIR := $(SYSDIR)/inc
-  HALDIR      := $(LIBDIR)/HAL
-    HALSRCDIR := $(HALDIR)/src
-    HALINCDIR := $(HALDIR)/inc
-TARGETDIR     := bin
+SRCDIR         := src
+INCDIR         := inc
+OBJDIR         := obj
+LIBDIR         := lib
+  SYSDIR       := $(LIBDIR)/system
+    SYSSRCDIR  := $(SYSDIR)/src
+    SYSINCDIR  := $(SYSDIR)/inc
+  HALDIR       := $(LIBDIR)/HAL
+    HALSRCDIR  := $(HALDIR)/src
+    HALINCDIR  := $(HALDIR)/inc
+  FATDIR       := $(LIBDIR)/fatfs
+    FATDRIVER  := $(FATDIR)/drivers
+    FATOPTION  := $(FATDIR)/option
+  EVLDIR       := $(LIBDIR)/eval
+    EVLSRCDIR  := $(EVLDIR)/src
+    EVLINCDIR  := $(EVLDIR)/inc
+TARGETDIR      := bin
 
 # Define vpaths
-vpath %.c  $(SRCDIR):$(SYSSRCDIR):$(HALSRCDIR)
-vpath %.h  $(SRCDIR):$(SYSINCDIR):$(HALINCDIR)
+vpath %.c  $(SRCDIR):$(SYSSRCDIR):$(HALSRCDIR):$(FATDIR):$(FATDRIVER):\
+	$(FATOPTION):$(EVLSRCDIR)
 vpath %.o  $(OBJDIR)
-vpath %.s  $(SRCDIR)
+vpath %.s  $(SYSDIR)
 vpath %.ld $(LIBDIR)
 
 # Define target
 TARGET = $(TARGETDIR)/main
 
+STARTUP = $(SYSDIR)/startup_stm32f303xc.s
+
 # Find source files and declare objects. Does not include hidden files.
 SRC   := $(shell find $(SRCDIR) -type f -name [^.]*.c)
 SRC   += $(shell find $(SYSSRCDIR) -type f -name [^.]*.c)
 SRC   += $(shell find $(HALSRCDIR) -type f -name [^.]*.c)
+SRC   += $(shell find $(FATDIR) -type f -name [^.]*.c)
+SRC   += $(shell find $(EVLSRCDIR) -type f -name [^.]*.c)
 OBJS  := $(addprefix $(OBJDIR)/,$(notdir $(SRC:.c=.o)))
-
-STARTUP = $(SYSDIR)/startup_stm32f303xc.s
+OBJS  += $(addprefix $(OBJDIR)/,$(notdir $(STARTUP:.s=.o)))
 
 LINKER  = $(LIBDIR)/stm32f303vctx_flash.ld
 
@@ -71,7 +80,7 @@ MCU = cortex-m4
 MCFLAGS = -mcpu=$(MCU) -mthumb -mthumb-interwork
 
 # Define include paths
-INCLUDES := . $(INCDIR) $(SYSINCDIR) $(HALINCDIR)
+INCLUDES := $(INCDIR) $(SYSINCDIR) $(HALINCDIR) $(FATDIR) $(EVLINCDIR)
 INCFLAGS := $(addprefix -I,$(INCLUDES))
 
 # Define compiler flags
@@ -99,7 +108,7 @@ $(TARGET).hex: $(TARGET)
 	$(CP) -O ihex $^ $@
 
 # Compile executable
-$(TARGET): $(OBJS) $(STARTUP)
+$(TARGET): $(OBJS)
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) $^ -o $@
 
@@ -108,13 +117,18 @@ $(OBJDIR)/%.o: %.c
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
+# Compile s objects rule
+$(OBJDIR)/%.o: %.s
+	@mkdir -p $(@D)
+	$(AS) $(ASFLAGS) -o $@ $<
+
 # ==============================================================================
 #   Other Commands
 # ==============================================================================
 
 # Remove compiled executables
 clean:
-	rm -f $(TARGET) $(TARGET).hex $(TARGET).bin $(OBJS)
+	rm -f $(TARGET) $(TARGET).hex $(TARGET).bin $(OBJDIR)/*.o
 
 # Different flashing methods for different systems
 flash: $(TARGET).bin

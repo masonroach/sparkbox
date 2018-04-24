@@ -59,6 +59,7 @@ void systemInit(void) {
 	usartConfig();
 	initButton();	
 	sdSpiInit();
+	HAL_Init();
 	
 	/*
 	 * Initialization is complete. User can press the button to continue at
