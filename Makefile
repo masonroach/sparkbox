@@ -80,7 +80,8 @@ MCU = cortex-m4
 MCFLAGS = -mcpu=$(MCU) -mthumb -mthumb-interwork
 
 # Define include paths
-INCLUDES := $(INCDIR) $(SYSINCDIR) $(HALINCDIR) $(FATDIR) $(EVLINCDIR)
+INCLUDES := $(INCDIR) $(SYSINCDIR) $(HALINCDIR) $(FATDIR) $(FATDRIVER) \
+	$(EVLINCDIR)
 INCFLAGS := $(addprefix -I,$(INCLUDES))
 
 # Define compiler flags

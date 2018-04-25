@@ -1,44 +1,30 @@
 #include "stm32f3xx.h"
+//#include "clock.h"
 #include "usart.h"
 #include "led.h"
 #include "button.h"
-#include "sd.h"
+#include "ff.h"
+#include "ff_gen_drv.h"
+#include "sd_diskio.h"
 
 void systemInit(void);
-void testSdSendByte(uint8_t byte);
-void checkCRC(void);
+
+FATFS SDFatFs;
+FIL MyFile;
+char SDPath[4];
 
 int main(void) {
 	uint8_t i = 0;
-	uint8_t crc, crcH, crcL;
+	FRESULT res;
+	uint32_t byteswritten, bytesread;
+	uint8_t rtext[100];
 
 	systemInit();
 
-	GPIOB->BSRR |= GPIO_BSRR_BR_6;		// CS low
-/*	usartSendString("Received: ");
-	usartSendByte(sdGetByte());
-	usartSendString("\r\n");
-*/
-	sdCardInit();
-	usartSendByte(sdReadByte());
-	usartSendByte(sdReadByte());
-	usartSendByte(sdReadByte());
-	usartSendByte(sdReadByte());
-	usartSendByte(sdReadByte());
-	usartSendByte(sdReadByte());
-	sdCardInit();
-	usartSendByte(sdReadByte());
-	usartSendByte(sdReadByte());
-	usartSendByte(sdReadByte());
-	usartSendByte(sdReadByte());
-	usartSendByte(sdReadByte());
-	usartSendByte(sdReadByte());
-	usartSendByte(sdReadByte());
-	usartSendByte(sdReadByte());
-//	testSdSendByte(0x95);
-	GPIOB->BSRR |= GPIO_BSRR_BS_6;		// CS high	
-	
-//	sdSendCmd(GO_IDLE_STATE, 0);
+	if (FATFS_LinkDriver(&SD_Driver, SDPath) == 0) {
+		ledOn(1);
+		usartSendString("FATFS_LinkDriver() Worked");
+	}
 
 	while (1) {
 		while (readButton() == 0);	// Wait while button is not pushed
@@ -58,7 +44,6 @@ void systemInit(void) {
 	initLeds();
 	usartConfig();
 	initButton();	
-	sdSpiInit();
 	HAL_Init();
 	
 	/*
@@ -77,23 +62,4 @@ void systemInit(void) {
 		for (j = 0; j < 50000; j++);
 	}
 	ledAllOff();
-}
-
-void testSdSendByte(uint8_t byte) {
-
-	sdSendByte(byte);
-	usartSendString("Sent: 0x");
-	usartSendByte(byte);
-	usartSendString("\r\n");
-
-}
-
-void checkCRC(void) {
-	uint8_t crc;
-
-	crc = (uint8_t)sdGetCRC(SPI_CRC_TX);
-
-	usartSendString("CRC: 0x");
-	usartSendByte(crc);
-	usartSendString("\r\n");
 }
