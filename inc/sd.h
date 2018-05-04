@@ -43,9 +43,12 @@ typedef enum {
 	SPI_CRC_TX		// Transmit CRC
 } CRCTYPE;
 
+void csHigh(void);
+void csLow(void);
 void sdInit(void);
+void sdSpiPinInit(void);
 void sdSendCmd(SDCOMMAND cmd, uint32_t args);
-void sdSendByte(uint8_t byte);
+uint8_t sdSendByte(uint8_t byte);
 uint16_t sdGetCRC(CRCTYPE crcType);
 uint8_t sdReadByte(void);
 

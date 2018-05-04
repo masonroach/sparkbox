@@ -20,6 +20,6 @@ void usartConfig(void);
 void usartSendChar(int8_t c);
 uint8_t usartGetChar(void);
 void usartSendString(int8_t *s);
-void usartSendByte(uint8_t byte);
+void usartSendHex(uint8_t byte);
 
 #endif

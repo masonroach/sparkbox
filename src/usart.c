@@ -59,7 +59,7 @@ void usartSendString(int8_t *s) {
 	while (*s != '\0') usartSendChar(*(s++));
 }
 
-void usartSendByte(uint8_t byte) {
+void usartSendHex(uint8_t byte) {
 	uint8_t byteH, byteL;
 
 	byteH = (byte/16) > 9 ? (byte/16) - 10 + 'A' : (byte/16) + '0';
