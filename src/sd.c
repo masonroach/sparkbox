@@ -1,10 +1,10 @@
 #include "sd.h"
 
-void csHigh(void) {
+static void csHigh(void) {
 	GPIOA->BSRR |= GPIO_BSRR_BS_4;		// Pull Chip Select high
 }
 
-void csLow(void) {
+static void csLow(void) {
 	GPIOA->BSRR |= GPIO_BSRR_BR_4;		// Pull Chip Select low
 }
 
@@ -18,7 +18,7 @@ void csLow(void) {
  * @param	None
  * @retval	None
  */
-void sdSpiInit(void) {
+void initSdSpi(void) {
 
 	/*
 	 * Enabling clocks
@@ -32,22 +32,22 @@ void sdSpiInit(void) {
 	/*
 	 * Configure SPI GPIOs
 	 */
-	GPIOA->MODER &= ~GPIO_MODER_MODER3;		// PA3 (CD) Mode -> Input
-	GPIOA->MODER |=  GPIO_MODER_MODER4_0 |	// PA4 (CS) Mode -> Output
-					 GPIO_MODER_MODER5_1 |	// PA5 (SCLK) Mode -> AF
-					 GPIO_MODER_MODER6_1 |	// PA6 (MISO) Mode -> AF
-					 GPIO_MODER_MODER7_1;	// PA6 (MOSI) Mode -> AF
+	GPIOA->MODER  &= ~GPIO_MODER_MODER3;		// PA3 (CD) Mode -> Input
+	GPIOA->MODER  |=  GPIO_MODER_MODER4_0 |		// PA4 (CS) Mode -> Output
+					  GPIO_MODER_MODER5_1 |		// PA5 (SCLK) Mode -> AF
+					  GPIO_MODER_MODER6_1 |		// PA6 (MISO) Mode -> AF
+					  GPIO_MODER_MODER7_1;		// PA6 (MOSI) Mode -> AF
 	GPIOA->AFR[0] |= (5 << GPIO_AFRL_AFRL5_Pos) |	// PA5 AF 5 -> SCLK
 					 (5 << GPIO_AFRL_AFRL6_Pos) |	// PA6 AF 5 -> MISO
 					 (5 << GPIO_AFRL_AFRL7_Pos);	// PA7 AF 5 -> MOSI
-	GPIOA->PUPDR |= GPIO_PUPDR_PUPDR3_0 |	// PA3 (CD) -> Pull-up resistor
-					GPIO_PUPDR_PUPDR6_0;	// PA6 (MISO) -> Pull-up resistor
+	GPIOA->PUPDR  |=  GPIO_PUPDR_PUPDR3_0 |		// PA3 (CD) -> Pull-up resistor
+					  GPIO_PUPDR_PUPDR6_0;		// PA6 (MISO) -> Pull-up resistor
 
 	/*
 	 * Configuring SPI1
 	 */
-	SPI1->CR1   &= ~SPI_CR1_BR;			// Baud rate -> 100 -> CLOCK_F/32
-	SPI1->CR1   |=  SPI_CR1_BR_2;		
+//	SPI1->CR1   &= ~SPI_CR1_BR;			// Baud rate -> 100 -> CLOCK_F/32
+	SPI1->CR1   |=  SPI_CR1_BR;		
 	SPI1->CR1   &= ~SPI_CR1_CPOL;		// Clock polarity -> 0 -> 0 when idle
 	SPI1->CR1   &= ~SPI_CR1_CPHA;		// Phase -> 0 -> first clock, first data
 	SPI1->CR1   &= ~SPI_CR1_RXONLY;		// Receive only -> 0 -> Full duplex
@@ -67,13 +67,12 @@ void sdSpiInit(void) {
 	SPI1->CR2   &= ~SPI_CR2_NSSP;		// NSS pulse management -> 0 -> No pulse
 	SPI1->CR2   |=  SPI_CR2_FRXTH;		// FIFO reception threshold -> 8 - bit
 	SPI1->CR1   |=  SPI_CR1_SPE;		// SPI Enable -> 1 -> Enabled
-//	SPI1->CRCPR  = 0x0089;				// CRC poly = x^7 + x^3 + 1
 
 	csHigh();
 	// **********DELAY 10MS***********
 }
 
-void sdCardInit(void) {
+void initSdCard(void) {
 	uint8_t i;
 
 	/*
@@ -81,13 +80,12 @@ void sdCardInit(void) {
 	 */
 	for (i = 0; i < 9; i++) {
 		sdSendByte(0xFF);
-		usartSendChar(i+'0');
 	}
-	sdSendCmd(GO_IDLE_STATE, 0x00000000UL);
+	usartSendHex(sdSendCmd(GO_IDLE_STATE, 0x00000000UL));
 }
 
-void sdSendCmd(SDCOMMAND cmd, uint32_t args) {
-	uint8_t i;
+uint8_t sdSendCmd(SDCOMMAND cmd, uint32_t args) {
+	uint8_t i, res;
 	uint8_t frame[6];
 
 	// Split commands into byte-size frames
@@ -98,26 +96,40 @@ void sdSendCmd(SDCOMMAND cmd, uint32_t args) {
 	frame[4] = (uint8_t)args;
 
 	// Determine if CRC is needed
-	if (cmd == GO_IDLE_STATE) frame[6] = 0x95;			// CRC for CMD0
-	else if (cmd == SEND_IF_COND) frame[6] = 0x87;		// CRC for CMD8
-	else frame[6] = 0x01;								// Dummy CRC + stop bit
+	if (cmd == GO_IDLE_STATE) frame[5] = 0x95;			// CRC for CMD0
+	else if (cmd == SEND_IF_COND) frame[5] = 0x87;		// CRC for CMD8
+	else frame[5] = 0x01;								// Dummy CRC + stop bit
 
 	csLow();							// Pull chip select low
 	for (i = 0; i < 6; i++) {			// Send each byte of data
 		sdSendByte(frame[i]);
-		usartSendHex(frame[i]);
-		usartSendChar('\n');
+	}
+	
+	// Get response data
+	for (i = 0; i < 10; i++) {
+		res = sdSendByte(0xFF);
+		if (!(res & 0x80)) break;
 	}
 
 	csHigh();							// Let chip select go high
+
+	return res;
 }
 
 uint8_t sdSendByte(uint8_t byte) {
+/*	usartSendString("Sent: 0x");
+	usartSendHex(byte);
+*/
 	while (!(SPI1->SR & SPI_SR_TXE)); 	// Wait until transmit buffer is empty
 	SPI1->DR = byte;					// Send the byte
 	while (SPI1->SR & SPI_SR_BSY);		// Wait until spi is not busy
-
-	return (uint8_t)SPI1->DR;
+	byte = (uint8_t)SPI1->DR;
+/*
+	usartSendString("\tReceived: 0x");
+	usartSendHex(byte);
+	usartSendString("\r\n");
+*/
+	return byte;
 }
 
 /*!

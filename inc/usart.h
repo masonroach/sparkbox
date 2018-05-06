@@ -16,7 +16,7 @@
 #define USARTDIV CLOCK_F/BAUD
 #endif
 
-void usartConfig(void);
+void initUsart(void);
 void usartSendChar(int8_t c);
 uint8_t usartGetChar(void);
 void usartSendString(int8_t *s);

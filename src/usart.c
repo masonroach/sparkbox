@@ -1,7 +1,7 @@
 #include "usart.h"
 
 // Configure 8N1 USART over USART1 port
-void usartConfig(void) {
+void initUsart(void) {
 
 	/*
 	 * Initialize GPIOs
