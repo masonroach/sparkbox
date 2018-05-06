@@ -27,7 +27,7 @@ void sdSpiInit(void) {
 					  RCC_AHBENR_GPIOAEN;
 	RCC->APB2ENR  |=  RCC_APB2ENR_SPI1EN;	// Enable SPI1 clock
 	RCC->APB2RSTR |=  RCC_APB2RSTR_SPI1RST;	// Reset SPI1
-	RCC->APB2RSTR &= ~RCC_APB2RSTR_SPI1RST;	// Reset SPI1
+	RCC->APB2RSTR &= ~RCC_APB2RSTR_SPI1RST;	// Clear reset of SPI1
 
 	/*
 	 * Configure SPI GPIOs
@@ -38,32 +38,35 @@ void sdSpiInit(void) {
 					 GPIO_MODER_MODER6_1 |	// PA6 (MISO) Mode -> AF
 					 GPIO_MODER_MODER7_1;	// PA6 (MOSI) Mode -> AF
 	GPIOA->AFR[0] |= (5 << GPIO_AFRL_AFRL5_Pos) |	// PA5 AF 5 -> SCLK
-					 (5 << GPIO_AFRL_AFRL6_Pos) |	// PA6 AF 6 -> MISO
-					 (5 << GPIO_AFRL_AFRL7_Pos);	// PA7 AF 7 -> MOSI
+					 (5 << GPIO_AFRL_AFRL6_Pos) |	// PA6 AF 5 -> MISO
+					 (5 << GPIO_AFRL_AFRL7_Pos);	// PA7 AF 5 -> MOSI
 	GPIOA->PUPDR |= GPIO_PUPDR_PUPDR3_0 |	// PA3 (CD) -> Pull-up resistor
 					GPIO_PUPDR_PUPDR6_0;	// PA6 (MISO) -> Pull-up resistor
 
 	/*
 	 * Configuring SPI1
 	 */
-	SPI1->CR1   &= ~SPI_CR1_BR;			// Baud rate -> 000 -> CLOCK_F/2
-	SPI1->CR1   &= ~SPI_CR1_RXONLY;		// Receive only -> 0 -> Full duplex
-	SPI1->CR1   |=  SPI_CR1_SSM;		// 
+	SPI1->CR1   &= ~SPI_CR1_BR;			// Baud rate -> 100 -> CLOCK_F/32
+	SPI1->CR1   |=  SPI_CR1_BR_2;		
 	SPI1->CR1   &= ~SPI_CR1_CPOL;		// Clock polarity -> 0 -> 0 when idle
 	SPI1->CR1   &= ~SPI_CR1_CPHA;		// Phase -> 0 -> first clock, first data
+	SPI1->CR1   &= ~SPI_CR1_RXONLY;		// Receive only -> 0 -> Full duplex
 	SPI1->CR1   &= ~SPI_CR1_BIDIMODE;	// Bidirectional data -> 0 -> Enabled
+	SPI1->CR1   |=  SPI_CR1_BIDIOE;		// Bidirectional output enable -> 1
 	SPI1->CR1   &= ~SPI_CR1_LSBFIRST;	// Frame format -> 0 -> MSB first
 	SPI1->CR1   &= ~SPI_CR1_CRCEN;		// CRC -> 0 -> Disabled
 	SPI1->CR1   &= ~SPI_CR1_CRCL;		// CRC length -> 0 -> 8 bits
-	SPI1->CR1   &= ~SPI_CR1_SSM;		// Software Slave Management -> 0
+	SPI1->CR1   |=  SPI_CR1_SSM;		// Slave Management -> 1 -> Software
+	SPI1->CR1   |=  SPI_CR1_SSI;		// Because Yifeng's book told me to
 	SPI1->CR1   |=  SPI_CR1_MSTR;		// Master config -> 1 -> Master device
 	SPI1->CR2   |=  SPI_CR2_DS_0 |		// Data length -> 0111 -> 8-bit
 					SPI_CR2_DS_1 |
 					SPI_CR2_DS_2;
-	SPI1->CR2   &= ~SPI_CR2_SSOE;		// Slave select output enable -> 0
+	SPI1->CR2   |=  SPI_CR2_SSOE;		// Slave select output enable -> 1
 	SPI1->CR2   &= ~SPI_CR2_FRF;		// Frame format -> 0 -> Motarola mode
 	SPI1->CR2   &= ~SPI_CR2_NSSP;		// NSS pulse management -> 0 -> No pulse
 	SPI1->CR2   |=  SPI_CR2_FRXTH;		// FIFO reception threshold -> 8 - bit
+	SPI1->CR1   |=  SPI_CR1_SPE;		// SPI Enable -> 1 -> Enabled
 //	SPI1->CRCPR  = 0x0089;				// CRC poly = x^7 + x^3 + 1
 
 	csHigh();
@@ -80,14 +83,7 @@ void sdCardInit(void) {
 		sdSendByte(0xFF);
 		usartSendChar(i+'0');
 	}
-	csLow();
-	sdSendByte(0x40);
-	sdSendByte(0x00);
-	sdSendByte(0x00);
-	sdSendByte(0x00);
-	sdSendByte(0x00);
-	sdSendByte(0x95);
-	
+	sdSendCmd(GO_IDLE_STATE, 0x00000000UL);
 }
 
 void sdSendCmd(SDCOMMAND cmd, uint32_t args) {
@@ -109,15 +105,17 @@ void sdSendCmd(SDCOMMAND cmd, uint32_t args) {
 	csLow();							// Pull chip select low
 	for (i = 0; i < 6; i++) {			// Send each byte of data
 		sdSendByte(frame[i]);
+		usartSendHex(frame[i]);
+		usartSendChar('\n');
 	}
 
 	csHigh();							// Let chip select go high
 }
 
 uint8_t sdSendByte(uint8_t byte) {
-	while (SPI1->SR & SPI_SR_BSY);		// Wait until spi is not busy
+	while (!(SPI1->SR & SPI_SR_TXE)); 	// Wait until transmit buffer is empty
 	SPI1->DR = byte;					// Send the byte
-	while (!(SPI1->SR & SPI_SR_TXE));	// Wait until transmit buffer is empty
+	while (SPI1->SR & SPI_SR_BSY);		// Wait until spi is not busy
 
 	return (uint8_t)SPI1->DR;
 }
