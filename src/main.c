@@ -9,8 +9,14 @@ void systemInit(void);
 
 int main(void) {
 	uint8_t i = 0;
+	int freq[4] = {1000, 2000, 3000, 4000}; // Continuous time frequencies
+	unsigned char vol = {100, 100, 100, 100}; // Volumes in terms of percent
 
 	systemInit();
+
+	initAudio();
+	setFrequency(freq);
+	setVolume(vol);
 /*
 	// Test 1 FATFS_LinkDriver()
 	if (FATFS_LinkDriver(&SD_Driver, SDPath) == 0) {
@@ -24,21 +30,21 @@ int main(void) {
 	}
 //	ledOn(2);
 //	usartSendString("f_mount() Worked\r\n");
-	
+
 	// Test 3 mkfs()
 	res = f_mkfs((TCHAR const*)SDPath, 0, 0);
 	if (res != FR_OK) {
 		if (res == FR_INVALID_PARAMETER)
 			usartSendString("res == FR_INVALID_PARAMETER\r\n");
-		if (res == FR_DISK_ERR) 
+		if (res == FR_DISK_ERR)
 			usartSendString("res == FR_DISK_ERR\r\n");
-		if (res == FR_INVALID_DRIVE) 
+		if (res == FR_INVALID_DRIVE)
 			usartSendString("res == FR_INVALID_DRIVE\r\n");
-		if (res == FR_NOT_READY); 
+		if (res == FR_NOT_READY);
 			usartSendString("res == FR_NOT_READY\r\n");
-		if (res == FR_WRITE_PROTECTED) 
+		if (res == FR_WRITE_PROTECTED)
 			usartSendString("res == FR_WRITE_PROTECTED\r\n");
-		if (res == FR_MKFS_ABORTED) 
+		if (res == FR_MKFS_ABORTED)
 			usartSendString("res == FR_MKFS_ABORTED\r\n");
 		goto end;
 	}
@@ -51,7 +57,7 @@ int main(void) {
 	}
 	ledOn(4);
 	usartSendString("f_open() (write) Worked\r\n");
-	
+
 	// Test 5 f_write
 	res = f_write(&MyFile, wtext, sizeof(wtext), (void *)&byteswritten);
 	if ((byteswritten == 0) || (res != FR_OK)) {
@@ -95,16 +101,16 @@ int main(void) {
 		goto end;
 	}
 	usartSendString("bytesread == byteswritten");
-	
+
 	FATFS_UnLinkDriver(SDPath);
 */
-	while (1) {
-		sdSendByte(0xAA);
+//	while (1) {
+//		sdSendByte(0xAA);
 /*		while (readButton() == 0);	// Wait while button is not pushed
 		if (++i > 8) i = 0;
 		ledCircle(i);
 		while (readButton() == 1);	// Wait while button is pushed
-*/	}
+*///	}
 
 	return 0;
 /*
@@ -119,19 +125,19 @@ void systemInit(void) {
 	int8_t i = 0;
 	volatile uint16_t j = 0;
 
-	usartConfig();
+	initUsart();
 	initLeds();
-	usartConfig();
+	initUsart();
 	initButton();
-	sdSpiInit();
-	
+	//sdSpiInit();
+
 	/*
 	 * Initialization is complete. User can press the button to continue at
 	 * any time. Until then, a single serial message will be sent, and the
 	 * LEDs will continue to light up in a circle.
 	 */
-	csHigh();
-	usartSendString("Initialized. Press button to continue.\r\n");
+	//csHigh();
+	//usartSendString("Initialized. Press button to continue.\r\n");
 	while (readButton() == 0) {
 		if (++i > 15) i = 0;
 		if (i <= 8) {
@@ -142,5 +148,5 @@ void systemInit(void) {
 		for (j = 0; j < 50000; j++);
 	}
 	ledAllOff();
-	csLow();
+	//csLow();
 }
