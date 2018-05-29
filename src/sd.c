@@ -8,6 +8,18 @@ static void csLow(void) {
 	GPIOA->BSRR |= GPIO_BSRR_BR_4;		// Pull Chip Select low
 }
 
+static uint8_t getResponse(void) {	
+	uint8_t res, i;
+
+	// Get response data
+	for (i = 0; i < 10; i++) {
+		res = sdSendByte(0xFF);
+		if (!(res & 0x80)) break;
+	}
+
+	return res;
+}
+
 /*!
  * @brief	Initializes pin connections to SD card
  *		PA3: CD
@@ -40,8 +52,8 @@ void initSdSpi(void) {
 	GPIOA->AFR[0] |= (5 << GPIO_AFRL_AFRL5_Pos) |	// PA5 AF 5 -> SCLK
 					 (5 << GPIO_AFRL_AFRL6_Pos) |	// PA6 AF 5 -> MISO
 					 (5 << GPIO_AFRL_AFRL7_Pos);	// PA7 AF 5 -> MOSI
-	GPIOA->PUPDR  |=  GPIO_PUPDR_PUPDR3_0 |		// PA3 (CD) -> Pull-up resistor
-					  GPIO_PUPDR_PUPDR6_0;		// PA6 (MISO) -> Pull-up resistor
+	GPIOA->PUPDR  |=  GPIO_PUPDR_PUPDR3_0;		// PA3 (CD) -> Pull-up resistor
+//					  GPIO_PUPDR_PUPDR6_0;		// PA6 (MISO) -> Pull-up resistor
 
 	/*
 	 * Configuring SPI1
@@ -78,14 +90,17 @@ void initSdCard(void) {
 	/*
 	 * Start initializing the SD card over SPI
 	 */
-	for (i = 0; i < 9; i++) {
+	for (i = 0; i < 10; i++) {
 		sdSendByte(0xFF);
 	}
-	usartSendHex(sdSendCmd(GO_IDLE_STATE, 0x00000000UL));
+	sdSendCmd(GO_IDLE_STATE, 0x00000000UL);
+	sdSendCmd(SEND_IF_COND, 0x000001AA);
+
+	getResponse();
 }
 
-uint8_t sdSendCmd(SDCOMMAND cmd, uint32_t args) {
-	uint8_t i, res;
+void sdSendCmd(SDCOMMAND cmd, uint32_t args) {
+	uint8_t i;
 	uint8_t frame[6];
 
 	// Split commands into byte-size frames
@@ -104,31 +119,25 @@ uint8_t sdSendCmd(SDCOMMAND cmd, uint32_t args) {
 	for (i = 0; i < 6; i++) {			// Send each byte of data
 		sdSendByte(frame[i]);
 	}
-	
-	// Get response data
-	for (i = 0; i < 10; i++) {
-		res = sdSendByte(0xFF);
-		if (!(res & 0x80)) break;
-	}
 
 	csHigh();							// Let chip select go high
 
-	return res;
+	return;
 }
 
 uint8_t sdSendByte(uint8_t byte) {
-/*	usartSendString("Sent: 0x");
+	usartSendString("Sent: 0x");
 	usartSendHex(byte);
-*/
+
 	while (!(SPI1->SR & SPI_SR_TXE)); 	// Wait until transmit buffer is empty
 	SPI1->DR = byte;					// Send the byte
 	while (SPI1->SR & SPI_SR_BSY);		// Wait until spi is not busy
 	byte = (uint8_t)SPI1->DR;
-/*
+
 	usartSendString("\tReceived: 0x");
 	usartSendHex(byte);
 	usartSendString("\r\n");
-*/
+
 	return byte;
 }
 

@@ -11,6 +11,7 @@ int main(void) {
 	uint8_t i = 0;
 
 	systemInit();
+	initSdCard();
 /*
 	// Test 1 FATFS_LinkDriver()
 	if (FATFS_LinkDriver(&SD_Driver, SDPath) == 0) {
@@ -99,12 +100,11 @@ int main(void) {
 	FATFS_UnLinkDriver(SDPath);
 */
 	while (1) {
-		sdSendByte(0xAA);
-/*		while (readButton() == 0);	// Wait while button is not pushed
+		while (readButton() == 0);	// Wait while button is not pushed
 		if (++i > 8) i = 0;
 		ledCircle(i);
 		while (readButton() == 1);	// Wait while button is pushed
-*/	}
+	}
 
 	return 0;
 /*
@@ -119,18 +119,16 @@ void systemInit(void) {
 	int8_t i = 0;
 	volatile uint16_t j = 0;
 
-	usartConfig();
+	initUsart();
 	initLeds();
-	usartConfig();
 	initButton();
-	sdSpiInit();
+	initSdSpi();
 	
 	/*
 	 * Initialization is complete. User can press the button to continue at
 	 * any time. Until then, a single serial message will be sent, and the
 	 * LEDs will continue to light up in a circle.
 	 */
-	csHigh();
 	usartSendString("Initialized. Press button to continue.\r\n");
 	while (readButton() == 0) {
 		if (++i > 15) i = 0;
@@ -142,5 +140,4 @@ void systemInit(void) {
 		for (j = 0; j < 50000; j++);
 	}
 	ledAllOff();
-	csLow();
 }
