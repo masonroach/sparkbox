@@ -4,19 +4,24 @@
 #include "led.h"
 #include "button.h"
 #include "sd.h"
+// #include "pwm.h"
+#include "pushButton.h"
 
 void systemInit(void);
 
 int main(void) {
 	uint8_t i = 0;
-	int freq[4] = {1000, 2000, 3000, 4000}; // Continuous time frequencies
-	unsigned char vol = {100, 100, 100, 100}; // Volumes in terms of percent
+	// int freq[4] = {1000, 2000, 3000, 4000}; // Continuous time frequencies
+	// unsigned char vol[4] = {100, 100, 100, 100}; // Volumes in terms of percent
 
 	systemInit();
 
+	/*
 	initAudio();
 	setFrequency(freq);
 	setVolume(vol);
+	*/
+
 /*
 	// Test 1 FATFS_LinkDriver()
 	if (FATFS_LinkDriver(&SD_Driver, SDPath) == 0) {
@@ -112,6 +117,12 @@ int main(void) {
 		while (readButton() == 1);	// Wait while button is pushed
 *///	}
 
+	while(1){
+		if (BUTTON_A || BUTTON_B || BUTTON_X || BUTTON_Y ||
+			BUTTON_LEFT || BUTTON_RIGHT || BUTTON_UP || BUTTON_DOWN) ledOn(1);
+		else ledOff(1);
+	}
+
 	return 0;
 /*
 end:
@@ -129,6 +140,7 @@ void systemInit(void) {
 	initLeds();
 	initUsart();
 	initButton();
+	initButtons();
 	//sdSpiInit();
 
 	/*
