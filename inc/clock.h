@@ -1,4 +1,4 @@
-#include "stm32f3xx.h"
+#include "stm32f4xx.h"
 
 #ifndef SPARK_CLK
 #define SPARK_CLK

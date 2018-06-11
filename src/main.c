@@ -1,11 +1,11 @@
-#include "stm32f3xx.h"
+#include "stm32f4xx.h"
 //#include "clock.h"	// Include clock before others
-#include "usart.h"
+//#include "usart.h"
 #include "led.h"
 #include "button.h"
-#include "sd.h"
+//#include "sd.h"
 // #include "pwm.h"
-#include "pushButton.h"
+//#include "pushButton.h"
 
 void systemInit(void);
 
@@ -111,10 +111,10 @@ int main(void) {
 */
 
 	while(1){
-		if (BUTTON_A || BUTTON_B || BUTTON_X || BUTTON_Y ||
+/*		if (BUTTON_A || BUTTON_B || BUTTON_X || BUTTON_Y ||
 			BUTTON_LEFT || BUTTON_RIGHT || BUTTON_UP || BUTTON_DOWN) ledOn(1);
 		else ledOff(1);
-	}
+*/	}
 
 	return 0;
 /*
@@ -141,11 +141,11 @@ void systemInit(void) {
 	 */
 	usartSendString("Initialized. Press button to continue.\r\n");
 	while (readButton() == 0) {
-		if (++i > 15) i = 0;
-		if (i <= 8) {
+		if (++i > 7) i = 0;
+		if (i <= 4) {
 			ledCircle(i);
 		} else {
-			ledCircleInverted(i%8);
+			ledCircleInverted(i%4);
 		}
 		for (j = 0; j < 50000; j++);
 	}

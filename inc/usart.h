@@ -1,4 +1,4 @@
-#include "stm32f303xc.h"
+#include "stm32f4xx.h"
 
 #ifndef SPARK_USART
 #define SPARK_USART

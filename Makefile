@@ -41,15 +41,9 @@ LIBDIR         := lib
   SYSDIR       := $(LIBDIR)/system
     SYSSRCDIR  := $(SYSDIR)/src
     SYSINCDIR  := $(SYSDIR)/inc
-  HALDIR       := $(LIBDIR)/HAL
-    HALSRCDIR  := $(HALDIR)/src
-    HALINCDIR  := $(HALDIR)/inc
   FATDIR       := $(LIBDIR)/fatfs
     FATDRIVER  := $(FATDIR)/drivers
     FATOPTION  := $(FATDIR)/option
-  EVLDIR       := $(LIBDIR)/eval
-    EVLSRCDIR  := $(EVLDIR)/src
-    EVLINCDIR  := $(EVLDIR)/inc
 TARGETDIR      := bin
 
 # Define vpaths
@@ -62,7 +56,7 @@ vpath %.ld $(LIBDIR)
 # Define target
 TARGET = $(TARGETDIR)/main
 
-STARTUP = $(SYSDIR)/startup_stm32f303xc.s
+STARTUP = $(SYSDIR)/startup_stm32f407xx.s
 
 # Find source files and declare objects. Does not include hidden files.
 SRC   := $(shell find $(SRCDIR) -type f -name [^.]*.c)
@@ -73,7 +67,7 @@ SRC   += $(shell find $(EVLSRCDIR) -type f -name [^.]*.c)
 OBJS  := $(addprefix $(OBJDIR)/,$(notdir $(SRC:.c=.o)))
 OBJS  += $(addprefix $(OBJDIR)/,$(notdir $(STARTUP:.s=.o)))
 
-LINKER  = $(LIBDIR)/stm32f303vctx_flash.ld
+LINKER  = $(LIBDIR)/stm32f407vgtx_flash.ld
 
 # CPU defines
 MCU = cortex-m4
@@ -137,10 +131,10 @@ flash: $(TARGET).bin
   ifdef WINDOWS
 	/mnt/c/Windows/System32/cmd.exe /C powershell -Command \
 	"Copy-Item $< (Get-WMIObject Win32_Volume \
-	| ? {\$$_.Label -eq 'DIS_F303VC'} | %{\$$_.DriveLetter})"
+	| ? {\$$_.Label -eq 'DIS_F407VG'} | %{\$$_.DriveLetter})"
 
   # Linux (RPi probably)
   else
-	cp $< $(shell mount|grep DIS_F303VC|awk '{print $$3}')
+	cp $< $(shell mount|grep DIS_F407VG|awk '{print $$3}')
 
   endif
