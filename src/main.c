@@ -129,25 +129,26 @@ void systemInit(void) {
 	int8_t i = 0;
 	volatile uint16_t j = 0;
 
-	initUsart();
+//	initUsart();
 	initLeds();
 	initButton();
-	initSdSpi();
+//	initSdSpi();
 	
 	/*
 	 * Initialization is complete. User can press the button to continue at
 	 * any time. Until then, a single serial message will be sent, and the
 	 * LEDs will continue to light up in a circle.
 	 */
-	usartSendString("Initialized. Press button to continue.\r\n");
+//	usartSendString("Initialized. Press button to continue.\r\n");
 	while (readButton() == 0) {
-		if (++i > 7) i = 0;
+		ledOn(GREEN);
+/*		if (++i > 7) i = 0;
 		if (i <= 4) {
 			ledCircle(i);
 		} else {
 			ledCircleInverted(i%4);
 		}
 		for (j = 0; j < 50000; j++);
-	}
+*/	}
 	ledAllOff();
 }

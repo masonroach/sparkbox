@@ -2,37 +2,37 @@
 
 // Initialize all 8 LEDs
 void initLeds(void) {
-	RCC->AHBENR    |=   RCC_AHBENR_GPIOEEN;	// Enable GPIOE Clock
+	RCC->AHB1ENR    |=   RCC_AHB1ENR_GPIODEN;	// Enable GPIOD Clock
 
-	GPIOE->MODER   |=   0x5555 << (8 * 2);	// GPIO Modes -> output
-	GPIOE->OTYPER  &= ~(0xFF   << (8 * 1));	// GPIO OType -> open drain
-	GPIOE->PUPDR   |=   0xAAAA << (8 * 2);	// GPIO PU/PD -> No PU/PD
-	GPIOE->OSPEEDR |=   0x5555 << (8 * 2);	// GPIO Speed -> Medium
+	GPIOD->MODER   |=   0x55 << (12 * 2);	// GPIO Modes -> output
+	GPIOD->OTYPER  &= ~(0xFF << (12 * 1));	// GPIO OType -> open drain
+	GPIOD->PUPDR   |=   0xAA << (12 * 2);	// GPIO PU/PD -> No PU/PD
+	GPIOD->OSPEEDR |=   0x55 << (12 * 2);	// GPIO Speed -> Medium
 }
 
 // Turns on a desginated LED
-void ledOn(uint8_t led) {
-	GPIOE->BSRR |= 1 << (8 + led);		// Turn on led
+void ledOn(LEDCOLOR led) {
+	GPIOD->BSRR |= 1 << (12 + led);		// Turn on led
 }
 
 // Turn off a designated LED
-void ledOff(uint8_t led) {
-	GPIOE->BSRR |= 1 << (8 + 16 + led);	// Turn off led
+void ledOff(LEDCOLOR led) {
+	GPIOD->BSRR |= 1 << (8 + 16 + led);	// Turn off led
 }
 
 // Toggle a designated LED
-void ledToggle(uint8_t led) {
-	GPIOE->ODR ^= 1 << (8 + led);
+void ledToggle(LEDCOLOR led) {
+	GPIOD->ODR ^= 1 << (12 + led);
 }
 
 // Turn all LEDs on
 void ledAllOn(void) {
-	GPIOE->BSRR |= 0xFF << 8;
+	GPIOD->BSRR |= 0xF << 12;
 }
 
 // Turn all LEDs off
 void ledAllOff(void) {
-	GPIOE->BSRR |= 0xFF << (8 + 16);
+	GPIOD->BSRR |= 0xF << (8 + 16);
 }
 
 // Turn on LEDs in a circle

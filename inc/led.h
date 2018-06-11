@@ -7,10 +7,17 @@
 #ifndef SPARK_LED
 #define SPARK_LED
 
+typedef enum {
+	GREEN	= 0,	// PD12
+	ORANGE	= 1,	// PD13
+	RED		= 2,	// PD14
+	BLUE	= 3		// PD15
+} LEDCOLOR;
+
 void initLeds(void);
-void ledOn(uint8_t led);
-void ledOff(uint8_t led);
-void ledToggle(uint8_t led);
+void ledOn(LEDCOLOR led);
+void ledOff(LEDCOLOR led);
+void ledToggle(LEDCOLOR led);
 void ledAllOn(void);
 void ledAllOff(void);
 void ledCircle(uint8_t numLeds);

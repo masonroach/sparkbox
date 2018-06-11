@@ -41,14 +41,13 @@ LIBDIR         := lib
   SYSDIR       := $(LIBDIR)/system
     SYSSRCDIR  := $(SYSDIR)/src
     SYSINCDIR  := $(SYSDIR)/inc
-  FATDIR       := $(LIBDIR)/fatfs
-    FATDRIVER  := $(FATDIR)/drivers
-    FATOPTION  := $(FATDIR)/option
+#  FATDIR       := $(LIBDIR)/fatfs
+#    FATDRIVER  := $(FATDIR)/drivers
+#    FATOPTION  := $(FATDIR)/option
 TARGETDIR      := bin
 
 # Define vpaths
-vpath %.c  $(SRCDIR):$(SYSSRCDIR):$(HALSRCDIR):$(FATDIR):$(FATDRIVER):\
-	$(FATOPTION):$(EVLSRCDIR)
+vpath %.c  $(SRCDIR):$(SYSSRCDIR):$(FATDIR):$(FATDRIVER):$(FATOPTION)
 vpath %.o  $(OBJDIR)
 vpath %.s  $(SYSDIR)
 vpath %.ld $(LIBDIR)
@@ -61,9 +60,7 @@ STARTUP = $(SYSDIR)/startup_stm32f407xx.s
 # Find source files and declare objects. Does not include hidden files.
 SRC   := $(shell find $(SRCDIR) -type f -name [^.]*.c)
 SRC   += $(shell find $(SYSSRCDIR) -type f -name [^.]*.c)
-SRC   += $(shell find $(HALSRCDIR) -type f -name [^.]*.c)
 SRC   += $(shell find $(FATDIR) -type f -name [^.]*.c)
-SRC   += $(shell find $(EVLSRCDIR) -type f -name [^.]*.c)
 OBJS  := $(addprefix $(OBJDIR)/,$(notdir $(SRC:.c=.o)))
 OBJS  += $(addprefix $(OBJDIR)/,$(notdir $(STARTUP:.s=.o)))
 
@@ -74,8 +71,7 @@ MCU = cortex-m4
 MCFLAGS = -mcpu=$(MCU) -mthumb -mthumb-interwork
 
 # Define include paths
-INCLUDES := $(INCDIR) $(SYSINCDIR) $(HALINCDIR) $(FATDIR) $(FATDRIVER) \
-	$(EVLINCDIR)
+INCLUDES := $(INCDIR) $(SYSINCDIR) $(FATDIR) $(FATDRIVER) \
 INCFLAGS := $(addprefix -I,$(INCLUDES))
 
 # Define compiler flags
