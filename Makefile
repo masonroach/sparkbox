@@ -60,7 +60,7 @@ STARTUP = $(SYSDIR)/startup_stm32f407xx.s
 # Find source files and declare objects. Does not include hidden files.
 SRC   := $(shell find $(SRCDIR) -type f -name [^.]*.c)
 SRC   += $(shell find $(SYSSRCDIR) -type f -name [^.]*.c)
-SRC   += $(shell find $(FATDIR) -type f -name [^.]*.c)
+#SRC   += $(shell find $(FATDIR) -type f -name [^.]*.c)
 OBJS  := $(addprefix $(OBJDIR)/,$(notdir $(SRC:.c=.o)))
 OBJS  += $(addprefix $(OBJDIR)/,$(notdir $(STARTUP:.s=.o)))
 
@@ -71,11 +71,11 @@ MCU = cortex-m4
 MCFLAGS = -mcpu=$(MCU) -mthumb -mthumb-interwork
 
 # Define include paths
-INCLUDES := $(INCDIR) $(SYSINCDIR) $(FATDIR) $(FATDRIVER) \
+INCLUDES := $(INCDIR) $(SYSINCDIR) $(FATDIR) $(FATDRIVER)
 INCFLAGS := $(addprefix -I,$(INCLUDES))
 
 # Define compiler flags
-CFLAGS = $(MCFLAGS) $(OPTIMIZE) $(INCFLAGS) -Wl,-T,$(LINKER) \
+CFLAGS = $(MCFLAGS) $(OPTIMIZE) $(INCFLAGS) -Wall -Wl,-T,$(LINKER) \
 	-lnosys
 
 ASFLAGS = $(MCFLAGS)

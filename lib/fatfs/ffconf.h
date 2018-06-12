@@ -9,12 +9,12 @@
 / Additional user header to be used  
 /-----------------------------------------------------------------------------*/
 /* Replace 'stm32xxx' with the STM32 Serie used, ex: stm32f4xx_hal.h */
-#include "stm32f3xx_hal.h" 
+//#include "stm32f3xx_hal.h" 
 
 /* If uSD is used, then include the uSD BSP header file. 
    Replace 'stm32xxx' with your EVAL board name, ex: stm324x9i_eval_sd.h 
    */
-#include "stm32303c_eval_sd.h"
+#//include "stm32303c_eval_sd.h"
 
 /* If USB Host MSC is used, then need to include the USBH and UBSH MSC core header files */
 //#include "usbh_core.h"
