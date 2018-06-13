@@ -6,18 +6,18 @@ void initUsart(void) {
 	/*
 	 * Initialize GPIOs
 	 */
-	RCC->AHBENR    |=   RCC_AHBENR_GPIOCEN;	// Enable GPIOC Clock
+	RCC->AHB1ENR   |=   RCC_AHB1ENR_GPIOAEN;	// Enable GPIOA Clock
 
-	// PC4 Config (TX)
-	GPIOC->MODER   |=   GPIO_MODER_MODER4_1;	// GPIO Mode AF
-	GPIOC->AFR[0]  |=   GPIO_AFRL_AFRL4 & (7 << GPIO_AFRL_AFRL4_Pos);	// Alternate function 7
-	GPIOC->OTYPER  |=   GPIO_OTYPER_OT_4;		// GPIO OType OD
-	GPIOC->OSPEEDR |=   GPIO_OSPEEDER_OSPEEDR4;	// GPIO Speed 50MHz
-	GPIOC->PUPDR   &=  ~GPIO_PUPDR_PUPDR4;		// GPIO No Pull
+	// PA9 Config (TX)
+	GPIOA->MODER   |=   GPIO_MODER_MODER9_1;	// GPIO Mode AF
+	GPIOA->AFR[1]  |=   GPIO_AFRH_AFSEL9 & (7 << GPIO_AFRH_AFSEL9_Pos);		// Alternate function 7
+	GPIOA->OTYPER  |=   GPIO_OTYPER_OT_9;		// GPIO OType OD
+	GPIOA->OSPEEDR |=   GPIO_OSPEEDER_OSPEEDR9;	// GPIO Speed 50MHz
+	GPIOA->PUPDR   &=  ~GPIO_PUPDR_PUPDR9;		// GPIO No Pull
 
-	// PC5 Config (RX)
-	GPIOC->MODER   |=   GPIO_MODER_MODER5_1;	// GPIO Mode AF
-	GPIOC->AFR[0]  |=   GPIO_AFRL_AFRL5 & (7 << GPIO_AFRL_AFRL5_Pos);	// Alternate function 7
+	// PA10 Config (RX)
+	GPIOA->MODER   |=   GPIO_MODER_MODER10_1;	// GPIO Mode AF
+	GPIOA->AFR[1]  |=   GPIO_AFRH_AFSEL10 & (7 << GPIO_AFRH_AFSEL10_Pos);	// Alternate function 7
 
 	/*
 	 * Initialize USART
@@ -44,14 +44,14 @@ void initUsart(void) {
 
 // Send a character over USART
 void usartSendChar(int8_t c) {
-	while (!(USART1->ISR & USART_ISR_TXE));	// Wait for transmit buffer to be empty
-	USART1->TDR = c;			// Send the byte
+	while (!(USART1->SR & USART_SR_TXE));	// Wait for transmit buffer to be empty
+	USART1->DR = c;			// Send the byte
 }
 
 // Receive a character over USART
 uint8_t usartGetChar(void) {
-	while (!(USART1->ISR & USART_ISR_RXNE));	// Wait for receive buffer to be full
-	return USART1->RDR;
+	while (!(USART1->SR & USART_SR_RXNE));	// Wait for receive buffer to be full
+	return USART1->DR;		// Get the byte
 }
 
 // Send a string over USART
