@@ -1,6 +1,9 @@
-# Sparkbox
+#### Sparkbox
 
-PINS IN USE
+## Patch Notes
+* 6/12/2018 - Updated all of the device files to run on F4. Buttton.[ch] and led.[ch] have been updated and are functioning properly on the F4 discovery board.
+
+## PINS IN USE
 -----------
 SPI 1: 
 PB2 - CS
@@ -18,7 +21,7 @@ Push Buttons (for Sparkbox):
 PD8 - 15
 
 LEDs (on Discovery Board):
-PE8 - 15
+PD12 - 15
 
 Push button (on Discovery Board):
 PA0
