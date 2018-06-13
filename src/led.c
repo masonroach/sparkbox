@@ -17,7 +17,7 @@ void ledOn(LEDCOLOR led) {
 
 // Turn off a designated LED
 void ledOff(LEDCOLOR led) {
-	GPIOD->BSRR |= 1 << (8 + 16 + led);	// Turn off led
+	GPIOD->BSRR |= 1 << (12 + 16 + led);	// Turn off led
 }
 
 // Toggle a designated LED
@@ -32,7 +32,7 @@ void ledAllOn(void) {
 
 // Turn all LEDs off
 void ledAllOff(void) {
-	GPIOD->BSRR |= 0xF << (8 + 16);
+	GPIOD->BSRR |= 0xF << (12 + 16);
 }
 
 // Turn on LEDs in a circle

@@ -6,12 +6,12 @@ void initButton(void) {
 	
 	GPIOA->MODER &= ~GPIO_MODER_MODER0;	// GPIO Mode Input
 	GPIOA->OTYPER &= ~GPIO_OTYPER_OT_0;	// GPIO OType -> Push-Pull
-	GPIOA->PUPDR |= GPIO_PUPDR_PUPDR0_1;	// GPIO PU/PD -> Pull-down
+	GPIOA->PUPDR &= ~GPIO_PUPDR_PUPDR0;	// GPIO PU/PD -> No Pull-up/down
 }
 
 // Read the value of the button
 uint8_t readButton(void) {
-	if (GPIOA->IDR & GPIO_IDR_IDR_0) {
+	if (GPIOA->IDR & GPIO_IDR_ID0) {
 		return 1;
 	} else {
 		return 0;
