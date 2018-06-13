@@ -115,13 +115,7 @@ int main(void) {
 			BUTTON_LEFT || BUTTON_RIGHT || BUTTON_UP || BUTTON_DOWN) ledOn(1);
 		else ledOff(1);
 */	
-		ledOn(ORANGE);
-		if (readButton()) {
-			ledOn(GREEN);
-		} else {
-			ledOff(GREEN);
-		}
-		ledOff(BLUE);
+		ledOn(GREEN);
 	}
 
 	return 0;
@@ -148,16 +142,14 @@ void systemInit(void) {
 	 * LEDs will continue to light up in a circle.
 	 */
 //	usartSendString("Initialized. Press button to continue.\r\n");
-	while (readButton() == 1) {
-/*		if (++i > 7) i = 0;
+	while (readButton() == 0) {
+		if (++i > 7) i = 0;
 		if (i <= 4) {
 			ledCircle(i);
 		} else {
 			ledCircleInverted(i%4);
 		}
 		for (j = 0; j < 50000; j++);
-*/	}
+	}
 	ledAllOff();
-	ledOn(BLUE);
-	ledOn(RED);
 }

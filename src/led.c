@@ -35,23 +35,24 @@ void ledAllOff(void) {
 	GPIOD->BSRR |= 0xF << (12 + 16);
 }
 
-// Turn on LEDs in a circle
+// Turn on LEDs in a clockwise circle
 void ledCircle(uint8_t numLeds) {
 	ledAllOff();
-	GPIOE->BSRR |= (0x00FF << numLeds+1) & 0xFF00;
-	if (numLeds > 7) {
-		ledOn(0);
+	GPIOD->BSRR |= ((0x0F00 << (numLeds+1)) & 0xE000);
+	if (numLeds > 3) {
+		ledOn(GREEN);
 	} else {
-		ledOff(0);
+		ledOff(GREEN);
 	}
 }
 
+// Turn on LEDs in an inverted clockwise cirlce
 void ledCircleInverted(uint8_t numLeds) {
 	ledAllOff();
-	GPIOE->BSRR |= ~(0x00FF << numLeds+1) & 0xFF00;
-	if (numLeds > 7) {
-		ledOff(0);
+	GPIOD->BSRR |= (~(0x0F00 << (numLeds+1)) & 0xE000);
+	if (numLeds > 3) {
+		ledOff(GREEN);
 	} else {
-		ledOn(0);
+		ledOn(GREEN);
 	}
 }
