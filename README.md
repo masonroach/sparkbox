@@ -30,3 +30,36 @@ PB6 - TIM4_CH1
 PB7 - TIM4_CH2
 PB8 - TIM4_CH3
 PB9 - TIM4_CH4
+
+FSMC (Flexible Static Memory Controller)
+Using NAND flash
+	PD12 - A[17] - address latch enable (ALE) - O
+	PD11 - A[16] - command latch enable (CLE) - O
+D[7:0] or D[15:0] 8 or 16 bit transactions - I/O
+	PD14 - D0
+	PD15 - D1
+	PD0  - D2
+	PD1  - D3
+	PE7  - D4
+	PE8  - D5
+	PE9  - D6
+	PE10 - D7
+	PE11 - D8
+	PE12 - D9
+	PE13 - D10
+	PE14 - D11
+	PE15 - D12
+	PD8  - D13
+	PD9  - D14
+	PD10 - D15
+NCE[x] chip select, x=2,3 - O
+	PD7 - NCE2
+	PG9 - NCE3
+NOE or NRE - Output enable (memory signal name: read enable, NRE) - O
+	PD4 - NOE
+NWE - Write enable - O
+	PD5 - NWE
+NWAIT/INT[3:2] - ready/busy input to FSMC - I
+	PD6 - NWAIT
+	PG6 - INT2
+	PG7 - INT3
