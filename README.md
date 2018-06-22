@@ -31,6 +31,10 @@ PB7 - TIM4_CH2
 PB8 - TIM4_CH3
 PB9 - TIM4_CH4
 
+DAC (Audio)
+PA4 - DAC_OUT1
+PA5 - DAC_OUT2
+
 FSMC (Flexible Static Memory Controller)
 Using NAND flash
 	PD12 - A[17] - address latch enable (ALE) - O
