@@ -17,7 +17,7 @@ void initButtons(void){
 	uint32_t priorityGroup, priority;
 
 	// Enable clock of PORTD and SYSCFG
-	RCC->AHBENR |= RCC_AHBENR_GPIODEN;
+	RCC->AHB1ENR |= RCC_AHB1ENR_GPIODEN;
 	RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
 
 	// Select PORTD as EXTICR8-15
@@ -46,14 +46,14 @@ void initButtons(void){
 				EXTI_FTSR_TR14 | EXTI_FTSR_TR15;
 
 	// Get initial values
-	BUTTON_LEFT = ((GPIOD->IDR & GPIO_IDR_8) != 0); 	// PD8
-	BUTTON_RIGHT = ((GPIOD->IDR & GPIO_IDR_9) != 0);  // PD9
-	BUTTON_UP = ((GPIOD->IDR & GPIO_IDR_10) != 0);		// PD10
-	BUTTON_DOWN = ((GPIOD->IDR & GPIO_IDR_11) != 0);	// PD11
-	BUTTON_A = ((GPIOD->IDR & GPIO_IDR_12) != 0);			// PD12
-	BUTTON_B = ((GPIOD->IDR & GPIO_IDR_13) != 0);			// PD13
-	BUTTON_X = ((GPIOD->IDR & GPIO_IDR_14) != 0);			// PD14
-	BUTTON_Y = ((GPIOD->IDR & GPIO_IDR_15) != 0);			// PD15
+	BUTTON_LEFT = ((GPIOD->IDR & GPIO_IDR_ID8) != 0); 	// PD8
+	BUTTON_RIGHT = ((GPIOD->IDR & GPIO_IDR_ID9) != 0);  // PD9
+	BUTTON_UP = ((GPIOD->IDR & GPIO_IDR_ID10) != 0);		// PD10
+	BUTTON_DOWN = ((GPIOD->IDR & GPIO_IDR_ID11) != 0);	// PD11
+	BUTTON_A = ((GPIOD->IDR & GPIO_IDR_ID12) != 0);			// PD12
+	BUTTON_B = ((GPIOD->IDR & GPIO_IDR_ID13) != 0);			// PD13
+	BUTTON_X = ((GPIOD->IDR & GPIO_IDR_ID14) != 0);			// PD14
+	BUTTON_Y = ((GPIOD->IDR & GPIO_IDR_ID15) != 0);			// PD15
 
 	// Set priority Number
 	priorityGroup = NVIC_GetPriorityGrouping();
@@ -73,12 +73,12 @@ void EXTI9_5_IRQHandler(void){
 	// ack correct interrupts, update button values
 	if (EXTI->PR & EXTI_PR_PR8){
 		EXTI->PR |= EXTI_PR_PR8;
-		BUTTON_LEFT = ((GPIOD->IDR & GPIO_IDR_8) != 0); 	// PD8
+		BUTTON_LEFT = ((GPIOD->IDR & GPIO_IDR_ID8) != 0); 	// PD8
 	}
 
 	if (EXTI->PR & EXTI_PR_PR9){
 		EXTI->PR |= EXTI_PR_PR9;
-		BUTTON_RIGHT = ((GPIOD->IDR & GPIO_IDR_9) != 0);  // PD9
+		BUTTON_RIGHT = ((GPIOD->IDR & GPIO_IDR_ID9) != 0);  // PD9
 	}
 
 }
@@ -87,31 +87,31 @@ void EXTI15_10_IRQHandler(void){
 	// ack correct interrupts, update button values
 	if (EXTI->PR & EXTI_PR_PR10){
 		EXTI->PR |= EXTI_PR_PR10;
-		BUTTON_UP = ((GPIOD->IDR & GPIO_IDR_10) != 0);		// PD10
+		BUTTON_UP = ((GPIOD->IDR & GPIO_IDR_ID10) != 0);		// PD10
 	}
 
 	if (EXTI->PR & EXTI_PR_PR11){
 		EXTI->PR |= EXTI_PR_PR11;
-		BUTTON_DOWN = ((GPIOD->IDR & GPIO_IDR_11) != 0);	// PD11
+		BUTTON_DOWN = ((GPIOD->IDR & GPIO_IDR_ID11) != 0);	// PD11
 	}
 
 	if (EXTI->PR & EXTI_PR_PR12){
 		EXTI->PR |= EXTI_PR_PR12;
-		BUTTON_A = ((GPIOD->IDR & GPIO_IDR_12) != 0);			// PD12
+		BUTTON_A = ((GPIOD->IDR & GPIO_IDR_ID12) != 0);			// PD12
 	}
 
 	if (EXTI->PR & EXTI_PR_PR13){
 		EXTI->PR |= EXTI_PR_PR13;
-		BUTTON_B = ((GPIOD->IDR & GPIO_IDR_13) != 0);			// PD13
+		BUTTON_B = ((GPIOD->IDR & GPIO_IDR_ID13) != 0);			// PD13
 	}
 
 	if (EXTI->PR & EXTI_PR_PR14){
 		EXTI->PR |= EXTI_PR_PR14;
-		BUTTON_X = ((GPIOD->IDR & GPIO_IDR_14) != 0);			// PD14
+		BUTTON_X = ((GPIOD->IDR & GPIO_IDR_ID14) != 0);			// PD14
 	}
 
 	if (EXTI->PR & EXTI_PR_PR15){
 		EXTI->PR |= EXTI_PR_PR15;
-		BUTTON_Y = ((GPIOD->IDR & GPIO_IDR_15) != 0);			// PD15
+		BUTTON_Y = ((GPIOD->IDR & GPIO_IDR_ID15) != 0);			// PD15
 	}
 }
