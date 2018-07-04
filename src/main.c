@@ -1,4 +1,5 @@
 #include "stm32f4xx.h"
+#include "ff.h" // Include FatFs functions
 //#include "clock.h"	// Include clock before others
 //#include "usart.h"
 #include "led.h"
@@ -10,17 +11,39 @@
 void systemInit(void);
 
 int main(void) {
-	uint8_t i = 0;
+	// uint8_t i = 0;
 	// int freq[4] = {1000, 2000, 3000, 4000}; // Continuous time frequencies
 	// unsigned char vol[4] = {100, 100, 100, 100}; // Volumes in terms of percent
+	FATFS FatFs;
+	FIL fil;
+	uint32_t total, free;
+
 
 	systemInit();
+
+	// FatFs test
+	ledAllOff();
+	if (f_mount(&FatFs, "", 1) == FR_OK) {
+		ledOn(BLUE);
+		if (f_open(&fil, "testFile.txt", FA_READ | FA_WRITE | FA_OPEN_ALWAYS) == FR_OK) {
+			ledOn(GREEN);
+			if (f_puts("Test string for test file\n", &fil) > 0) {
+				ledOn(ORANGE);
+			}
+		f_close(&fil);
+		}
+		f_mount(0, "", 1); // Unmount
+	} else {
+		// Failed to mount
+		ledOn(RED);
+	}
 
 	/*
 	initAudio();
 	setFrequency(freq);
 	setVolume(vol);
 	*/
+
 
 /*
 	// Test 1 FATFS_LinkDriver()
@@ -114,8 +137,8 @@ int main(void) {
 /*		if (BUTTON_A || BUTTON_B || BUTTON_X || BUTTON_Y ||
 			BUTTON_LEFT || BUTTON_RIGHT || BUTTON_UP || BUTTON_DOWN) ledOn(1);
 		else ledOff(1);
-*/	
-		ledOn(GREEN);
+*/
+	//	ledOn(GREEN);
 	}
 
 	return 0;
@@ -135,7 +158,7 @@ void systemInit(void) {
 	initLeds();
 	initButton();
 //	initSdSpi();
-	
+
 	/*
 	 * Initialization is complete. User can press the button to continue at
 	 * any time. Until then, a single serial message will be sent, and the

@@ -105,7 +105,7 @@ $(TARGET).hex: $(TARGET)
 # Compile executable
 $(TARGET): $(OBJS)
 	@mkdir -p $(@D)
-	$(CC) $(CFLAGS) $^ -o $@
+	$(CC) $(CFLAGS) --specs=nosys.specs $^ -o $@
 
 # Compile c objects rule
 $(OBJDIR)/%.o: %.c
