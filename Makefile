@@ -34,20 +34,23 @@ OD = $(PREFIX)-objdump
 OPTIMIZE = -Os
 
 # Directories
-SRCDIR         := src
-INCDIR         := inc
-OBJDIR         := obj
-LIBDIR         := lib
-  SYSDIR       := $(LIBDIR)/system
-    SYSSRCDIR  := $(SYSDIR)/src
-    SYSINCDIR  := $(SYSDIR)/inc
-#  FATDIR       := $(LIBDIR)/fatfs
-#    FATDRIVER  := $(FATDIR)/drivers
-#    FATOPTION  := $(FATDIR)/option
-TARGETDIR      := bin
+SRCDIR           := src
+INCDIR           := inc
+OBJDIR           := obj
+LIBDIR           := lib
+  SYSDIR         := $(LIBDIR)/system
+    SYSSRCDIR    := $(SYSDIR)/src
+    SYSINCDIR    := $(SYSDIR)/inc
+  PERIPHDIR    	 := $(LIBDIR)/STM32F4xx_StdPeriph_Driver
+    PERIPHSRCDIR := $(PERIPHDIR)/src
+    PERIPHINCDIR := $(PERIPHDIR)/inc
+  FATDIR         := $(LIBDIR)/fatfs
+    FATDRIVER    := $(FATDIR)/drivers
+    FATOPTION    := $(FATDIR)/option
+TARGETDIR        := bin
 
 # Define vpaths
-vpath %.c  $(SRCDIR):$(SYSSRCDIR):$(FATDIR):$(FATDRIVER):$(FATOPTION)
+vpath %.c  $(SRCDIR):$(SYSSRCDIR):$(FATDIR):$(FATDRIVER):$(FATOPTION):$(PERIPHSRCDIR)
 vpath %.o  $(OBJDIR)
 vpath %.s  $(SYSDIR)
 vpath %.ld $(LIBDIR)
@@ -60,7 +63,8 @@ STARTUP = $(SYSDIR)/startup_stm32f407xx.s
 # Find source files and declare objects. Does not include hidden files.
 SRC   := $(shell find $(SRCDIR) -type f -name [^.]*.c)
 SRC   += $(shell find $(SYSSRCDIR) -type f -name [^.]*.c)
-#SRC   += $(shell find $(FATDIR) -type f -name [^.]*.c)
+SRC   += $(shell find $(FATDIR) -type f -name [^.]*.c)
+SRC   += $(shell find $(PERIPHDIR) -type f -name [^.]*.c)
 OBJS  := $(addprefix $(OBJDIR)/,$(notdir $(SRC:.c=.o)))
 OBJS  += $(addprefix $(OBJDIR)/,$(notdir $(STARTUP:.s=.o)))
 
@@ -71,8 +75,8 @@ MCU = cortex-m4
 MCFLAGS = -mcpu=$(MCU) -mthumb -mthumb-interwork
 
 # Define include paths
-INCLUDES := $(INCDIR) $(SYSINCDIR) $(FATDIR) $(FATDRIVER)
-INCFLAGS := $(addprefix -I,$(INCLUDES))
+INCLUDES := $(INCDIR) $(SYSINCDIR) $(FATDIR) $(FATDRIVER) $(PERIPHINCDIR)
+INCFLAGS := $(addprefix -I, $(INCLUDES))
 
 # Define compiler flags
 CFLAGS = $(MCFLAGS) $(OPTIMIZE) $(INCFLAGS) -Wall -Wl,-T,$(LINKER) \

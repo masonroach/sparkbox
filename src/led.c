@@ -12,12 +12,12 @@ void initLeds(void) {
 
 // Turns on a desginated LED
 void ledOn(LEDCOLOR led) {
-	GPIOD->BSRR |= 1 << (12 + led);		// Turn on led
+	GPIOD->BSRRL |= 1 << (12 + led);		// Turn on led
 }
 
 // Turn off a designated LED
 void ledOff(LEDCOLOR led) {
-	GPIOD->BSRR |= 1 << (12 + 16 + led);	// Turn off led
+	GPIOD->BSRRL |= 1 << (12 + 16 + led);	// Turn off led
 }
 
 // Toggle a designated LED
@@ -27,18 +27,18 @@ void ledToggle(LEDCOLOR led) {
 
 // Turn all LEDs on
 void ledAllOn(void) {
-	GPIOD->BSRR |= 0xF << 12;
+	GPIOD->BSRRL |= 0xF << 12;
 }
 
 // Turn all LEDs off
 void ledAllOff(void) {
-	GPIOD->BSRR |= 0xF << (12 + 16);
+	GPIOD->BSRRH |= 0xF << (12);
 }
 
 // Turn on LEDs in a clockwise circle
 void ledCircle(uint8_t numLeds) {
 	ledAllOff();
-	GPIOD->BSRR |= ((0x0F00 << (numLeds+1)) & 0xE000);
+	GPIOD->BSRRL |= ((0x0F00 << (numLeds+1)) & 0xE000);
 	if (numLeds > 3) {
 		ledOn(GREEN);
 	} else {
@@ -49,7 +49,7 @@ void ledCircle(uint8_t numLeds) {
 // Turn on LEDs in an inverted clockwise cirlce
 void ledCircleInverted(uint8_t numLeds) {
 	ledAllOff();
-	GPIOD->BSRR |= (~(0x0F00 << (numLeds+1)) & 0xE000);
+	GPIOD->BSRRL |= (~(0x0F00 << (numLeds+1)) & 0xE000);
 	if (numLeds > 3) {
 		ledOff(GREEN);
 	} else {

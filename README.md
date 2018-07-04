@@ -12,8 +12,8 @@ PB5 - MOSI
 PB4 - MISO
 PB3 - SCK
 
-Push Buttons (for Sparkbox):
-PD8 - 15
+Push Buttons (on Sparkbox):
+PB8 - 15
 
 LEDs (on Discovery Board):
 PD12 - 15
@@ -25,15 +25,9 @@ UART1:
 PA9 - TX
 PA10 - RX
 
-PWM (Audio):
-PB6 - TIM4_CH1
-PB7 - TIM4_CH2
-PB8 - TIM4_CH3
-PB9 - TIM4_CH4
-
 DAC (Audio)
 PA4 - DAC_OUT1
-PA5 - DAC_OUT2
+PA5 - DAC_OUT2 (likely not used)
 
 FSMC (Flexible Static Memory Controller)
 Using NAND flash
