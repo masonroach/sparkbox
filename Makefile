@@ -22,7 +22,7 @@
 # Define compilers
 PREFIX = arm-none-eabi
 CC = $(PREFIX)-gcc
-LD = $(PREFIX)-gcc
+LD = $(PREFIX)-ld
 AS = $(PREFIX)-as
 CP = $(PREFIX)-objcopy
 OD = $(PREFIX)-objdump
@@ -80,7 +80,7 @@ INCFLAGS := $(addprefix -I, $(INCLUDES))
 
 # Define compiler flags
 CFLAGS = $(MCFLAGS) $(OPTIMIZE) $(INCFLAGS) -Wall -Wl,-T,$(LINKER) \
-	-lnosys
+	-lnosys -lc -lm -lgcc
 
 ASFLAGS = $(MCFLAGS)
 
