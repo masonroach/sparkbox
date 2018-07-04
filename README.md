@@ -12,6 +12,16 @@ PB5 - MOSI
 PB4 - MISO
 PB3 - SCK
 
+SDIO (In order of microSD connection):
+PC10 - D2
+PC11 - D3
+PD2  - CMD
+3.3V - VDD
+PC12 - CLK
+GND  - VSS
+PC8  - D0
+PC9  - D1
+
 Push Buttons (on Sparkbox):
 PB8 - 15
 
