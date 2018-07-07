@@ -7,37 +7,59 @@
 //#include "sd.h"
 // #include "pwm.h"
 //#include "pushButton.h"
+#include "waveplayer.h"
+#include "stdlib.h"
 
 void systemInit(void);
+
+// Global variables for waveplayer.[ch]
+FATFS fs;
+FIL F;
+uint32_t *Buffer1;
+uint32_t *Buffer2;
+UINT BytesRead;
 
 int main(void) {
 	// uint8_t i = 0;
 	// int freq[4] = {1000, 2000, 3000, 4000}; // Continuous time frequencies
 	// unsigned char vol[4] = {100, 100, 100, 100}; // Volumes in terms of percent
-	FATFS FatFs;
-	FIL fil;
-	uint32_t total, free;
-
-
+	
+	// uint32_t total, free;
+	uint32_t *fileLen;
+	
+	
+	
+	Buffer1 = malloc(sizeof(uint32_t)* BUFFER_SIZE_WORD);
+	Buffer2 = malloc(sizeof(uint32_t)* BUFFER_SIZE_WORD);
+	fileLen = malloc(sizeof(uint32_t));
+	
+	*fileLen = 1024;
+	
 	systemInit();
 
 	// FatFs test
 	ledAllOff();
-	if (f_mount(&FatFs, "", 1) == FR_OK) {
+	if (f_mount(&fs, "", 1) == FR_OK) { // mount and error check
 		ledOn(BLUE);
-		if (f_open(&fil, "testFile.txt", FA_READ | FA_WRITE | FA_OPEN_ALWAYS) == FR_OK) {
+		if (f_open(&F, "testFile.txt", FA_READ | FA_WRITE | FA_OPEN_ALWAYS) == FR_OK) {
 			ledOn(GREEN);
-			if (f_puts("Test string for test file\n", &fil) > 0) {
+			if (f_puts("Test string for test file\n", &F) > 0) {
 				ledOn(ORANGE);
 			}
-		f_close(&fil);
+		f_close(&F);
 		}
 		f_mount(0, "", 1); // Unmount
 	} else {
 		// Failed to mount
 		ledOn(RED);
 	}
-
+	
+	WavePlayerMenu_Start("filename.wav", fileLen);
+	
+	free(fileLen);
+	free(Buffer1);
+	free(Buffer2);
+	
 	/*
 	initAudio();
 	setFrequency(freq);
