@@ -25,6 +25,10 @@ PC9  - D1
 Push Buttons (on Sparkbox):
 PB8 - 15
 
+LEDs (on Sparkbox):
+PC0 - 7
+PA0
+
 LEDs (on Discovery Board):
 PD12 - 15
 
