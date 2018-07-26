@@ -41,16 +41,18 @@ LIBDIR           := lib
   SYSDIR         := $(LIBDIR)/system
     SYSSRCDIR    := $(SYSDIR)/src
     SYSINCDIR    := $(SYSDIR)/inc
-  PERIPHDIR    	 := $(LIBDIR)/STM32F4xx_StdPeriph_Driver
-    PERIPHSRCDIR := $(PERIPHDIR)/src
-    PERIPHINCDIR := $(PERIPHDIR)/inc
-  FATDIR         := $(LIBDIR)/fatfs
-    FATDRIVER    := $(FATDIR)/drivers
+  FATDIR         := $(LIBDIR)/FatFs/src
     FATOPTION    := $(FATDIR)/option
+  HALDIR	 := $(LIBDIR)/STM32F4xx_HAL_Driver
+    HALINCDIR    := $(HALDIR)/Inc
+    HALSRCDIR    := $(HALDIR)/Src
+  USDDIR	 := $(LIBDIR)/FatFs_uSD
+    USDINCDIR    := $(USDDIR)/Inc
+    USDSRCDIR    := $(USDDIR)/Src
 TARGETDIR        := bin
 
 # Define vpaths
-vpath %.c  $(SRCDIR):$(SYSSRCDIR):$(FATDIR):$(FATDRIVER):$(FATOPTION):$(PERIPHSRCDIR)
+vpath %.c  $(SRCDIR):$(SYSSRCDIR):$(FATDIR):$(FATOPTION):$(FATDRIVER):$(HALSRCDIR):$(USDSRCDIR)
 vpath %.o  $(OBJDIR)
 vpath %.s  $(SYSDIR)
 vpath %.ld $(LIBDIR)
@@ -64,7 +66,8 @@ STARTUP = $(SYSDIR)/startup_stm32f407xx.s
 SRC   := $(shell find $(SRCDIR) -type f -name [^.]*.c)
 SRC   += $(shell find $(SYSSRCDIR) -type f -name [^.]*.c)
 SRC   += $(shell find $(FATDIR) -type f -name [^.]*.c)
-SRC   += $(shell find $(PERIPHDIR) -type f -name [^.]*.c)
+SRC   += $(shell find $(HALDIR) -type f -name [^.]*.c)
+SRC   += $(shell find $(USDDIR) -type f -name [^.]*.c)
 OBJS  := $(addprefix $(OBJDIR)/,$(notdir $(SRC:.c=.o)))
 OBJS  += $(addprefix $(OBJDIR)/,$(notdir $(STARTUP:.s=.o)))
 
@@ -75,7 +78,7 @@ MCU = cortex-m4
 MCFLAGS = -mcpu=$(MCU) -mthumb -mthumb-interwork
 
 # Define include paths
-INCLUDES := $(INCDIR) $(SYSINCDIR) $(FATDIR) $(FATDRIVER) $(PERIPHINCDIR)
+INCLUDES := $(INCDIR) $(SYSINCDIR) $(FATDIR) $(FATOPTION) $(FATDRIVER) $(HALINCDIR) $(USDINCDIR)
 INCFLAGS := $(addprefix -I, $(INCLUDES))
 
 # Define compiler flags

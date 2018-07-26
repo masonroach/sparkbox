@@ -21,9 +21,10 @@ PC12 - CLK
 GND  - VSS
 PC8  - D0
 PC9  - D1
+PC13 - CD
 
 Push Buttons (on Sparkbox):
-PB8 - 15
+PA1 - PA8
 
 LEDs (on Sparkbox):
 PC0 - 7
@@ -75,3 +76,20 @@ NWAIT/INT[3:2] - ready/busy input to FSMC - I
 	PD6 - NWAIT
 	PG6 - INT2
 	PG7 - INT3
+
+## PERIPHERALS/FUNCTIONS IN USE
+-----------
+
+SD Driver:
+SDIO
+EXTI15_10_IRQn
+DMA_CHANNEL_4
+DMA2_Stream3
+DMA2_Stream6
+
+sparkbox push buttons:
+EXTI1_IRQn
+EXTI2_IRQn
+EXTI3_IRQn
+EXTI4_IRQn
+EXTI9_5_IRQn

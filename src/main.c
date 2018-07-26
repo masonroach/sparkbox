@@ -1,186 +1,82 @@
-#include "stm32f4xx.h"
-#include "ff.h" // Include FatFs functions
-//#include "clock.h"	// Include clock before others
-//#include "usart.h"
-#include "led.h"
-#include "button.h"
-//#include "sd.h"
-// #include "pwm.h"
-//#include "pushButton.h"
-#include "waveplayer.h"
-#include "stdlib.h"
+#include "main.h"
 
+/* Private function prototypes -----------------------------------------------*/
+static void SystemClock_Config(void);
 void systemInit(void);
 
-// Global variables for waveplayer.[ch]
-FATFS fs;
-FIL F;
-uint32_t *Buffer1;
-uint32_t *Buffer2;
-UINT BytesRead;
+
+FATFS SDFatFs;  /* File system object for SD card logical drive */
+FIL MyFile;     /* File object */
+char SDPath[4]; /* SD card logical drive path */
 
 int main(void) {
-	// uint8_t i = 0;
-	// int freq[4] = {1000, 2000, 3000, 4000}; // Continuous time frequencies
-	// unsigned char vol[4] = {100, 100, 100, 100}; // Volumes in terms of percent
-	
-	// uint32_t total, free;
-	uint32_t *fileLen;
-	
-	
-	
-	Buffer1 = malloc(sizeof(uint32_t)* BUFFER_SIZE_WORD);
-	Buffer2 = malloc(sizeof(uint32_t)* BUFFER_SIZE_WORD);
-	fileLen = malloc(sizeof(uint32_t));
-	
-	*fileLen = 1024;
+	FRESULT res;                                          /* FatFs function common result code */
+	uint32_t byteswritten, bytesread;                     /* File write/read counts */
+	uint8_t wtext[] = "Sparkbox's first file!"; /* File write buffer */
+	TCHAR fileName[] = "sparkbox.txt"; 				  /* File name */
+	uint8_t rtext[100];
+	// volatile int i,j;
 	
 	systemInit();
-
+	
 	// FatFs test
 	ledAllOff();
-	if (f_mount(&fs, "", 1) == FR_OK) { // mount and error check
-		ledOn(BLUE);
-		if (f_open(&F, "testFile.txt", FA_READ | FA_WRITE | FA_OPEN_ALWAYS) == FR_OK) {
-			ledOn(GREEN);
-			if (f_puts("Test string for test file\n", &F) > 0) {
-				ledOn(ORANGE);
-			}
-		f_close(&F);
-		}
-		f_mount(0, "", 1); // Unmount
-	} else {
-		// Failed to mount
-		ledOn(RED);
-	}
 	
-	WavePlayerMenu_Start("filename.wav", fileLen);
-	
-	free(fileLen);
-	free(Buffer1);
-	free(Buffer2);
-	
-	/*
-	initAudio();
-	setFrequency(freq);
-	setVolume(vol);
-	*/
-
-
-/*
-	// Test 1 FATFS_LinkDriver()
-	if (FATFS_LinkDriver(&SD_Driver, SDPath) == 0) {
-//		ledOn(1);
-//		usartSendString("FATFS_LinkDriver() Worked\r\n");
-	} else return 1;
-
-	// Test 2 f_mount
-	if (f_mount(&SDFatFs, (TCHAR const*)SDPath, 0) != FR_OK) {
-		goto end;
+	if(FATFS_LinkDriver(&SD_Driver, SDPath) != 0) goto end;
+	if(f_mount(&SDFatFs, (TCHAR const*)SDPath, 0) != FR_OK) goto end;
+	if(f_open(&MyFile, fileName, FA_CREATE_ALWAYS | FA_WRITE) != FR_OK) goto end;
+	if(f_write(&MyFile, wtext, sizeof(wtext), (void *)&byteswritten) != FR_OK) {
+		f_close(&MyFile); 
+		goto end; 
 	}
-//	ledOn(2);
-//	usartSendString("f_mount() Worked\r\n");
-
-	// Test 3 mkfs()
-	res = f_mkfs((TCHAR const*)SDPath, 0, 0);
-	if (res != FR_OK) {
-		if (res == FR_INVALID_PARAMETER)
-			usartSendString("res == FR_INVALID_PARAMETER\r\n");
-		if (res == FR_DISK_ERR)
-			usartSendString("res == FR_DISK_ERR\r\n");
-		if (res == FR_INVALID_DRIVE)
-			usartSendString("res == FR_INVALID_DRIVE\r\n");
-		if (res == FR_NOT_READY);
-			usartSendString("res == FR_NOT_READY\r\n");
-		if (res == FR_WRITE_PROTECTED)
-			usartSendString("res == FR_WRITE_PROTECTED\r\n");
-		if (res == FR_MKFS_ABORTED)
-			usartSendString("res == FR_MKFS_ABORTED\r\n");
-		goto end;
-	}
-	ledOn(3);
-	usartSendString("f_mkfs() Worked\r\n");
-
-	// Test 4 f_open
-	if (f_open(&MyFile, "Test.txt", FA_CREATE_ALWAYS | FA_WRITE) != FR_OK) {
-		goto end;
-	}
-	ledOn(4);
-	usartSendString("f_open() (write) Worked\r\n");
-
-	// Test 5 f_write
-	res = f_write(&MyFile, wtext, sizeof(wtext), (void *)&byteswritten);
-	if ((byteswritten == 0) || (res != FR_OK)) {
-		goto end;
-	}
-	ledOn(5);
-	usartSendString("f_write() Worked\r\n");
-
-	// Test 6 f_close
-	if (f_close(&MyFile) != FR_OK) {
-		goto end;
-	}
-	ledOn(6);
-	usartSendString("f_close() Worked\r\n");
-
-	// Test 7 f_open
-	if (f_open(&MyFile, "Test.txt", FA_READ) != FR_OK) {
-		goto end;
-	}
-	ledOn(7);
-	usartSendString("f_open() (read) Worked\r\n");
-
-	// Test 8 f_read
-	res = f_read(&MyFile, rtext, sizeof(rtext), (UINT*)&bytesread);
-	if ((bytesread == 0) || (res != FR_OK)) {
-		goto end;
-	}
-	ledOn(8);
-	usartSendString("f_read() Worked\r\n");
-
-	// Test f_close
 	f_close(&MyFile);
-
-	// Test bytesread = byteswritten
-	if (bytesread != byteswritten) {
-		usartSendString("bytesread != bytes written ");
-		usartSendHex((uint8_t)bytesread);
-		usartSendChar(' ');
-		usartSendHex((uint8_t)bytesread);
-		usartSendString("\r\n");
+	if(f_open(&MyFile, fileName, FA_READ) != FR_OK) goto end;
+    if(f_read(&MyFile, rtext, sizeof(rtext), (UINT*)&bytesread) != FR_OK) {
+		f_close(&MyFile);
 		goto end;
 	}
-	usartSendString("bytesread == byteswritten");
+	f_close(&MyFile);
+	if((bytesread == byteswritten)) ledOn(GREEN);
 
-	FATFS_UnLinkDriver(SDPath);
-*/
-
-	while(1){
-/*		if (BUTTON_A || BUTTON_B || BUTTON_X || BUTTON_Y ||
-			BUTTON_LEFT || BUTTON_RIGHT || BUTTON_UP || BUTTON_DOWN) ledOn(1);
-		else ledOff(1);
-*/
-	//	ledOn(GREEN);
-	}
-
-	return 0;
-/*
 end:
 	FATFS_UnLinkDriver(SDPath);
-	while (1);
+		// Push button test
+	while(1){
+		if (BUTTON_A || BUTTON_B || BUTTON_X || BUTTON_Y ||
+			BUTTON_LEFT || BUTTON_RIGHT || BUTTON_UP || BUTTON_DOWN){
+				ledOn(BLUE);
+		} else {
+			ledOff(BLUE);
+		}
+	}
 	return 1;
-*/
 }
 
 void systemInit(void) {
 	int8_t i = 0;
 	volatile uint16_t j = 0;
+	
+	/* STM32F4xx HAL library initialization:
+       - Configure the Flash prefetch, instruction and Data caches
+       - Configure the Systick to generate an interrupt each 1 msec
+       - Set NVIC Group Priority to 4
+       - Global MSP (MCU Support Package) initialization
+     */
+	HAL_Init();
+  
+	/* Configure the system clock to 168 MHz */
+	SystemClock_Config();
 
 //	initUsart();
 	initLeds();
 	initButton();
+	initButtons();
 //	initSdSpi();
+	// RCC->AHB1ENR    |=   RCC_AHB1ENR_GPIODEN;
+	// RCC->AHB1ENR    |=   RCC_AHB1ENR_GPIOCEN;
+	
 
+	
 	/*
 	 * Initialization is complete. User can press the button to continue at
 	 * any time. Until then, a single serial message will be sent, and the
@@ -198,3 +94,62 @@ void systemInit(void) {
 	}
 	ledAllOff();
 }
+
+static void SystemClock_Config(void) {
+  RCC_ClkInitTypeDef RCC_ClkInitStruct;
+  RCC_OscInitTypeDef RCC_OscInitStruct;
+
+  /* Enable Power Control clock */
+  __HAL_RCC_PWR_CLK_ENABLE();
+
+  /* The voltage scaling allows optimizing the power consumption when the device is 
+     clocked below the maximum system frequency, to update the voltage scaling value 
+     regarding system frequency refer to product datasheet.  */
+  __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
+
+  /* Enable HSE Oscillator and activate PLL with HSE as source */
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
+  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
+  RCC_OscInitStruct.PLL.PLLM = 25;
+  RCC_OscInitStruct.PLL.PLLN = 336;
+  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
+  RCC_OscInitStruct.PLL.PLLQ = 7;
+  HAL_RCC_OscConfig(&RCC_OscInitStruct);
+  
+  /* Select PLL as system clock source and configure the HCLK, PCLK1 and PCLK2 
+     clocks dividers */
+  RCC_ClkInitStruct.ClockType = (RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2);
+  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;  
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;  
+  HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5);
+
+  /* STM32F405x/407x/415x/417x Revision Z devices: prefetch is supported  */
+  if (HAL_GetREVID() == 0x1001)
+  {
+    /* Enable the Flash prefetch */
+    __HAL_FLASH_PREFETCH_BUFFER_ENABLE();
+  }
+}
+
+#ifdef  USE_FULL_ASSERT
+/**
+  * @brief  Reports the name of the source file and the source line number
+  *         where the assert_param error has occurred.
+  * @param  file: pointer to the source file name
+  * @param  line: assert_param error line source number
+  * @retval None
+  */
+void assert_failed(uint8_t* file, uint32_t line) { 
+  /* User can add his own implementation to report the file name and line number,
+     ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
+
+  /* Infinite loop */
+  while (1)
+  {
+  }
+}
+#endif

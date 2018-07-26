@@ -2,7 +2,8 @@
   ******************************************************************************
   * @file    system_stm32f4xx.c
   * @author  MCD Application Team
-  * @brief   CMSIS Cortex-M4 Device Peripheral Access Layer System Source File.
+  * @brief   - CMSIS Cortex-M4 Device Peripheral Access Layer System Source File.
+  *          - This file is dedicated only for STM32F446 NUCLEO 144 boards.
   *
   *   This file provides two functions and one global variable to be called from 
   *   user application:
@@ -22,7 +23,7 @@
   ******************************************************************************
   * @attention
   *
-  * <h2><center>&copy; COPYRIGHT(c) 2017 STMicroelectronics</center></h2>
+  * <h2><center>&copy; COPYRIGHT 2017 STMicroelectronics</center></h2>
   *
   * Redistribution and use in source and binary forms, with or without modification,
   * are permitted provided that the following conditions are met:
@@ -61,6 +62,7 @@
   * @{
   */
 
+
 #include "stm32f4xx.h"
 
 #if !defined  (HSE_VALUE) 
@@ -88,7 +90,6 @@
   */
 
 /************************* Miscellaneous Configuration ************************/
-
 /*!< Uncomment the following line if you need to relocate your vector Table in
      Internal SRAM. */
 /* #define VECT_TAB_SRAM */
@@ -126,13 +127,6 @@ const uint8_t APBPrescTable[8]  = {0, 0, 0, 0, 1, 2, 3, 4};
   * @}
   */
 
-/** @addtogroup STM32F4xx_System_Private_FunctionPrototypes
-  * @{
-  */
-
-/**
-  * @}
-  */
 
 /** @addtogroup STM32F4xx_System_Private_Functions
   * @{
@@ -169,6 +163,7 @@ void SystemInit(void)
 
   /* Disable all interrupts */
   RCC->CIR = 0x00000000;
+
 
   /* Configure the Vector Table location add offset address ------------------*/
 #ifdef VECT_TAB_SRAM
@@ -269,8 +264,8 @@ void SystemCoreClockUpdate(void)
 /**
   * @}
   */
-  
+
 /**
   * @}
-  */    
+  */
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
