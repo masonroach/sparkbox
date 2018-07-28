@@ -22,15 +22,15 @@ int main(void) {
 	// FatFs test
 	ledAllOff();
 	
-	if(FATFS_LinkDriver(&SD_Driver, SDPath) != 0) goto end;
-	if(f_mount(&SDFatFs, (TCHAR const*)SDPath, 0) != FR_OK) goto end;
-	if(f_open(&MyFile, fileName, FA_CREATE_ALWAYS | FA_WRITE) != FR_OK) goto end;
+	if(FATFS_LinkDriver(&SD_Driver, SDPath) != 0) {goto end;}
+	if(f_mount(&SDFatFs, (TCHAR const*)SDPath, 0) != FR_OK) {goto end;}
+	if(f_open(&MyFile, fileName, FA_CREATE_ALWAYS | FA_WRITE) != FR_OK) {goto end;}
 	if(f_write(&MyFile, wtext, sizeof(wtext), (void *)&byteswritten) != FR_OK) {
 		f_close(&MyFile); 
 		goto end; 
 	}
 	f_close(&MyFile);
-	if(f_open(&MyFile, fileName, FA_READ) != FR_OK) goto end;
+	if(f_open(&MyFile, fileName, FA_READ) != FR_OK) {goto end;}
     if(f_read(&MyFile, rtext, sizeof(rtext), (UINT*)&bytesread) != FR_OK) {
 		f_close(&MyFile);
 		goto end;
