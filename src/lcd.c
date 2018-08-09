@@ -7,7 +7,7 @@
  * | Name | Pin  |
  * +------+------+
  * | CS   | PB7  |
- * | DC   | PB6  | <-- Stands for data/command
+ * | D/C  | PB6  | <-- Stands for data/command
  * | WR   | PB1  |
  * | RESET| PB8  |
  * | RD   | PB0  |
@@ -30,11 +30,61 @@
  * +------+------+
  */
 
+// Pointer to start address of FSMC
+// Magic number or something. Gotta try to find this somewhere in the
+//   datasheet/reference manual.
+volatile uint16_t *fsmc = (uint16_t *)0x60000000;
+
 // Configure LCD
-void initLCD(void) {
+void initLcd(void) {
 	initFSMC();
 
 	return;
+}
+
+// Write a command to the LCD controller over FSMC
+void LcdWriteCmd(uint16_t command) {
+	// Pull DC low
+	LCD_DC_LOW();
+
+	// Pull CS low
+	LCD_CS_LOW();
+
+	// Set RD high
+	LCD_RD_HIGH();
+
+	// Set parallel data
+	*fsmc = command;
+	
+	// Pull WR low, then high
+	LCD_WR_LOW();
+	LCD_WR_LOW();	// Rising edge captures data
+
+	// Set CS high
+	LCD_CS_HIGH();
+}
+
+// Write data to the LCD controller over FSMC
+void LcdWriteData(uint16_t data) {
+	// Set DC high
+	LCD_DC_HIGH();
+
+	// Pull CS low
+	LCD_CS_LOW();
+
+	// Set RD high
+	LCD_RD_HIGH();
+
+	// Set parallel data
+	*fsmc = command;
+	
+	// Pull WR low, then high
+	LCD_WR_LOW();
+	LCD_WR_LOW();	// Rising edge captures data
+
+	// Set CS high
+	LCD_CS_HIGH();
+
 }
 
 // Configure the FSMC port for LCD
@@ -226,3 +276,4 @@ static void initFSMC(void) {
 
 	return;
 }
+
