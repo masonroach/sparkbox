@@ -59,7 +59,7 @@ Finally, the data chunk contains the sample data:
 */
 
 /* Includes ------------------------------------------------------------------*/
-// #include "stm32f4xx.h"
+#include "stm32f4xx.h"
 // #include "stm32f4xx_rcc.h"
 // #include "stm32f4xx_dma.h"
 // #include "stm32f4xx_gpio.h"
@@ -73,7 +73,22 @@ Finally, the data chunk contains the sample data:
 /** @addtogroup WAVEPLAYER
   * @{
   */
+  
+/** @defgroup WAVEPLAYER_User_Defines
+  * @{
+  */
 
+ /* Change defines to modify audio output */
+#define WAVEPLAYER_USE_MONO
+// #define WAVEPLAYER_USE_STEREO  
+  
+#define WAVEPLAYER_12BIT
+// #define WAVEPLAYER_8BIT  
+  
+/**
+  * @}
+  */  
+  
 /** @defgroup WAVEPLAYER_Exported_Types
   * @{
   */
@@ -145,9 +160,6 @@ typedef enum
 #define BUFFER_SIZE_BYTE   _MAX_SS /* Size of audio buffers (two buffers) in byte */
 #define BUFFER_SIZE_WORD   _MAX_SS/4
 
-
-// Sparkbox needs to change following addresses to work with STM32F4 Discovery
-
 /* 12-bit Left alignment (dual channels) used in case of stereo and 16-bit data */
 #define DAC_DHR12LD_ADDRESS     ((uint32_t)(DAC_BASE + 0x000000024))
 /* 8-bit right alignment (dual channels) used in case of stereo and 8-bit data */
@@ -156,16 +168,47 @@ typedef enum
 #define DAC_DHR12L1_ADDRESS     ((uint32_t)(DAC_BASE + 0x0000000C))
 /* 8-bit right alignment (channel1) used in case of mono and 8-bit data */
 #define DAC_DHR8R1_ADDRESS      ((uint32_t)(DAC_BASE + 0x00000010))
+
+
+/* Find register address based on user defines */
+#ifdef WAVEPLAYER_USE_MONO
+
+
+#define WAVEPLAYER_CHANNEL CHANNEL_MONO
+
+#ifdef WAVEPLAYER_12BIT
+
+#define WAVEPLAYER_DAC_ADDRESS DAC_DHR12L1_ADDRESS
+
+#else
+
+#define WAVEPLAYER_DAC_ADDRESS DAC_DHR8R1_ADDRESS
+	
+#endif
+
+
+#else
+	
+
+#define WAVEPLAYER_CHANNEL CHANNEL_STEREO
+
+#ifdef WAVEPLAYER_12BIT
+
+#define WAVEPLAYER_DAC_ADDRESS DAC_DHR12LD_ADDRESS
+
+#else
+	
+#define WAVEPLAYER_DAC_ADDRESS DAC_DHR8RD_ADDRESS
+
+#endif
+	
+	
+#endif
+
 /**
   * @}
   */
 
-/** @defgroup WAVEPLAYER_Exported_Macros
-  * @{
-  */
-/**
-  * @}
-  */
 
 /** @defgroup WAVEPLAYER_Exported_functions
   * @{
@@ -173,10 +216,7 @@ typedef enum
 // void Menu_WavePlayerFunc(void);
 void WavePlayer_Init(void);
 uint8_t WavePlayerMenu_Start(const char* FileName, uint32_t *FileLen);
-void WavePlayer_DMATxComplete_IRQHandler(void);
-// uint8_t LCD_Update(void);
 uint32_t ReadUnit(uint8_t *buffer, uint8_t idx, uint8_t NbrOfBytes, Endianness BytesFormat);
-// uint8_t WaveRecPlayerMenu_Start(const char* FileName, uint32_t *FileLen);
 #ifdef __cplusplus
 }
 #endif
