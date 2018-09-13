@@ -21,15 +21,19 @@ int main(void)
 	GPIOB->MODER |= (GPIO_MODER_MODE2_0);
 	GPIOC->MODER |= (GPIO_MODER_MODE0_0);
 */
+	HAL_Init();
 	SystemClock_Config();
 	initLeds();
 	ledAllOff();
 
-	if(FATFS_LinkDriver(&SD_Driver, SDPath) != 0) {goto end;}
-	if(f_mount(&SDFatFs, (TCHAR const*)SDPath, 0) != FR_OK) {goto end;}
-	if(f_open(&MyFile, fileName, FA_CREATE_ALWAYS | FA_WRITE) != FR_OK) {goto end;}
+	for (i= 0; i < 1000000; i++);
+
+	if(FATFS_LinkDriver(&SD_Driver, SDPath) != 0) {ledOn(1); goto end;}
+	if(f_mount(&SDFatFs, (TCHAR const*)SDPath, 0) != FR_OK) {ledOn(2); goto end;}
+	if(f_open(&MyFile, fileName, FA_CREATE_ALWAYS | FA_WRITE) != FR_OK) {ledOn(3); goto end;}
 	if(f_write(&MyFile, wtext, sizeof(wtext), (void *)&byteswritten) != FR_OK) {
 		f_close(&MyFile);
+		ledOn(4);
 		goto end;
 	}
 	f_close(&MyFile);
@@ -44,7 +48,6 @@ int main(void)
 
 end:
 	FATFS_UnLinkDriver(SDPath);
-
 
 	// while(1){
 /*
