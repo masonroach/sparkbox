@@ -45,45 +45,45 @@ void initLcd(void) {
 // Write a command to the LCD controller over FSMC
 void LcdWriteCmd(uint16_t command) {
 	// Pull DC low
-	LCD_DC_LOW();
+	LCD_DC_LOW;
 
 	// Pull CS low
-	LCD_CS_LOW();
+	LCD_CS_LOW;
 
 	// Set RD high
-	LCD_RD_HIGH();
+	LCD_RD_HIGH;
 
 	// Set parallel data
 	*fsmc = command;
 	
 	// Pull WR low, then high
-	LCD_WR_LOW();
-	LCD_WR_LOW();	// Rising edge captures data
+	LCD_WR_LOW;
+	LCD_WR_LOW;	// Rising edge captures data
 
 	// Set CS high
-	LCD_CS_HIGH();
+	LCD_CS_HIGH;
 }
 
 // Write data to the LCD controller over FSMC
 void LcdWriteData(uint16_t data) {
 	// Set DC high
-	LCD_DC_HIGH();
+	LCD_DC_HIGH;
 
 	// Pull CS low
-	LCD_CS_LOW();
+	LCD_CS_LOW;
 
 	// Set RD high
-	LCD_RD_HIGH();
+	LCD_RD_HIGH;
 
 	// Set parallel data
-	*fsmc = command;
+	*fsmc = data;
 	
 	// Pull WR low, then high
-	LCD_WR_LOW();
-	LCD_WR_LOW();	// Rising edge captures data
+	LCD_WR_LOW;
+	LCD_WR_LOW;	// Rising edge captures data
 
 	// Set CS high
-	LCD_CS_HIGH();
+	LCD_CS_HIGH;
 
 }
 

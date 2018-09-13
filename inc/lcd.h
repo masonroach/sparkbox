@@ -33,16 +33,16 @@
  * +------+------+
  */
 
-#define LCD_CS_HIGH()	GPIOB->ODR |= (1 << 7)
-#define LCD_CS_LOW()	GPIOB->ODR &= ~(1 << 7)
-#define LCD_DC_HIGH()	GPIOB->ODR |= (1 << 6)
-#define LCD_DC_LOW()	GPIOB->ODR &= ~(1 << 6)
-#define LCD_WR_HIGH()	GPIOB->ODR |= (1 << 1)
-#define LCD_WR_LOW()	GPIOB->ODR &= ~(1 << 1)
-#define LCD_RESET_HIGH()	GPIOB->ODR |= (1 << 8)
-#define LCD_RESET_LOW()		GPIOB->ODR &= ~(1 << 8)
-#define LCD_RD_HIGH()	GPIOB->ODR |= 1
-#define LCD_RD_LOW()	GPIOB->ODR &= ~1
+#define LCD_CS_HIGH		GPIOB->ODR |= (1 << 7)
+#define LCD_CS_LOW		GPIOB->ODR &= ~(1 << 7)
+#define LCD_DC_HIGH		GPIOB->ODR |= (1 << 6)
+#define LCD_DC_LOW		GPIOB->ODR &= ~(1 << 6)
+#define LCD_WR_HIGH		GPIOB->ODR |= (1 << 1)
+#define LCD_WR_LOW		GPIOB->ODR &= ~(1 << 1)
+#define LCD_RESET_HIGH	GPIOB->ODR |= (1 << 8)
+#define LCD_RESET_LOW	GPIOB->ODR &= ~(1 << 8)
+#define LCD_RD_HIGH		GPIOB->ODR |= 1
+#define LCD_RD_LOW		GPIOB->ODR &= ~1
 
 void initLcd(void);
 void LcdWriteCmd(uint16_t command);
