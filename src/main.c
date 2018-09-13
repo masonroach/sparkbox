@@ -46,18 +46,20 @@ end:
 	FATFS_UnLinkDriver(SDPath);
 
 
-	while(1){/*
+	// while(1){
+/*
 		GPIOB->ODR ^= GPIO_ODR_OD2;
 		GPIOC->ODR ^= GPIO_ODR_OD0;
 */
-		if (++j > 8) {
-			j = 0;
-			error = ++error > 2 ? 0 : error;
-			ledError(error);
-		}
-		ledMap(0xFF >> (8 - j));
-		for(i=0; i < 100000; i++);
-	}
+	//	if (++j > 8) {
+	//		j = 0;
+	//		error = ++error > 2 ? 0 : error;
+	//		ledError(error);
+	//	}
+	//	ledMap(0xFF >> (8 - j));
+	//	for(i=0; i < 100000; i++);
+	// }
+	while(1);
 }
 
 static void SystemClock_Config(void) {
