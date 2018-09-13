@@ -1,5 +1,6 @@
 #include "led.h"
-
+/*
+#ifdef DISCOVERY
 // Initialize all 8 LEDs
 void initLeds(void) {
 	RCC->AHB1ENR    |=   RCC_AHB1ENR_GPIODEN;	// Enable GPIOD Clock
@@ -55,4 +56,51 @@ void ledCircleInverted(uint8_t numLeds) {
 	} else {
 		ledOn(GREEN);
 	}
+}
+*/
+
+void initLeds(void) {
+	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOCEN |	// Enable GPIOC Clock
+					RCC_AHB1ENR_GPIOBEN;	// Enable GPIOB Clock
+
+	GPIOC->MODER  |=  0x5555;	// GPIO Modes -> output
+	GPIOC->OTYPER &= ~0xFFFF;	// GPIO OType -> open drain
+
+	GPIOB->MODER  |=  GPIO_MODER_MODE2_0;	// Output
+	GPIOB->OTYPER &= ~GPIO_OTYPER_OT_2;		// Open drain
+}
+
+// Turns on a desginated LED
+void ledOn(uint8_t led) {
+	GPIOC->ODR |= 1 << led;	// Turn on led
+}
+
+// Turn off a designated LED
+void ledOff(uint8_t led) {
+	GPIOC->ODR &= ~(1 << led);	// Turn off led
+}
+
+// Toggle a designated LED
+void ledToggle(uint8_t led) {
+	GPIOC->ODR ^= 1 << led;
+}
+
+// Turn all LEDs on
+void ledAllOn(void) {
+	GPIOC->ODR |= 0x00FF;
+}
+
+// Turn all LEDs off
+void ledAllOff(void) {
+	GPIOC->ODR &= 0xFF00;
+}
+
+// Sets the error led to eithe yellow (0) or red (1)
+void ledError(uint8_t status) {
+	GPIOB->BSRR |= (status << 2) + (~status << 18);
+}
+
+// Input a 8-bit map to turn the corresponding LED's on and off
+void ledMap(uint8_t map) {
+	GPIOC->BSRR |= (map & 0xFF) + ((~map & 0xFF) << 16);
 }

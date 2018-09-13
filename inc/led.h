@@ -4,9 +4,11 @@
  *	discovery board. On the PCB, these functions will no
  *	longer work as intended.
  */
-#ifndef SPARK_LED
-#define SPARK_LED
+#ifndef SPARK_LED_H
+#define SPARK_LED_H
 
+// LED functions for the discovery, not the sparbox
+/*
 typedef enum {
 	GREEN	= 0,	// PD12
 	ORANGE	= 1,	// PD13
@@ -22,5 +24,15 @@ void ledAllOn(void);
 void ledAllOff(void);
 void ledCircle(uint8_t numLeds);
 void ledCircleInverted(uint8_t numLeds);
+*/
 
+// LED functions for the sparkbox, not the discovery
+void initLeds(void);
+void ledOn(uint8_t led);
+void ledOff(uint8_t led);
+void ledToggle(uint8_t led);
+void ledAllOn(void);
+void ledAllOff(void);
+void ledError(uint8_t status);
+void ledMap(uint8_t map);
 #endif
