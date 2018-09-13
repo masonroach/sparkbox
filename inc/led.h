@@ -27,12 +27,18 @@ void ledCircleInverted(uint8_t numLeds);
 */
 
 // LED functions for the sparkbox, not the discovery
+typedef enum {
+	LED_OFF		= 0,
+	LED_WARNING	= 1,
+	LED_ERROR	= 2
+} LED_DEBUG;
+
 void initLeds(void);
 void ledOn(uint8_t led);
 void ledOff(uint8_t led);
 void ledToggle(uint8_t led);
 void ledAllOn(void);
 void ledAllOff(void);
-void ledError(uint8_t status);
+void ledError(LED_DEBUG status);
 void ledMap(uint8_t map);
 #endif

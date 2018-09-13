@@ -19,7 +19,7 @@ int main(void)
 */
 		if (++j > 8) {
 			j = 0;
-			error = !error;
+			error = ++error > 2 ? 0 : error;
 			ledError(error);
 		}
 		ledMap(0xFF >> (8 - j));
