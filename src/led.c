@@ -60,14 +60,14 @@ void ledCircleInverted(uint8_t numLeds) {
 */
 
 void initLeds(void) {
-	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOCEN |	// Enable GPIOC Clock
+	RCC->AHB1ENR |= //RCC_AHB1ENR_GPIOCEN |	// Enable GPIOC Clock
 					RCC_AHB1ENR_GPIOBEN;	// Enable GPIOB Clock
 
-	GPIOC->MODER  |=  0x5555;	// GPIO Modes -> output
-	GPIOC->OTYPER &= ~0xFFFF;	// GPIO OType -> open drain
+	//GPIOC->MODER  |=  0x5;	// GPIO Modes -> output
+	// GPIOC->OTYPER &= ~0xFF;	// GPIO OType -> open drain
 
 //	GPIOB->MODER  |=  GPIO_MODER_MODE2_0;	// Output
-	GPIOB->OTYPER &= ~GPIO_OTYPER_OT_2;		// Open drain
+	// GPIOB->OTYPER &= ~GPIO_OTYPER_OT_2;		// Open drain
 }
 
 // Turns on a desginated LED
