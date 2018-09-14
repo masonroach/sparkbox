@@ -90,6 +90,7 @@ ASFLAGS = $(MCFLAGS)
 # Find if running on a windows subsystem
 WINDOWS := $(if $(shell grep -E "(Microsoft|WSL)" /proc/version),\
 	 "Windows Subsystem",)
+LINUX   := $(if $(shell grep -E "Ubuntu" /proc/version), "Ubuntu")
 
 # ==============================================================================
 #   Compilation
@@ -138,6 +139,7 @@ flash: $(TARGET).bin
 
   # Linux (RPi probably)
   else
-	cp $< $(shell mount|grep DIS_F407VG|awk '{print $$3}')
-
+  ifdef LINUX
+	st-flash write bin/main.bin 0x8000000
+  endif
   endif
