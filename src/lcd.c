@@ -9,8 +9,8 @@
  * | CS   | PB7  |
  * | D/C  | PB6  | <-- Stands for data/command
  * | WR   | PB1  |
- * | RESET| PB8  |
  * | RD   | PB0  |
+ * | RESET| PB8  |
  * | DB0  | PD14 |
  * | DB1  | PD15 |
  * | DB2  | PD0  |
@@ -35,9 +35,16 @@
 //   datasheet/reference manual.
 volatile uint16_t *fsmc = (uint16_t *)0x60000000;
 
+/*
+ * Prototypes for static functions
+ */
+static void initFSMC(void);
+static void initILI9341(void);
+
 // Configure LCD
 void initLcd(void) {
 	initFSMC();
+	initILI9341();
 
 	return;
 }
@@ -58,7 +65,7 @@ void LcdWriteCmd(uint16_t command) {
 	
 	// Pull WR low, then high
 	LCD_WR_LOW;
-	LCD_WR_LOW;	// Rising edge captures data
+	LCD_WR_HIGH;	// Rising edge captures data
 
 	// Set CS high
 	LCD_CS_HIGH;
@@ -80,7 +87,7 @@ void LcdWriteData(uint16_t data) {
 	
 	// Pull WR low, then high
 	LCD_WR_LOW;
-	LCD_WR_LOW;	// Rising edge captures data
+	LCD_WR_HIGH;	// Rising edge captures data
 
 	// Set CS high
 	LCD_CS_HIGH;
@@ -277,3 +284,129 @@ static void initFSMC(void) {
 	return;
 }
 
+/******************************************************************************/
+/* FROM THE EXAMPLE CODE PROVIDED, NOT YET UPDATED ****************************/
+/******************************************************************************/
+static void initILI9341(void) {	 
+	volatile uint32_t i;
+
+	LCD_CS_HIGH;
+	for (i = 0; i < 20000; i++); //delayms(5);
+	LCD_RESET_LOW;
+	for (i = 0; i < 50000; i++); //delayms(10);
+	LCD_RESET_HIGH;
+	for (i = 0; i < 500000; i++); //delayms(120);
+
+	LcdWriteCmd(0x11);
+	for (i = 0; i < 500000; i++); //delayms(120);
+
+ 	LcdWriteCmd(0xCF);   
+	LcdWriteData(0x00); 
+	LcdWriteData(0xc3); 
+	LcdWriteData(0X30); 
+      
+ 	LcdWriteCmd(0xED);   
+	LcdWriteData(0x64); 
+	LcdWriteData(0x03); 
+	LcdWriteData(0X12); 
+	LcdWriteData(0X81); 
+      
+ 	LcdWriteCmd(0xE8);   
+	LcdWriteData(0x85); 
+	LcdWriteData(0x10); 
+	LcdWriteData(0x79); 
+      
+ 	LcdWriteCmd(0xCB);   
+	LcdWriteData(0x39); 
+	LcdWriteData(0x2C); 
+	LcdWriteData(0x00); 
+	LcdWriteData(0x34); 
+	LcdWriteData(0x02); 
+      
+ 	LcdWriteCmd(0xF7);   
+	LcdWriteData(0x20); 
+      
+ 	LcdWriteCmd(0xEA);   
+	LcdWriteData(0x00); 
+	LcdWriteData(0x00); 
+      
+ 	LcdWriteCmd(0xC0);    //Power control 
+	LcdWriteData(0x22);   //VRH[5:0] 
+      
+ 	LcdWriteCmd(0xC1);    //Power control 
+	LcdWriteData(0x11);   //SAP[2:0];BT[3:0] 
+      
+ 	LcdWriteCmd(0xC5);    //VCM control 
+	LcdWriteData(0x3d); 
+    //LCD_DataWrite_ILI9341(0x30); 
+	LcdWriteData(0x20); 
+      
+ 	LcdWriteCmd(0xC7);    //VCM control2 
+    //LCD_DataWrite_ILI9341(0xBD); 
+	LcdWriteData(0xAA); //0xB0 
+    
+ 	LcdWriteCmd(0x36);    // Memory Access Control 
+	LcdWriteData(0x08); 
+      
+ 	LcdWriteCmd(0x3A);   
+	LcdWriteData(0x55); 
+    
+ 	LcdWriteCmd(0xB1);   
+	LcdWriteData(0x00);   
+	LcdWriteData(0x13); 
+      
+ 	LcdWriteCmd(0xB6);    // Display Function Control 
+	LcdWriteData(0x0A); 
+	LcdWriteData(0xA2); 
+    
+ 	LcdWriteCmd(0xF6);     
+	LcdWriteData(0x01); 
+	LcdWriteData(0x30); 
+      
+ 	LcdWriteCmd(0xF2);    // 3Gamma Function Disable 
+	LcdWriteData(0x00); 
+      
+ 	LcdWriteCmd(0x26);    //Gamma curve selected 
+	LcdWriteData(0x01); 
+      
+ 	LcdWriteCmd(0xE0);    //Set Gamma 
+	LcdWriteData(0x0F); 
+	LcdWriteData(0x3F); 
+	LcdWriteData(0x2F); 
+	LcdWriteData(0x0C); 
+	LcdWriteData(0x10); 
+	LcdWriteData(0x0A); 
+	LcdWriteData(0x53); 
+	LcdWriteData(0XD5); 
+	LcdWriteData(0x40); 
+	LcdWriteData(0x0A); 
+	LcdWriteData(0x13); 
+	LcdWriteData(0x03); 
+	LcdWriteData(0x08); 
+	LcdWriteData(0x03); 
+	LcdWriteData(0x00); 
+      
+ 	LcdWriteCmd(0XE1);    //Set Gamma 
+	LcdWriteData(0x00); 
+	LcdWriteData(0x00); 
+	LcdWriteData(0x10); 
+	LcdWriteData(0x03); 
+	LcdWriteData(0x0F); 
+	LcdWriteData(0x05); 
+	LcdWriteData(0x2C); 
+	LcdWriteData(0xA2); 
+	LcdWriteData(0x3F); 
+	LcdWriteData(0x05); 
+	LcdWriteData(0x0E); 
+	LcdWriteData(0x0C); 
+	LcdWriteData(0x37); 
+	LcdWriteData(0x3C); 
+	LcdWriteData(0x0F); 
+      
+ 	LcdWriteCmd(0x11);    //Exit Sleep 
+	for (i = 0; i < 500000; i++); //delayms(120);
+ 	LcdWriteCmd(0x29);    //Display on 
+	for (i = 0; i < 200000; i++); //delayms(50);
+
+	return;
+}

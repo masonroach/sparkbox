@@ -12,8 +12,8 @@
  * | CS   | PB7  |
  * | D/C  | PB6  | <-- Stands for data/command
  * | WR   | PB1  |
- * | RESET| PB8  |
  * | RD   | PB0  |
+ * | RESET| PB8  |
  * | DB0  | PD14 |
  * | DB1  | PD15 |
  * | DB2  | PD0  |
@@ -46,6 +46,6 @@
 
 void initLcd(void);
 void LcdWriteCmd(uint16_t command);
-static void initFSMC(void);
+void LcdWriteData(uint16_t data);
 
 #endif
