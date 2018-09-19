@@ -60,11 +60,7 @@ Finally, the data chunk contains the sample data:
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4xx.h"
-// #include "stm32f4xx_rcc.h"
-// #include "stm32f4xx_dma.h"
-// #include "stm32f4xx_gpio.h"
-// #include "stm32f4xx_tim.h"
-// #include "ff.h"
+#include "ff.h"
 
 /** @addtogroup STM32072B_EVAL_Demo
   * @{
@@ -78,13 +74,11 @@ Finally, the data chunk contains the sample data:
   * @{
   */
 
- /* Change defines to modify audio output */
-#define WAVEPLAYER_USE_MONO
-// #define WAVEPLAYER_USE_STEREO  
-  
+ /* Change define to modify audio output */
 #define WAVEPLAYER_12BIT
 // #define WAVEPLAYER_8BIT  
-  
+/*  */
+#define REPEAT_ALWAYS -1
 /**
   * @}
   */  
@@ -109,8 +103,11 @@ typedef struct
   uint16_t  BlockAlign;
   uint16_t  BitsPerSample;
   uint32_t  DataSize;
-}
-WAVE_FormatTypeDef;
+  uint32_t  TIM6ARRValue;
+  uint32_t  SpeechDataOffset;
+  uint16_t  Error;
+} WAV_Format;
+
 typedef enum
 {
   Valid_WAVE_File = 0,
@@ -169,42 +166,6 @@ typedef enum
 /* 8-bit right alignment (channel1) used in case of mono and 8-bit data */
 #define DAC_DHR8R1_ADDRESS      ((uint32_t)(DAC_BASE + 0x00000010))
 
-
-/* Find register address based on user defines */
-#ifdef WAVEPLAYER_USE_MONO
-
-
-#define WAVEPLAYER_CHANNEL CHANNEL_MONO
-
-#ifdef WAVEPLAYER_12BIT
-
-#define WAVEPLAYER_DAC_ADDRESS DAC_DHR12L1_ADDRESS
-
-#else
-
-#define WAVEPLAYER_DAC_ADDRESS DAC_DHR8R1_ADDRESS
-	
-#endif
-
-
-#else
-	
-
-#define WAVEPLAYER_CHANNEL CHANNEL_STEREO
-
-#ifdef WAVEPLAYER_12BIT
-
-#define WAVEPLAYER_DAC_ADDRESS DAC_DHR12LD_ADDRESS
-
-#else
-	
-#define WAVEPLAYER_DAC_ADDRESS DAC_DHR8RD_ADDRESS
-
-#endif
-	
-	
-#endif
-
 /**
   * @}
   */
@@ -214,9 +175,11 @@ typedef enum
   * @{
   */
 // void Menu_WavePlayerFunc(void);
-void WavePlayer_Init(void);
-uint8_t WavePlayerMenu_Start(const char* FileName, uint32_t *FileLen);
-uint32_t ReadUnit(uint8_t *buffer, uint8_t idx, uint8_t NbrOfBytes, Endianness BytesFormat);
+void WAV_Init(void);
+uint8_t WAV_Import(const char* FileName, WAV_Format* W, uint32_t* Buffer);
+void WAV_Play(uint32_t Addr, WAV_Format* W, int numPlays);
+void WAV_Pause(void);
+void WAV_Resume(void);
 #ifdef __cplusplus
 }
 #endif

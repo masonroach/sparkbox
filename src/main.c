@@ -36,7 +36,16 @@ int main(void) {
 		goto end;
 	}
 	f_close(&MyFile);
-	if((bytesread == byteswritten)){ledError(1); goto end2;} 
+	if((bytesread != byteswritten)){goto end;}
+
+
+	
+	// SUCCESS, let's play a WAV file
+	ledError(1);
+
+	// PLAY WAV FILE HERE
+
+	goto end2;
 
 end:
 	ledError(2);

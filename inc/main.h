@@ -15,7 +15,7 @@
 // #include "sd.h"
 // #include "pwm.h"
 #include "sparkboxButtons.h"
-// #include "waveplayer.h"
+#include "waveplayer.h"
 // #include "stdlib.h"
 
 
