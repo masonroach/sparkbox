@@ -134,7 +134,7 @@ typedef enum {
 } LCD_COMMAND;
 
 void initLcd(void);
-void LcdWriteCmd(LCD_COMMAND cmd);
+void LcdWriteCmd(uint16_t cmd);
 void LcdWriteData(uint16_t data);
 void LcdEnterSleep(void);
 void LcdExitSleep(void);

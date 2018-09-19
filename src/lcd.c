@@ -50,7 +50,7 @@ void initLcd(void) {
 }
 
 // Write a command to the LCD controller over FSMC
-void LcdWriteCmd(LCD_COMMAND cmd) {
+void LcdWriteCmd(uint16_t cmd) {
 	// Pull DC low
 	LCD_DC_LOW;
 

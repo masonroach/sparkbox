@@ -44,7 +44,7 @@ void systemInit(void) {
 		ledMap((0xFF >> (8-i)) & 0xFF);
 //		ledMap(0xFF & rand32());
 		ledError(e > 2 ? e = 0 : e++);
-		for (j = 0; j < 300000; j++);
+		for (j = 0; j < 500000; j++);
 	}
 	while (readButton() == 1);
 	ledAllOff();
