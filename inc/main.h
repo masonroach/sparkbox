@@ -13,7 +13,7 @@
 #include "led.h"
 #include "button.h"
 #include "lcd.h"
-#include "rand.h"
+// #include "rand.h"
 // #include "sd.h"
 // #include "pwm.h"
 // #include "sparkboxButtons.h"

@@ -11,7 +11,13 @@ int main(void) {
 	// Main code
 //	LcdWriteCmd(0xFFFF);
 	while (1) {
-		LcdWriteCmd(i++);
+		LcdWriteCmd(1);
+		LcdWriteCmd(0);
+		LcdWriteCmd(1);
+		LcdWriteCmd(0);
+		LcdWriteCmd(1);
+		while (readButton());
+		while (!readButton());
 	}
 
 	// End with a dead loop
@@ -28,7 +34,6 @@ void systemInit(void) {
 	initLeds();
 	initButton();
 	initLcd();
-	initRng();
 	
 	/*
 	 * Initialization is complete. User can press the button to continue at
@@ -37,8 +42,8 @@ void systemInit(void) {
 	 */
 	while (readButton()) {
 		i > 8 ? i = 0 : i++;
-//		ledMap((0xFF >> (8-i)) & 0xFF);
-		ledMap(0xFF & rand32());
+		ledMap((0xFF >> (8-i)) & 0xFF);
+//		ledMap(0xFF & rand32());
 		ledError(e > 2 ? e = 0 : e++);
 		for (j = 0; j < 300000; j++);
 	}

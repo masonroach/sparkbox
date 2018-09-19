@@ -50,21 +50,23 @@ void initLcd(void) {
 }
 
 // Write a command to the LCD controller over FSMC
-void LcdWriteCmd(uint16_t command) {
+void LcdWriteCmd(LCD_COMMAND cmd) {
 	// Pull DC low
 	LCD_DC_LOW;
-
-	// Pull CS low
-	LCD_CS_LOW;
 
 	// Set RD high
 	LCD_RD_HIGH;
 
-	// Set parallel data
-	*fsmc = command;
-	
-	// Pull WR low, then high
+	// Pull CS low
+	LCD_CS_LOW;
+
+	// Pull WR low
 	LCD_WR_LOW;
+
+	// Set parallel data
+	*fsmc = cmd;
+	
+	// Pull WR high
 	LCD_WR_HIGH;	// Rising edge captures data
 
 	// Set CS high
@@ -92,6 +94,23 @@ void LcdWriteData(uint16_t data) {
 	// Set CS high
 	LCD_CS_HIGH;
 
+}
+
+void LcdEnterSleep(void) {
+	LcdWriteCmd(0x28);	// Display off
+	LcdWriteCmd(0x10);	// Enter sleep mode
+
+	return;
+}
+
+void LcdExitSleep(void) {
+	LcdWriteCmd(0x11);	// Sleep out
+	/******************/
+	/* DELAY 120MS    */
+	/******************/
+	LcdWriteCmd(0x29);	// Display On
+
+	return;
 }
 
 // Configure the FSMC port for LCD
@@ -297,9 +316,11 @@ static void initILI9341(void) {
 	LCD_RESET_HIGH;
 	for (i = 0; i < 500000; i++); //delayms(120);
 
-	LcdWriteCmd(0x11);
+	LcdWriteCmd(SOFTWARE_RESET);
 	for (i = 0; i < 500000; i++); //delayms(120);
+	LcdWriteCmd(DISPLAY_OFF);
 
+/*
  	LcdWriteCmd(0xCF);   
 	LcdWriteData(0x00); 
 	LcdWriteData(0xc3); 
@@ -407,6 +428,107 @@ static void initILI9341(void) {
 	for (i = 0; i < 500000; i++); //delayms(120);
  	LcdWriteCmd(0x29);    //Display on 
 	for (i = 0; i < 200000; i++); //delayms(50);
+*/    //Power
+    LcdWriteCmd(POWER_1); //power control
+    LcdWriteData(0x26);
+    LcdWriteCmd(POWER_2); //power control
+    LcdWriteData(0x11);
+    LcdWriteCmd(VCOM_1); //vcom control
+    LcdWriteData(0x5c); //35
+    LcdWriteData(0x4c); //3E
+    LcdWriteCmd(VCOM_2); //vcom control
+    LcdWriteData(0x94);
+
+    //Pixel format
+    LcdWriteCmd(PIXEL_FORMAT_SET);
+    LcdWriteData(0x65); //16-bit 5-6-5 MCU
+
+    //Memory access
+    LcdWriteCmd(MEMORY_ACCESS_CTRL);
+    LcdWriteData(0x0048); //Swap row/columns, RGB/BGR swap
+
+    //Frame Rate
+    LcdWriteCmd(FRAME_RATE_NORMAL); // frame rate
+    LcdWriteData(0x00);
+    LcdWriteData(0x1B); //70
+
+    //Gamma
+    LcdWriteCmd(ENABLE_3_GAMMA); // 3Gamma Function Disable
+    LcdWriteData(0x08);
+
+    LcdWriteCmd(GAMMA_SET);
+    LcdWriteData(0x01); // gamma set 4 gamma curve 01/02/04/08
+
+    LcdWriteCmd(POSITIVE_GAMMA_CORRECT); //positive gamma correction
+    LcdWriteData(0x1f);
+    LcdWriteData(0x1a);
+    LcdWriteData(0x18);
+    LcdWriteData(0x0a);
+    LcdWriteData(0x0f);
+    LcdWriteData(0x06);
+    LcdWriteData(0x45);
+    LcdWriteData(0x87);
+    LcdWriteData(0x32);
+    LcdWriteData(0x0a);
+    LcdWriteData(0x07);
+    LcdWriteData(0x02);
+    LcdWriteData(0x07);
+    LcdWriteData(0x05);
+    LcdWriteData(0x00);
+
+    LcdWriteCmd(NEGATIVE_GAMMA_CORRECT); //negative gamma correction
+    LcdWriteData(0x00);
+    LcdWriteData(0x25);
+    LcdWriteData(0x27);
+    LcdWriteData(0x05);
+    LcdWriteData(0x10);
+    LcdWriteData(0x09);
+    LcdWriteData(0x3a);
+    LcdWriteData(0x78);
+    LcdWriteData(0x4d);
+    LcdWriteData(0x05);
+    LcdWriteData(0x18);
+    LcdWriteData(0x0d);
+    LcdWriteData(0x38);
+    LcdWriteData(0x3a);
+    LcdWriteData(0x1f);
+
+    //Set the column and page ranges
+    LcdWriteCmd(COLUMN_ADDRESS_SET); // column set
+    LcdWriteData(0x00);
+    LcdWriteData(0x00);
+    LcdWriteData(0x00);
+    LcdWriteData(0xEF);
+    LcdWriteCmd(PAGE_ADDRESS_SET); // page address set
+    LcdWriteData(0x00);
+    LcdWriteData(0x00);
+    LcdWriteData(0x01);
+    LcdWriteData(0x3F);
+
+    //entry mode set
+    LcdWriteCmd(ENTRY_MODE_SET);
+    LcdWriteData(0x07);
+
+    // display function control
+    LcdWriteCmd(DISPLAY_FUNCTION);
+    LcdWriteData(0x0a);
+    LcdWriteData(0x82);
+    LcdWriteData(0x27);
+    LcdWriteData(0x00);
+
+    //MDT- for reading data back
+    LcdWriteCmd(INTERFACE_CONTROL);
+    LcdWriteData(0x01);
+    LcdWriteData(0x01);
+    LcdWriteData(0x00);
+
+    // Sleep Out
+    LcdWriteCmd(SLEEP_OUT);
+	for (i = 0; i < 2500000; i++);//    DelayMs(120); //Wait to wake up
+
+    //Display On
+    LcdWriteCmd(DISPLAY_ON); //Turn the display on
+
 
 	return;
 }
