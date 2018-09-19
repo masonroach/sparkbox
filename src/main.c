@@ -5,9 +5,6 @@ static void SystemClock_Config(void);
 void systemInit(void);
 
 
-FATFS SDFatFs;  /* File system object for SD card logical drive */
-FIL MyFile;     /* File object */
-char SDPath[4]; /* SD card logical drive path */
 
 int main(void) {
 	FRESULT res;                                          /* FatFs function common result code */
@@ -15,13 +12,16 @@ int main(void) {
 	uint8_t wtext[] = "Sparkbox's first file!"; /* File write buffer */
 	TCHAR fileName[] = "sparkbox.txt"; 				  /* File name */
 	uint8_t rtext[100];
-	// volatile int i,j;
+	volatile int i;
+	FATFS SDFatFs;  /* File system object for SD card logical drive */
+	FIL MyFile;     /* File object */
+	char SDPath[4]; /* SD card logical drive path */
 	
 	systemInit();
 	
 	// FatFs test
 	ledAllOff();
-	
+
 	if(FATFS_LinkDriver(&SD_Driver, SDPath) != 0) {goto end;}
 	if(f_mount(&SDFatFs, (TCHAR const*)SDPath, 0) != FR_OK) {goto end;}
 	if(f_open(&MyFile, fileName, FA_CREATE_ALWAYS | FA_WRITE) != FR_OK) {goto end;}
@@ -36,9 +36,11 @@ int main(void) {
 		goto end;
 	}
 	f_close(&MyFile);
-	if((bytesread == byteswritten)){} 
+	if((bytesread == byteswritten)){ledError(1); goto end2;} 
 
 end:
+	ledError(2);
+end2:
 	FATFS_UnLinkDriver(SDPath);
 		// Push button test
 	while(1){
@@ -70,6 +72,7 @@ void systemInit(void) {
 	// RCC->AHB1ENR    |=   RCC_AHB1ENR_GPIOCEN;
 	
 
+	ledError(0);
 	
 	/*
 	 * Initialization is complete. User can press the button to continue at
@@ -77,7 +80,7 @@ void systemInit(void) {
 	 * LEDs will continue to light up in a circle.
 	 */
 //	usartSendString("Initialized. Press button to continue.\r\n");
-	while (readButton() == 0) {
+	while (readButton() == 1) {
 	}
 	ledAllOff();
 }
@@ -94,15 +97,17 @@ static void SystemClock_Config(void) {
      regarding system frequency refer to product datasheet.  */
   __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
 
-  /* Enable HSE Oscillator and activate PLL with HSE as source */
+  /* Enable HSE Oscillator and activate PLL with HSI as source */
+  /* fVCO = fPLLin * (PLLN / PLLM); fPLLout = fVCO / PLLP; fSDIO = fPLLout / PLLQ */
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
-  RCC_OscInitStruct.PLL.PLLM = 25;
-  RCC_OscInitStruct.PLL.PLLN = 336;
-  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
-  RCC_OscInitStruct.PLL.PLLQ = 14;
+  RCC_OscInitStruct.PLL.PLLM = 10; // Clock division (2<=PLLM<=63)
+  RCC_OscInitStruct.PLL.PLLN = 210; // Clock multiplication (50<=PLLN<=432)
+  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2; // PLLP = 2, 4, 6, or 8
+  RCC_OscInitStruct.PLL.PLLQ = 10; // 2<=PLLQ<=15 SDIO and RNG clock divider (SDIO<=48MHz)
+  // fPLLout = 16e6 * 210 / 10 / 2
   HAL_RCC_OscConfig(&RCC_OscInitStruct);
   
   /* Select PLL as system clock source and configure the HCLK, PCLK1 and PCLK2 
