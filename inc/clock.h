@@ -5,4 +5,6 @@
 
 #define CLOCK_F 72000000UL
 
+void SystemClock_Config(void);
+
 #endif

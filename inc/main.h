@@ -8,7 +8,7 @@
 #include "ff_gen_drv.h"
 #include "sd_diskio.h"
 
-// #include "clock.h"	// Include clock before others
+#include "clock.h"	// Include clock before others
 // #include "usart.h"
 #include "led.h"
 #include "button.h"
