@@ -1,6 +1,8 @@
 #include "main.h"
 
 void systemInit(void);
+void lcdTest(void);
+void sdTest(void);
 static void SystemClock_Config(void);
 
 int main(void) {
@@ -10,42 +12,7 @@ int main(void) {
 	systemInit();
 	
 	// Main code
-	lcdTest();
-
-	// End with a dead loop
-	while (1);
-
-	if(FATFS_LinkDriver(&SD_Driver, SDPath) != 0) {goto end;}
-	if(f_mount(&SDFatFs, (TCHAR const*)SDPath, 0) != FR_OK) {goto end;}
-	if(f_open(&MyFile, fileName, FA_CREATE_ALWAYS | FA_WRITE) != FR_OK) {goto end;}
-	if(f_write(&MyFile, wtext, sizeof(wtext), (void *)&byteswritten) != FR_OK) {
-		f_close(&MyFile); 
-		goto end; 
-	}
-	f_close(&MyFile);
-	if(f_open(&MyFile, fileName, FA_READ) != FR_OK) {goto end;}
-    if(f_read(&MyFile, rtext, sizeof(rtext), (UINT*)&bytesread) != FR_OK) {
-		f_close(&MyFile);
-		goto end;
-	}
-	f_close(&MyFile);
-	if((bytesread != byteswritten)){goto end;}
-
-
-	
-	// SUCCESS, let's play a WAV file
-	ledError(1);
-
-	// PLAY WAV FILE HERE
-
-	goto end2;
-
-end:
-	ledError(2);
-end2:
-	FATFS_UnLinkDriver(SDPath);
-	// Push button test
-	while(1);
+	sdTest();
 
 	return 0;
 	
@@ -73,7 +40,6 @@ void systemInit(void) {
 	ledAllOff();
 	ledError(LED_OFF);
 }
-
 
 static void SystemClock_Config(void) {
   RCC_ClkInitTypeDef RCC_ClkInitStruct;
@@ -130,9 +96,7 @@ void assert_failed(uint8_t* file, uint32_t line) {
      ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
 
   /* Infinite loop */
-  while (1)
-  {
-  }
+  while (1);
 }
 #endif
 
@@ -148,4 +112,49 @@ void lcdTest(void) {
 		while (readButton());
 		while (!readButton());
 	}
+}
+
+void sdTest(void) {
+	FRESULT res;                                          /* FatFs function common result code */
+ 	uint32_t byteswritten, bytesread;                     /* File write/read counts */
+ 	uint8_t wtext[] = "Sparkbox's first file!"; /* File write buffer */
+ 	TCHAR fileName[] = "sparkbox.txt"; 				  /* File name */
+	uint8_t rtext[100];
+	volatile int i;
+	FATFS SDFatFs;  /* File system object for SD card logical drive */
+	FIL MyFile;     /* File object */
+	char SDPath[4]; /* SD card logical drive path */
+
+	if(FATFS_LinkDriver(&SD_Driver, SDPath) != 0) {goto end;}
+	if(f_mount(&SDFatFs, (TCHAR const*)SDPath, 0) != FR_OK) {goto end;}
+	if(f_open(&MyFile, fileName, FA_CREATE_ALWAYS | FA_WRITE) != FR_OK) {goto end;}
+	if(f_write(&MyFile, wtext, sizeof(wtext), (void *)&byteswritten) != FR_OK) {
+		f_close(&MyFile); 
+		goto end; 
+	}
+	f_close(&MyFile);
+	if(f_open(&MyFile, fileName, FA_READ) != FR_OK) {goto end;}
+    if(f_read(&MyFile, rtext, sizeof(rtext), (UINT*)&bytesread) != FR_OK) {
+		f_close(&MyFile);
+		goto end;
+	}
+	f_close(&MyFile);
+	if((bytesread != byteswritten)){goto end;}
+
+
+	
+	// SUCCESS, let's play a WAV file
+	ledError(1);
+
+	// PLAY WAV FILE HERE
+
+	goto end2;
+
+end:
+	ledError(2);
+end2:
+	FATFS_UnLinkDriver(SDPath);
+	// Push button test
+	while(1);
+
 }
