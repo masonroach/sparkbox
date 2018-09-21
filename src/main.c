@@ -3,7 +3,6 @@
 void systemInit(void);
 void lcdTest(void);
 void sdTest(void);
-static void SystemClock_Config(void);
 
 int main(void) {
 	uint16_t i = 0;
@@ -22,6 +21,8 @@ void systemInit(void) {
 	int8_t i = 0;
 	int8_t e = 0;
 	volatile uint32_t j = 0;
+
+	HAL_Init();
 
 	SystemClock_Config();
 	initLeds();
