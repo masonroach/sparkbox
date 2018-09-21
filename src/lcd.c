@@ -284,7 +284,8 @@ static void initFSMC(void) {
 
 	/*
 	 * Initialize FSMC using bank 1 NORSRAM1
-	 */	
+	 */
+//	FSMC_Bank1->BTCR[0] &= ~FSMC_BCR1_CBURSTRW;	// ???
 	FSMC_Bank1->BTCR[0] &= ~FSMC_BCR1_ASYNCWAIT;	// Disable sync-wait signal
 	FSMC_Bank1->BTCR[0] &= ~FSMC_BCR1_EXTMOD;	// Disable extended mode
 	FSMC_Bank1->BTCR[0] &= ~FSMC_BCR1_WAITEN;	// Disable wait bit
@@ -298,7 +299,11 @@ static void initFSMC(void) {
 	FSMC_Bank1->BTCR[0] |=  FSMC_BCR1_MBKEN;	// Enable memory bank
 
 	FSMC_Bank1->BTCR[1] &= ~FSMC_BTR1_ACCMOD;	// Access mode A
+	FSMC_Bank1->BTCR[1] &= ~FSMC_BTR1_DATAST;	// Clear DATAST bits
+	FSMC_Bank1->BTCR[1] |= (4 << FSMC_BTR1_DATAST_Pos);	// DATAST = 4 x HCLK
 	FSMC_Bank1->BTCR[1] &= ~FSMC_BTR1_BUSTURN;	// Set short bus turn around
+//	FSMC_Bank1->BTCR[1] &= ~FSMC_BTR1_ADDHLD;	// Disable Address hold
+	FSMC_Bank1->BTCR[1] &= ~FSMC_BTR1_ADDSET;	// Disable Address hold
 
 	return;
 }
@@ -524,7 +529,7 @@ static void initILI9341(void) {
 
     // Sleep Out
     LcdWriteCmd(SLEEP_OUT);
-	for (i = 0; i < 2500000; i++);//    DelayMs(120); //Wait to wake up
+	for (i = 0; i < 500000; i++);//    DelayMs(120); //Wait to wake up
 
     //Display On
     LcdWriteCmd(DISPLAY_ON); //Turn the display on

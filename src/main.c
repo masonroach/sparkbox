@@ -10,16 +10,7 @@ int main(void) {
 	systemInit();
 	
 	// Main code
-//	LcdWriteCmd(0xFFFF);
-	while (1) {
-		LcdWriteCmd(i++);
-//		LcdWriteCmd(0);
-//		LcdWriteCmd(1);
-//		LcdWriteCmd(0);
-//		LcdWriteCmd(1);
-//		while (readButton());
-//		while (!readButton());
-	}
+	lcdTest();
 
 	// End with a dead loop
 	while (1);
@@ -112,3 +103,17 @@ void assert_failed(uint8_t* file, uint32_t line) {
   }
 }
 #endif
+
+void lcdTest(void) {
+//	LcdWriteCmd(0xFFFF);
+	while (1) {
+//		LcdWriteCmd(i++);
+		LcdWriteCmd(1);
+		LcdWriteCmd(0);
+		LcdWriteCmd(1);
+		LcdWriteCmd(0);
+		LcdWriteCmd(1);
+		while (readButton());
+		while (!readButton());
+	}
+}
