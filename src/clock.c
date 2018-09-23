@@ -1,14 +1,29 @@
 #include "clock.h"
 
-void initSystemClock(void) {
-	SystemClock_Config();
+// Global time delay variable
+volatile uint32_t TimeDelay = 0;
+
+uint8_t initSystemClock(void) {
+	
+	if (SystemClock_Config()) return 1;
+
+	if (SysTick_Config(CLOCK_FREQ/1000)) return 2;
+
+	return 0;
 }
 
 void delayms(uint16_t ms) {
+	TimeDelay = ms;
 
+	while (TimeDelay != 0);
 }
 
-void SystemClock_Config(void) {
+// SysTick interrupt service routine
+void SysTick_Handler(void) {
+	if (TimeDelay > 0) TimeDelay--;
+}
+
+uint8_t SystemClock_Config(void) {
 	RCC_ClkInitTypeDef RCC_ClkInitStruct;
 	RCC_OscInitTypeDef RCC_OscInitStruct;
 
@@ -48,6 +63,8 @@ void SystemClock_Config(void) {
 		/* Enable the Flash prefetch */
 		__HAL_FLASH_PREFETCH_BUFFER_ENABLE();
 	}
+
+	return 0;
 }
 
 

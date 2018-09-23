@@ -13,6 +13,8 @@ int main(void) {
 	// Main code
 	sdTest();
 
+	while (1);
+
 	return 0;
 	
 }
@@ -22,9 +24,10 @@ void systemInit(void) {
 	int8_t e = 0;
 	volatile uint32_t j = 0;
 
-	HAL_Init();
+	// Init system clock first
+	if (ledMap(initSystemClock())) ledError(2);
 
-	SystemClock_Config();
+	HAL_Init();
 	initLeds();
 	initButton();
 	initLcd();
@@ -35,7 +38,8 @@ void systemInit(void) {
 		ledMap((0xFF >> (8-i)) & 0xFF);
 //		ledMap(0xFF & rand32());
 		ledError(e > 2 ? e = 0 : e++);
-		for (j = 0; j < 500000; j++);
+		delayms(250);
+//		for (j = 0; j < 500000; j++);
 	}
 	while (readButton() == 1);
 	ledAllOff();

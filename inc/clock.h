@@ -1,12 +1,14 @@
-#include "stm32f4xx.h"
-
 #ifndef SPARK_CLK
 #define SPARK_CLK
 
-#define CLOCK_F 168000000UL
+#define CLOCK_FREQ 168000000UL
 
-void initSystemClock(void);
+#include "stm32f4xx.h"
+#include "core_cm4.h"
+
+uint8_t initSystemClock(void);
 void delayms(uint16_t ms);
-void SystemClock_Config(void);
+uint8_t SystemClock_Config(void);
+void SysTick_Handler(void);
 
 #endif

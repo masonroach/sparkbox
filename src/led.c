@@ -48,6 +48,8 @@ void ledError(LED_DEBUG status) {
 }
 
 // Input a 8-bit map to turn the corresponding LED's on and off
-void ledMap(uint8_t map) {
+uint8_t ledMap(uint8_t map) {
 	GPIOC->BSRR |= (map & 0xFF) + ((~map & 0xFF) << 16);
+
+	return map;
 }
