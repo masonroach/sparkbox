@@ -315,14 +315,14 @@ static void initILI9341(void) {
 	volatile uint32_t i;
 
 	LCD_CS_HIGH;
-	for (i = 0; i < 20000; i++); //delayms(5);
+	delayms(5);
 	LCD_RESET_LOW;
-	for (i = 0; i < 50000; i++); //delayms(10);
+	delayms(10);
 	LCD_RESET_HIGH;
-	for (i = 0; i < 500000; i++); //delayms(120);
+	delayms(120);
 
 	LcdWriteCmd(SOFTWARE_RESET);
-	for (i = 0; i < 500000; i++); //delayms(120);
+	delayms(120);
 	LcdWriteCmd(DISPLAY_OFF);
 
 /*
@@ -529,7 +529,7 @@ static void initILI9341(void) {
 
     // Sleep Out
     LcdWriteCmd(SLEEP_OUT);
-	for (i = 0; i < 500000; i++);//    DelayMs(120); //Wait to wake up
+	delayms(120);
 
     //Display On
     LcdWriteCmd(DISPLAY_ON); //Turn the display on

@@ -1,7 +1,8 @@
-#include "stm32f4xx.h"
-
 #ifndef SPARK_LCD
 #define SPARK_LCD
+
+#include "stm32f4xx.h"
+#include "clock.h"
 
 /*
  * +-------------+

@@ -27,7 +27,7 @@ void systemInit(void) {
 	// Init system clock first
 	if (ledMap(initSystemClock())) ledError(2);
 
-	HAL_Init();
+//	HAL_Init();
 	initLeds();
 	initButton();
 	initLcd();
@@ -38,7 +38,7 @@ void systemInit(void) {
 		ledMap((0xFF >> (8-i)) & 0xFF);
 //		ledMap(0xFF & rand32());
 		ledError(e > 2 ? e = 0 : e++);
-		delayms(250);
+		delayms(100);
 //		for (j = 0; j < 500000; j++);
 	}
 	while (readButton() == 1);
