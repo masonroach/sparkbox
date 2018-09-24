@@ -7,7 +7,7 @@ uint8_t initSystemClock(void) {
 	
 	if (SystemClock_Config()) return 1;
 
-	if (SysTick_Config(CLOCK_FREQ/1000)) return 2;
+	//if (SysTick_Config(CLOCK_FREQ/1000)) return 2;
 
 	return 0;
 }
@@ -19,9 +19,12 @@ void delayms(uint16_t ms) {
 }
 
 // SysTick interrupt service routine
+
 void SysTick_Handler(void) {
 	if (TimeDelay > 0) TimeDelay--;
+	HAL_IncTick();
 }
+
 
 uint8_t SystemClock_Config(void) {
 	RCC_ClkInitTypeDef RCC_ClkInitStruct;
@@ -66,5 +69,3 @@ uint8_t SystemClock_Config(void) {
 
 	return 0;
 }
-
-
