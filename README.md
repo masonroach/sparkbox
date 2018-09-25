@@ -67,10 +67,12 @@ SD card with SDIO
 
 FSMC (Flexible Static Memory Controller) using NAND flash:
 	fD[7:0] or fD[15:0] 8 or 16 bit transactions - I/O
-	fNCE[x] chip select, x=2,3 - O
+	fA[17] - ALE (address latch enable)
+	fA[16] - CLE (command latch enable)
+	fNCE[x] chip select, x=2,3 - O (fNCE2 for our purposes)
 	fNOE or NRE - Output enable (memory signal name: read enable, NRE) - O
 	fNWE - Write enable - O
-	fNWAIT/fINT[3:2] - ready/busy input to FSMC - I
+	fNWAIT/fINT[3:2] - R/B (ready/busy) input to FSMC - I
 
 ## PERIPHERALS/FUNCTIONS IN USE
 -----------
