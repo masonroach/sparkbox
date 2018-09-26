@@ -6,6 +6,7 @@
  * +------+------+
  * | Name | Pin  |
  * +------+------+
+ * | FRAME| PB9  | <-- Trigger on new frame
  * | CS   | PB7  |
  * | D/C  | PB6  | <-- Stands for data/command
  * | WR   | PB1  |
