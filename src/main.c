@@ -14,9 +14,9 @@ FIL MyFile;     /* File object */
 int main(void) {
 	
 	systemInit();
-	buttonTest();
 	
 	sdTest();
+	buttonTest();
 
 	
 	while(1);
@@ -143,16 +143,13 @@ void sdTest(void) {
 
 	// PLAY WAV FILE HERE
 	WAV_test();
-
-
+	
 end:
 	FATFS_UnLinkDriver(SDPath);
-	// Push button test
-	while(1);
 
 }
 
-#define BUFFER_BYTE 9901
+#define BUFFER_BYTE 19802
 #define BUFFER_WORD ((BUFFER_BYTE / 4)+1)
 void WAV_test(void)
 {
@@ -193,15 +190,17 @@ void WAV_test(void)
 		return;
 	}
 
-	WAV_Play((uint32_t)wavBuffer, WAV, REPEAT_ALWAYS);
-	ledOn(3);
+	WAV_Play((uint32_t)wavBuffer, WAV, 1);
 	if (WAV->Error != 0) {
 		ledOn(4);
 		return;
 	}
+	
 
+	// Don't want to free memory the DMA is transferring
+	// free(WAV);
+	// free(wavBuffer);
 
-	free(WAV);
-	free(wavBuffer);
+	return;
 	
 }
