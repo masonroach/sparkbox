@@ -5,15 +5,16 @@
 #include <stdbool.h>
 #include "stm32f4xx.h"
 
+extern volatile uint8_t buttons;
 
-extern volatile bool BUTTON_LEFT; 	// PA1
-extern volatile bool BUTTON_RIGHT; // PA2
-extern volatile bool BUTTON_UP;		// PA3
-extern volatile bool BUTTON_DOWN;	// PB4
-extern volatile bool BUTTON_A;			// PA5
-extern volatile bool BUTTON_B;			// PA6
-extern volatile bool BUTTON_X;			// PA7
-extern volatile bool BUTTON_Y;			// PA8
+#define BUTTON_LEFT ((buttons >> 0) & 0x01)
+#define BUTTON_RIGHT ((buttons >> 1) & 0x01)
+#define BUTTON_UP ((buttons >> 2) & 0x01)
+#define BUTTON_DOWN ((buttons >> 3) & 0x01)
+#define BUTTON_A ((buttons >> 4) & 0x01)
+#define BUTTON_B ((buttons >> 5) & 0x01)
+#define BUTTON_X ((buttons >> 6) & 0x01)
+#define BUTTON_Y ((buttons >> 7) & 0x01)
 
 void initButtons(void);
 
