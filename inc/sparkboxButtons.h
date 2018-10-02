@@ -7,6 +7,8 @@
 
 extern volatile uint8_t buttons;
 
+#define ALL_BUTTONS (buttons)
+
 #define BUTTON_LEFT ((buttons >> 0) & 0x01)
 #define BUTTON_RIGHT ((buttons >> 1) & 0x01)
 #define BUTTON_UP ((buttons >> 2) & 0x01)
@@ -15,6 +17,9 @@ extern volatile uint8_t buttons;
 #define BUTTON_B ((buttons >> 5) & 0x01)
 #define BUTTON_X ((buttons >> 6) & 0x01)
 #define BUTTON_Y ((buttons >> 7) & 0x01)
+
+#define PUSHED 0x01
+#define RELEASED 0x00
 
 void initButtons(void);
 
