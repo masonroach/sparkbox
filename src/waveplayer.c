@@ -47,6 +47,7 @@ uint32_t ReadUnit(uint8_t *buffer, uint8_t idx, uint8_t NbrOfBytes, Endianness B
 uint32_t lastAddr;
 WAV_Format* lastWAV;
 int numberPlays;
+FIL F;
 
 /** @defgroup WAVEPLAYER_Private_Functions
   * @{
@@ -59,12 +60,6 @@ int numberPlays;
   */
 void WAV_Init(void)
 {
-	uint8_t tmppriority = 0x00, tmppre = 0x00, tmpsub = 0x0F;
-	// DAC_InitTypeDef  DAC_InitStructure;
-	// GPIO_InitTypeDef GPIO_InitStructure;
-	// NVIC_InitTypeDef NVIC_InitStructure;
-	
-
 	/******************************* TIM6 Configuration *************************/
 	 
 	/* TIM6 clock enable */
@@ -120,23 +115,12 @@ void WAV_Init(void)
 	/********************************* DMA Config *******************************/
 	/* DMA1 clock enable (to be used with DAC) */
 	RCC->AHB1ENR |= RCC_AHB1ENR_DMA1EN;
-	/* DMA channel3 Configuration is managed by Audio_MAL_Play() function */
+	/* DMA channel3 Configuration is managed by WAV_Play() function */
 
 	
-	// From misc.c NVIC _Init() in standard peripheral libraries
-	/* Compute the Corresponding IRQ Priority --------------------------------*/    
-	  tmppriority = (0x700 - ((SCB->AIRCR) & (uint32_t)0x700))>> 0x08;
-	  tmppre = (0x4 - tmppriority);
-	  tmpsub = tmpsub >> tmppriority;
-
-	  tmppriority = 0 << tmppre;
-	  tmppriority = tmppriority << 0x04;
-	      
-	  NVIC->IP[DMA1_Stream3_IRQn] = tmppriority;
-	  
-	  /* Enable the Selected IRQ Channels --------------------------------------*/
-	  NVIC->ISER[DMA1_Stream3_IRQn >> 0x05] =
-	    (uint32_t)0x01 << (DMA1_Stream3_IRQn & (uint8_t)0x1F);
+	/* Enable the DMA IRQ --------------------------------------*/
+	NVIC_SetPriority(DMA1_Stream3_IRQn, 0x20);
+	NVIC_EnableIRQ(DMA1_Stream3_IRQn);
 	
 	/* Enable Transfer Complete Interrupt on channel 3 */
 	DMA1_Stream3->CR |= DMA_SxCR_TCIE;
@@ -162,15 +146,15 @@ void WAV_Init(void)
 	*/
 void WavePlayer_ReadAndParse(const char* WavName, WAV_Format* WAVE_Format)
 {
-	FIL F;
 	UINT BytesRead;
 	uint32_t temp = 0x00;
 	uint32_t extraformatbytes = 0;
 	uint16_t TempBuffer[_MAX_SS];
+	uint8_t i, res;
 	
 	f_open(&F, WavName, FA_READ);
 
-	f_read(&F, TempBuffer, _MAX_SS, &BytesRead);
+	res = f_read(&F, TempBuffer, _MAX_SS, &BytesRead);
 
 	/* Read chunkID, must be 'RIFF'  -------------------------------------------*/
 	temp = ReadUnit((uint8_t*)TempBuffer, 0, 4, BigEndian);
@@ -313,7 +297,6 @@ void WavePlayer_ReadAndParse(const char* WavName, WAV_Format* WAVE_Format)
 	*/
 uint8_t WAV_Import(const char* FileName, WAV_Format* W, uint32_t* Buffer)
 {
-	FIL F;
 	UINT BytesRead;
 
 	/* Read the Speech wave file status */
@@ -475,7 +458,7 @@ void WAV_Play(uint32_t Addr, WAV_Format* W, int numPlays)
 	DAC->CR |= DAC_CR_DMAEN1;
 
 	/* Set the timer period */
-        TIM6->ARR = W->TIM6ARRValue;
+	TIM6->ARR = W->TIM6ARRValue;
 	
 	/* Enable TIM6 counter */
 	TIM6->CR1 |= TIM_CR1_CEN;

@@ -4,6 +4,8 @@
 void systemInit(void);
 void lcdTest(void);
 void sdTest(void);
+void WAV_test(void);
+void buttonTest(void);
 
 FATFS SDFatFs;  /* File system object for SD card logical drive */
 char SDPath[4]; /* SD card logical drive path */
@@ -14,6 +16,8 @@ int main(void) {
 	systemInit();
 	
 	sdTest();
+	buttonTest();
+
 	
 	while(1);
 	return 1;
@@ -39,6 +43,7 @@ void systemInit(void) {
 	initButton();
 	initButtons();
 	initLcd();
+	WAV_Init();
 //	initSdSpi();
 	// RCC->AHB1ENR    |=   RCC_AHB1ENR_GPIODEN;
 	// RCC->AHB1ENR    |=   RCC_AHB1ENR_GPIOCEN;
@@ -61,6 +66,7 @@ void systemInit(void) {
 	}
 	ledAllOff();
 	ledError(0);
+	while (readButton());
 }
 
 void lcdTest(void) {
@@ -77,6 +83,36 @@ void lcdTest(void) {
 	}
 }
 
+void buttonTest(void)
+{
+	ledAllOff();
+	while (1) {
+		if (BUTTON_LEFT) ledOn(0);
+		else ledOff(0);
+
+		if (BUTTON_RIGHT) ledOn(1);
+		else ledOff(1);
+
+		if (BUTTON_UP) ledOn(2);
+		else ledOff(2);
+
+		if (BUTTON_DOWN) ledOn(3);
+		else ledOff(3);
+
+		if (BUTTON_A) ledOn(4);
+		else ledOff(4);
+
+		if (BUTTON_B) ledOn(5);
+		else ledOff(5);
+
+		if (BUTTON_X) ledOn(6);
+		else ledOff(6);
+
+		if (BUTTON_Y) ledOn(7);
+		else ledOff(7);
+	}
+}
+
 void sdTest(void) {
  	uint32_t byteswritten, bytesread;                     /* File write/read counts */
  	uint8_t wtext[] = "Sparkbox's first file!"; /* File write buffer */
@@ -84,21 +120,21 @@ void sdTest(void) {
 	uint8_t rtext[100];
 	volatile int i;
 
-	if(FATFS_LinkDriver(&SD_Driver, SDPath) != 0) {goto end;}
-	if(f_mount(&SDFatFs, (TCHAR const*)SDPath, 0) != FR_OK) {goto end;}
-	if(f_open(&MyFile, fileName, FA_CREATE_ALWAYS | FA_WRITE) != FR_OK) {goto end;}
-	if(f_write(&MyFile, wtext, sizeof(wtext), (void *)&byteswritten) != FR_OK) {
+	if (FATFS_LinkDriver(&SD_Driver, SDPath) != 0) {goto end;}
+	if (f_mount(&SDFatFs, (TCHAR const*)SDPath, 0) != FR_OK) {goto end;}
+	if (f_open(&MyFile, fileName, FA_CREATE_ALWAYS | FA_WRITE) != FR_OK) {goto end;}
+	if (f_write(&MyFile, wtext, sizeof(wtext), (void *)&byteswritten) != FR_OK) {
 		f_close(&MyFile); 
 		goto end; 
 	}
 	f_close(&MyFile);
-	if(f_open(&MyFile, fileName, FA_READ) != FR_OK) {goto end;}
-    if(f_read(&MyFile, rtext, sizeof(rtext), (UINT*)&bytesread) != FR_OK) {
+	if (f_open(&MyFile, fileName, FA_READ) != FR_OK) {goto end;}
+    if (f_read(&MyFile, rtext, sizeof(rtext), (UINT*)&bytesread) != FR_OK) {
 		f_close(&MyFile);
 		goto end;
 	}
 	f_close(&MyFile);
-	if((bytesread != byteswritten)){goto end;}
+	if ((bytesread != byteswritten)){goto end;}
 
 
 	
@@ -106,10 +142,65 @@ void sdTest(void) {
 	ledError(2);
 
 	// PLAY WAV FILE HERE
-
+	WAV_test();
+	
 end:
 	FATFS_UnLinkDriver(SDPath);
-	// Push button test
-	while(1);
 
+}
+
+#define BUFFER_BYTE 19802
+#define BUFFER_WORD ((BUFFER_BYTE / 4)+1)
+void WAV_test(void)
+{
+	uint8_t i=0;
+	char testFile[14] = "test.wav"; 
+	uint32_t* wavBuffer;
+	WAV_Format* WAV;
+
+	// Wait for button to be pressed
+	while (!readButton()) {
+		i > 8 ? i = 0 : i++;
+		ledMap((0xFF >> (8-i)) & 0xFF);
+//		ledMap(0xFF & rand32());
+		delayms(100);
+		//for (j = 0; j < 500000; j++);
+	}
+	ledAllOff();
+	ledError(0);
+	// Wait for button to be released
+	while (readButton());	
+
+	WAV = (WAV_Format*)malloc(sizeof(WAV_Format));
+	if (WAV == NULL) {
+		ledOn(0);
+		return;
+	}
+
+	wavBuffer = (uint32_t*)malloc(sizeof(uint32_t) * BUFFER_WORD);
+	if (wavBuffer == NULL) {
+		ledOn(1);
+		return;
+	}
+
+
+	WAV_Import(testFile, WAV, wavBuffer);
+	if (WAV->Error != 0) {
+		ledOn(2);
+		return;
+	}
+
+	WAV_Play((uint32_t)wavBuffer, WAV, 1);
+	if (WAV->Error != 0) {
+		ledOn(4);
+		return;
+	}
+	
+
+	// Don't want to free memory the DMA is transferring
+	// free(WAV);
+	// free(wavBuffer);
+
+	return;
+	
 }

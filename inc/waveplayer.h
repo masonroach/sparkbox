@@ -60,6 +60,8 @@ Finally, the data chunk contains the sample data:
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4xx.h"
+#include "led.h"
+#include "clock.h"
 #include "ff.h"
 
 /** @addtogroup STM32072B_EVAL_Demo
