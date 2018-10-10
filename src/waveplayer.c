@@ -43,9 +43,11 @@ uint32_t ReadUnit(uint8_t *buffer, uint8_t idx, uint8_t NbrOfBytes, Endianness B
   * @}
   */
 
+// Handles for initialization
+DAC_HandleTypeDef hdac;
+DMA_HandleTypeDef hdma_dac1;
+TIM_HandleTypeDef htim6;
 
-uint32_t lastAddr;
-WAV_Format* lastWAV;
 int numberPlays;
 FIL F;
 
@@ -60,70 +62,50 @@ FIL F;
   */
 void WAV_Init(void)
 {
-	/******************************* TIM6 Configuration *************************/
-	 
-	/* TIM6 clock enable */
-	RCC->APB1ENR |= RCC_APB1ENR_TIM6EN;
-	
-	/* Reset Timer 6 */
-	RCC->APB1RSTR |= RCC_APB1RSTR_TIM6RST;
-	RCC->APB1RSTR &= ~RCC_APB1RSTR_TIM6RST;
-	
-	/* TIM6 TRGO update selection */
-	TIM6->CR2 &= (uint16_t)~TIM_CR2_MMS;
-	TIM6->CR2 |=  TIM_CR2_MMS_1;
-	
-	/******************************* Init DAC channel 1 (PA4) *******************/  
-	/* DAC Periph clock enable */
-	RCC->APB1ENR |= RCC_APB1ENR_DACEN;
-	
-	/* Reset DAC */
-	RCC->APB1RSTR |= RCC_APB1RSTR_DACRST;
-	RCC->APB1RSTR &= ~RCC_APB1RSTR_DACRST;
-	
-	/* GPIOA clock enable */
-	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOAEN; 
-	
-	/* Configure PA.04 (DAC_OUT1) in analog mode, No PUPD */
-	GPIOA->MODER |= GPIO_MODER_MODE4;
-	GPIOA->PUPDR &= ~GPIO_PUPDR_PUPD4;
-	
-	/* Clear MAMP1, WAVE1, TSEL1, TEN1, BOFF1 bits */
-	DAC->CR &= ~(DAC_CR_MAMP1 | DAC_CR_WAVE1 | DAC_CR_TSEL1 | DAC_CR_TEN1 | DAC_CR_BOFF1);
-	/* TSEL1 = 0b000, TIM6 trigger source */
-	/* DAC Channel 1 Trigger Enable */
-	DAC->CR |= DAC_CR_TEN1;
-	
-	/* Enable DAC Channel 1 */
-	DAC->CR |= DAC_CR_EN1;
-	
-	/************************** Init DAC channel 2 (PA5) ************************/
-	// /* Configure PA.05 (DAC_OUT2) in analog mode, No PUPD */
-	// GPIOA->MODER |= GPIO_MODER_MODE5;
-	// GPIOA->PUPDR &= ~GPIO_PUPDR_PUPD5;
-	
-	// /* Clear MAMP2, WAVE2, TSEL2, TEN2, BOFF2 bits */
-	// DAC->CR &= ~(DAC_CR_MAMP2 | DAC_CR_WAVE2 | DAC_CR_TSEL2 | DAC_CR_TEN2 | DAC_CR_BOFF2);
+	DAC_ChannelConfTypeDef sConfig;
+	TIM_MasterConfigTypeDef sMasterConfig;
 
-	// /* TSEL2 = 0b000, TIM6 trigger source */
-	// /* DAC Channel 2 Trigger Enable */
-	// DAC->CR |= DAC_CR_TEN2;
-	
-	// /* Enable DAC Channel 2 */
-	// DAC->CR |= DAC_CR_EN2;
-	
+	/* GPIO Ports Clock Enable */
+	__HAL_RCC_GPIOA_CLK_ENABLE();
+
 	/********************************* DMA Config *******************************/
-	/* DMA1 clock enable (to be used with DAC) */
-	RCC->AHB1ENR |= RCC_AHB1ENR_DMA1EN;
-	/* DMA channel3 Configuration is managed by WAV_Play() function */
+    /* DMA1 clock enable (to be used with DAC) */
+    __HAL_RCC_DMA1_CLK_ENABLE();
+    /* DMA channel3 Configuration is managed by WAV_Play() function */
 
+
+    /* Enable the DMA IRQ --------------------------------------*/
+    NVIC_SetPriority(DMA1_Stream5_IRQn, 0x40);
+    NVIC_EnableIRQ(DMA1_Stream5_IRQn);
+
+    /* Enable Transfer Complete Interrupt on channel 5 */
+    //DMA1_Stream5->CR |= DMA_SxCR_TCIE;
+
+
+	/******************************* Init DAC channel 1 (PA4) *******************/
+
+    hdac.Instance = DAC;
+    HAL_DAC_Init(&hdac);
+
+    /** DAC channel OUT1 config **/
+    sConfig.DAC_Trigger = DAC_TRIGGER_T6_TRGO;
+    sConfig.DAC_OutputBuffer = DAC_OUTPUTBUFFER_ENABLE;
+    HAL_DAC_ConfigChannel(&hdac, &sConfig, DAC_CHANNEL_1);
+
+    /************************** Init DAC channel 2 (PA5) ************************/
+
+	/******************************* TIM6 Configuration *************************/
 	
-	/* Enable the DMA IRQ --------------------------------------*/
-	NVIC_SetPriority(DMA1_Stream3_IRQn, 0x20);
-	NVIC_EnableIRQ(DMA1_Stream3_IRQn);
-	
-	/* Enable Transfer Complete Interrupt on channel 3 */
-	DMA1_Stream3->CR |= DMA_SxCR_TCIE;
+	htim6.Instance = TIM6;
+	htim6.Init.Prescaler = 0;
+	htim6.Init.CounterMode = TIM_COUNTERMODE_UP;
+	htim6.Init.Period = 4353;
+	HAL_TIM_Base_Init(&htim6);
+
+	sMasterConfig.MasterOutputTrigger = TIM_TRGO_UPDATE;
+	sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+	HAL_TIMEx_MasterConfigSynchronization(&htim6, &sMasterConfig);
+
 }
 
 /**
@@ -209,31 +191,15 @@ void WavePlayer_ReadAndParse(const char* WavName, WAV_Format* WAVE_Format)
 	/* Read the Sample Rate ----------------------------------------------------*/
 	WAVE_Format->SampleRate = ReadUnit((uint8_t*)TempBuffer, 24, 4, LittleEndian);
 	/* Update the OCA value according to the .WAV file Sample Rate */
-	switch (WAVE_Format->SampleRate){
-		case SAMPLE_RATE_8000 :
-			WAVE_Format->TIM6ARRValue = 6000;
-			break; /* 8KHz = 48MHz / 6000 */
-		case SAMPLE_RATE_16000 :
-			WAVE_Format->TIM6ARRValue = 3000;
-			break; /* 8KHz = 48MHz / 6000 */
-		case SAMPLE_RATE_11025:
-			WAVE_Format->TIM6ARRValue = 4353;
-			break; /* 11.025KHz = 48MHz / 4353 */
-		case SAMPLE_RATE_22050:
-			WAVE_Format->TIM6ARRValue = 2176;
-			break; /* 22.05KHz = 48MHz / 2176 */
-		case SAMPLE_RATE_32000:
-			WAVE_Format->TIM6ARRValue = 1500;
-			break; /* 32KHz = 48MHz / 1500 */
-		case SAMPLE_RATE_44100:
-			WAVE_Format->TIM6ARRValue = 1088;
-			break; /* 44.1KHz = 48MHz / 1088 */
-		default:
+	if (WAVE_Format->SampleRate < 6000 || WAVE_Format->SampleRate > 100000) {
 			f_close(&F);
 			WAVE_Format->Error = Unsupporetd_Sample_Rate;
 			return;
 	}
-
+	
+	/* Fs = Ftimer / (ARR+1); ARR = Ftimer / Fs - 1 */
+	WAVE_Format->TIM6ARRValue = (uint32_t)(TIM6FREQ / WAVE_Format->SampleRate - 1);
+	
 	/* Read the Byte Rate ------------------------------------------------------*/
 	WAVE_Format->ByteRate = ReadUnit((uint8_t*)TempBuffer, 28, 4, LittleEndian);
 
@@ -281,6 +247,7 @@ void WavePlayer_ReadAndParse(const char* WavName, WAV_Format* WAVE_Format)
 	/* Read the number of sample data ------------------------------------------*/
 	WAVE_Format->DataSize = ReadUnit((uint8_t*)TempBuffer, WAVE_Format->SpeechDataOffset, 
 										4, LittleEndian);
+
 	WAVE_Format->SpeechDataOffset += 4;
 	// WaveCounter =  SpeechDataOffset;
 	f_close(&F);
@@ -329,22 +296,30 @@ uint8_t WAV_Import(const char* FileName, WAV_Format* W, uint32_t* Buffer)
 	* @param  None
 	* @retval None
 	*/
-void DMA1_Stream3_IRQHandler(void)
+void DMA1_Stream5_IRQHandler(void)
 {
+	HAL_DMA_IRQHandler(&hdma_dac1);
+	
+	// If the last play has occurred, stop
+	if (numberPlays == 1) HAL_TIM_Base_Stop(&htim6);
+	else if (numberPlays <= REPEAT_ALWAYS) numberPlays = REPEAT_ALWAYS;
+	else numberPlays--;
 	// If DMA transfer is complete
-	if(DMA1->LISR & DMA_LISR_TCIF3) {
+	//if(DMA1->HISR & DMA_HISR_TCIF5) {
 		// Clear transfer complete bit (writing 1 clears bit)
-		DMA1->LIFCR |= DMA_LIFCR_CTCIF3;
+	//	DMA1->HIFCR |= DMA_HIFCR_CTCIF5;
 
 		// Clear control register
-		DMA1_Stream3->CR = 0x0;
+		// DMA1_Stream5->CR = 0x0;
 
 		/* Disable TIM6 counter */
-        	TIM6->CR1 &= ~TIM_CR1_CEN;
+        // TIM6->CR1 &= ~TIM_CR1_CEN;
 		
-		if (numberPlays != 0) WAV_Play(lastAddr, lastWAV, numberPlays-1);
+		// Disable TIM6 counter if done playing
+		// if (numberPlays != REPEAT_ALWAYS && --numberPlays == 0)
+    	//	HAL_DAC_Stop_DMA(&hdac, DAC_CHANNEL_1);
 		
-	}
+	//}
 }
 
 /**
@@ -410,70 +385,37 @@ void WAV_Play(uint32_t Addr, WAV_Format* W, int numPlays)
 	
 	/* Save data for DMA interrupt */
 	numberPlays = numPlays;
-	lastAddr = Addr;
-	lastWAV = W;	
 
-	/* Disable DMA for DAC Channel 1 */
-	DAC->CR &= ~DAC_CR_DMAEN1;
-	
-	/* Disable DMA1 Channel3 */
-	DMA1_Stream3->CR &= ~DMA_SxCR_EN;
-	
-	/* Disable TIM6 counter */
-	TIM6->CR1 &= ~TIM_CR1_CEN;
-	
-	/* Clear CHSEL, MBURST, PBURST, PL, MSIZE, PSIZE, MINC, PINC, CIRC and DIR bits */
-	DMA1_Stream3->CR &= ((uint32_t)~(DMA_SxCR_CHSEL | DMA_SxCR_MBURST | DMA_SxCR_PBURST |
-	                       DMA_SxCR_PL | DMA_SxCR_MSIZE | DMA_SxCR_PSIZE |
-	                       DMA_SxCR_MINC | DMA_SxCR_PINC | DMA_SxCR_CIRC |
-	                       DMA_SxCR_DIR));
-						 
-	/* Set bit values needed to complete DMA transfer */
-	/*
-	* Memory to Peripheral
-	* PeriphSIZE and MemSIZE = word (32 bits)
-	* Only memory address increments every iteration
-	* High priority level
-	*/
-	DMA1_Stream3->CR |= (DMA_SxCR_DIR_0 | DMA_SxCR_MINC | DMA_SxCR_PSIZE_1
-					   | DMA_SxCR_MSIZE_1 | DMA_SxCR_PL_1);					 
-					
+	/* Deinitialize everything */
+	HAL_TIM_Base_Stop(&htim6);
+    HAL_DAC_Stop(&hdac,DAC_CHANNEL_1);
+    HAL_DAC_Stop_DMA(&hdac, DAC_CHANNEL_1);
 
-	/*------------------------- DMAy Streamx NDTR Configuration ----------------*/
-	/* Write to DMAy Streamx NDTR register */
-	DMA1_Stream3->NDTR = (uint32_t)(W->DataSize / 2); // DataSize in Bytes, now in 1/2 word
+	// Set period based on sample rate
+	HAL_TIM_Base_DeInit(&htim6); // deinit
+	htim6.Init.Period = W->TIM6ARRValue; // set ARR value
+	HAL_TIM_Base_Init(&htim6); // init
+	
+	// Start TIM6
+	HAL_TIM_Base_Start(&htim6);
+	// Start DAC
+	HAL_DAC_Start(&hdac,DAC_CHANNEL_1);
+	// Start DAC with DMA
+	HAL_DAC_Start_DMA(&hdac, DAC_CHANNEL_1, (uint32_t*)Addr,
+		(uint32_t)(W->DataSize / 2), DAC_ALIGN_12B_R);
 
-	/*------------------------- DMAy Streamx PAR Configuration -----------------*/
-	/* Write to DMAy Streamx PAR */
-	// DMA1_Stream3->PAR = DAC_DHR12LD_ADDRESS; // Stereo
-	DMA1_Stream3->PAR = DAC_DHR12L1_ADDRESS; // Mono
-	/*------------------------- DMAy Streamx M0AR Configuration ----------------*/
-	/* Write to DMAy Streamx M0AR */
-	DMA1_Stream3->M0AR = (uint32_t)Addr;
-	
-	/* Enable the DMA Channel */
-	DMA1_Stream3->CR |= DMA_SxCR_EN;
-	
-	/* Enable DMA for DAC Channel 1 */
-	DAC->CR |= DAC_CR_DMAEN1;
-
-	/* Set the timer period */
-	TIM6->ARR = W->TIM6ARRValue;
-	
-	/* Enable TIM6 counter */
-	TIM6->CR1 |= TIM_CR1_CEN;
 }
 
 void WAV_Pause(void)
 {
-	/* Disable TIM6 counter */
-        TIM6->CR1 &= ~TIM_CR1_CEN;
+	/* Disable TIM6 */
+	HAL_TIM_Base_Stop(&htim6);
 }
 
 void WAV_Resume(void)
 {
-	/* Enable TIM6 counter */
-	TIM6->CR1 |= TIM_CR1_CEN;
+	/* Enable TIM6 if number of plays is nonzero */
+	if (numberPlays != 0) HAL_TIM_Base_Start(&htim6);
 }
 /**
 	* @brief  Executed at each timer interruption (option must be enabled)

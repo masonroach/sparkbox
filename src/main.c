@@ -3,7 +3,7 @@
 /* Private function prototypes -----------------------------------------------*/
 void systemInit(void);
 void lcdTest(void);
-void sdTest(void);
+uint8_t sdTest(void);
 void WAV_test(void);
 void buttonTest(void);
 
@@ -15,7 +15,10 @@ int main(void) {
 	
 	systemInit();
 	
-	sdTest();
+	if (!sdTest()) {
+		ledError(2);
+		WAV_test();
+	}
 	buttonTest();
 
 	
@@ -113,7 +116,7 @@ void buttonTest(void)
 	}
 }
 
-void sdTest(void) {
+uint8_t sdTest(void) {
  	uint32_t byteswritten, bytesread;                     /* File write/read counts */
  	uint8_t wtext[] = "Sparkbox's first file!"; /* File write buffer */
  	TCHAR fileName[] = "sparkbox.txt"; 				  /* File name */
@@ -138,15 +141,13 @@ void sdTest(void) {
 
 
 	
-	// SUCCESS, let's play a WAV file
-	ledError(2);
-
-	// PLAY WAV FILE HERE
-	WAV_test();
+	// SUCCESS
+	return 0;
 	
 end:
+	// FAIL
 	FATFS_UnLinkDriver(SDPath);
-
+	return -1;
 }
 
 #define BUFFER_BYTE 19802
@@ -157,19 +158,6 @@ void WAV_test(void)
 	char testFile[14] = "test.wav"; 
 	uint32_t* wavBuffer;
 	WAV_Format* WAV;
-
-	// Wait for button to be pressed
-	while (!readButton()) {
-		i > 8 ? i = 0 : i++;
-		ledMap((0xFF >> (8-i)) & 0xFF);
-//		ledMap(0xFF & rand32());
-		delayms(100);
-		//for (j = 0; j < 500000; j++);
-	}
-	ledAllOff();
-	ledError(0);
-	// Wait for button to be released
-	while (readButton());	
 
 	WAV = (WAV_Format*)malloc(sizeof(WAV_Format));
 	if (WAV == NULL) {
@@ -190,7 +178,7 @@ void WAV_test(void)
 		return;
 	}
 
-	WAV_Play((uint32_t)wavBuffer, WAV, 1);
+	WAV_Play((uint32_t)wavBuffer, WAV, -1);
 	if (WAV->Error != 0) {
 		ledOn(4);
 		return;

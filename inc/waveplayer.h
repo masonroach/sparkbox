@@ -59,8 +59,8 @@ Finally, the data chunk contains the sample data:
 */
 
 /* Includes ------------------------------------------------------------------*/
-#include "stm32f4xx.h"
-#include "led.h"
+//#include "stm32f4xx.h"
+#include "stm32f4xx_hal.h"
 #include "clock.h"
 #include "ff.h"
 
@@ -81,10 +81,13 @@ Finally, the data chunk contains the sample data:
 // #define WAVEPLAYER_8BIT  
 /*  */
 #define REPEAT_ALWAYS -1
+
+// 168 MHz TIM6 clock
+#define TIM6FREQ 168000000
 /**
   * @}
   */  
-  
+ 
 /** @defgroup WAVEPLAYER_Exported_Types
   * @{
   */
