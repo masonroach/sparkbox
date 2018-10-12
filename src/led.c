@@ -7,7 +7,6 @@ void initLeds(void) {
 	GPIOC->MODER  |=  0x5555;	// GPIO Modes -> output
 	GPIOC->OTYPER &= ~0xFF;		// GPIO OType -> open drain
 
-	GPIOB->MODER  |=  GPIO_MODER_MODE2_0;	// Output
 	GPIOB->OTYPER &= ~GPIO_OTYPER_OT_2;		// Open drain
 }
 
@@ -40,8 +39,11 @@ void ledAllOff(void) {
 void ledError(LED_DEBUG status) {
 	if (status) {	// Enabled, either yellow or red
 		GPIOB->MODER |= GPIO_MODER_MODE2_0;	// Set pin as output
-		status -= 1;
-		GPIOB->BSRR |= (status << 2) + (~status << 18);	// Set the color
+		if (status == LED_WARNING) {	// Warning, yellow
+			GPIOB->ODR &= ~(1 << 2);
+		} else {	// Error, red
+			GPIOB->ODR |= (1 << 2);
+		}
 	} else {		// Disabled
 		GPIOB->MODER &= ~GPIO_MODER_MODE2;	// Set pin as input
 	}
