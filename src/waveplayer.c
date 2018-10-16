@@ -402,7 +402,7 @@ void WAV_Play(uint32_t Addr, WAV_Format* W, int numPlays)
 	HAL_DAC_Start(&hdac,DAC_CHANNEL_1);
 	// Start DAC with DMA
 	HAL_DAC_Start_DMA(&hdac, DAC_CHANNEL_1, (uint32_t*)Addr,
-		(uint32_t)(W->DataSize / 2), DAC_ALIGN_12B_R);
+		(uint32_t)(W->DataSize / 2), DAC_ALIGN_12B_L);
 
 }
 

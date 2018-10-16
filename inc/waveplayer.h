@@ -82,8 +82,8 @@ Finally, the data chunk contains the sample data:
 /*  */
 #define REPEAT_ALWAYS -1
 
-// 168 MHz TIM6 clock
-#define TIM6FREQ 168000000
+// 84 MHz TIM6 clock
+#define TIM6FREQ 84000000
 /**
   * @}
   */  

@@ -155,7 +155,7 @@ end:
 void WAV_test(void)
 {
 	uint8_t i=0;
-	char testFile[14] = "test.wav"; 
+	char testFile[14] = "sinewave.wav"; 
 	uint32_t* wavBuffer;
 	WAV_Format* WAV;
 
