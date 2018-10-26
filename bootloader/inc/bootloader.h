@@ -5,8 +5,11 @@
 #include "stm32f4xx.h"
 
 /* Module defines */
-#define BOOTLOADER_SIZE_BYTES 32000
-#define PROGRAM_FLASH_START (FLASH_BASE + BOOTLOADER_SIZE_BYTES)
+#define BOOTLOADER_SIZE_BYTES 72000
+#define FILENAME_ADDR FLASH_BASE
+#define MAX_FILENAME_SIZE 63
+#define FILENAME_LEN (MAX_FILENAME_SIZE + 1)
+#define PROGRAM_FLASH_START (FILENAME_ADDR + FILENAME_LEN + BOOTLOADER_SIZE_BYTES)
 
 /* Error codes for this module */
 enum flashErrorCode {

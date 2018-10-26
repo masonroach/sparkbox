@@ -1,9 +1,12 @@
 #include "bootloader.h"
+#include "led.h"
 
-/* Private function headers */
+#define FLASH_FLAG_ALL_ERRORS (FLASH_FLAG_OPERR | \
+FLASH_FLAG_WRPERR | FLASH_FLAG_PGAERR | FLASH_FLAG_PGPERR | FLASH_FLAG_PGSERR)
+
 
 // Contains the next unused flash memory address
-uint32_t flashAddr = PROGRAM_FLASH_START;
+volatile uint32_t flashAddr = PROGRAM_FLASH_START;
 
 /* Program the flash from fatfs */
 UINT fatFsProgramFlash(char* filename, uint32_t *programAddr)
@@ -13,7 +16,7 @@ UINT fatFsProgramFlash(char* filename, uint32_t *programAddr)
 	HAL_StatusTypeDef status;
 
 	uint32_t *bytesRead = NULL;
-	uint8_t buffer;
+	uint64_t buffer;
 	
 	// Open the file
 	fres = f_open(&binFile, filename, FA_READ);
@@ -22,13 +25,17 @@ UINT fatFsProgramFlash(char* filename, uint32_t *programAddr)
 	// Check if enough memory exists for the flash (file size in bytes)
 	if (flashAddr + f_size(&binFile) > FLASH_END) return PROGRAM_TOO_BIG;
 
-	// S
-	*programAddr = flashAddr;
+	// Set the program address for the user
+	(*programAddr) = flashAddr;
+
+	// Clear all previous errors
+	__HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_ALL_ERRORS);
 
 	// Copy file into flash memory while not at the end of the file
 	while (!f_eof(&binFile)) {
-		// Read a byte
+		// Read 8 bytes
 		fres = f_read(&binFile, &buffer, 8, (UINT*)bytesRead);
+
 
 		// Check for file read error
 		if (fres != FR_OK) {
@@ -37,14 +44,18 @@ UINT fatFsProgramFlash(char* filename, uint32_t *programAddr)
 		}
 		
 		// Write a byte
-		status = HAL_FLASH_Program(FLASH_TYPEPROGRAM_BYTE, (uint32_t)flashAddr,
-			(uint64_t)buffer);
+		status = HAL_FLASH_Program(FLASH_TYPEPROGRAM_DOUBLEWORD, (uint32_t)flashAddr, 
+		buffer);
 
 		// Check for flash write error
 		if (status != HAL_OK) {
+			ledOff(1);
 			f_close(&binFile);
 			return BAD_FLASH_WRITE;
 		}
+		
+		// Increment flash address counter
+		flashAddr += sizeof(uint64_t);
 	}
 	return FLASH_SUCCESS;
 

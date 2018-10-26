@@ -5,10 +5,10 @@
 Fs = 44.1e3;
 
 % To meet spec, frequencies must be between .1-3 kHz
-f1 = 3000;
-f2 = 3000;
-f3 = 3000;
-f4 = 3000;
+f1 = 100;
+f2 = 100;
+f3 = 100;
+f4 = 100;
 
 
 % Frequency of the combined waveform
