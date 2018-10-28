@@ -11,11 +11,11 @@
  * | Name | Pin  |
  * +------+------+
  * | FRAME| PB9  | <-- Trigger on new frame
- * | CS   | PB7  |
- * | D/C  | PB6  | <-- Stands for data/command
- * | WR   | PB1  |
- * | RD   | PB0  |
  * | RESET| PB8  |
+ * | NOE  | PD4  | <-- Read
+ * | NWE  | PD5  | <-- Write
+ * | NE1  | PD7  | <-- Chip Select
+ * | A18  | PD13 | <-- Register Select (C/D)
  * | DB0  | PD14 |
  * | DB1  | PD15 |
  * | DB2  | PD0  |
@@ -35,16 +35,12 @@
  * +------+------+
  */
 
-#define LCD_CS_HIGH		GPIOB->ODR |= (1 << 7)
-#define LCD_CS_LOW		GPIOB->ODR &= ~(1 << 7)
-#define LCD_DC_HIGH		GPIOB->ODR |= (1 << 6)
-#define LCD_DC_LOW		GPIOB->ODR &= ~(1 << 6)
-#define LCD_WR_HIGH		GPIOB->ODR |= (1 << 1)
-#define LCD_WR_LOW		GPIOB->ODR &= ~(1 << 1)
 #define LCD_RESET_HIGH	GPIOB->ODR |= (1 << 8)
 #define LCD_RESET_LOW	GPIOB->ODR &= ~(1 << 8)
-#define LCD_RD_HIGH		GPIOB->ODR |= 1
-#define LCD_RD_LOW		GPIOB->ODR &= ~1
+
+#define LCD_WIDTH 240
+#define LCD_HEIGHT 320
+#define LCD_PIXELS LCD_WIDTH*LCD_HEIGHT
 
 typedef enum {
 	NOP = 0x00,
@@ -140,5 +136,8 @@ void LcdWriteCmd(uint16_t cmd);
 void LcdWriteData(uint16_t data);
 void LcdEnterSleep(void);
 void LcdExitSleep(void);
+void LcdPutPixel(uint16_t x, uint16_t y, uint16_t color);
+void LcdFillScreen(uint16_t color);
+void LcdInvertDisplay(uint8_t invert);
 
 #endif

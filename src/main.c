@@ -14,14 +14,16 @@ FIL MyFile;     /* File object */
 int main(void) {
 	
 	systemInit();
-	
+
+	lcdTest();
+
+/*	
 	if (!sdTest()) {
 		ledError(2);
 		WAV_test();
 	}
 	buttonTest();
-
-	
+*/	
 	while(1);
 	return 1;
 }
@@ -46,7 +48,7 @@ void systemInit(void) {
 	initButton();
 	initButtons();
 	initLcd();
-	WAV_Init();
+//	WAV_Init();
 //	initSdSpi();
 	// RCC->AHB1ENR    |=   RCC_AHB1ENR_GPIODEN;
 	// RCC->AHB1ENR    |=   RCC_AHB1ENR_GPIOCEN;
@@ -65,7 +67,6 @@ void systemInit(void) {
 //		ledMap(0xFF & rand32());
 		ledError(e > 2 ? e = 0 : e++);
 		delayms(100);
-		//for (j = 0; j < 500000; j++);
 	}
 	ledAllOff();
 	ledError(0);
@@ -73,17 +74,17 @@ void systemInit(void) {
 }
 
 void lcdTest(void) {
-//	LcdWriteCmd(0xFFFF);
-	while (1) {
-//		LcdWriteCmd(i++);
-		LcdWriteCmd(1);
-		LcdWriteCmd(0);
-		LcdWriteCmd(1);
-		LcdWriteCmd(0);
-		LcdWriteCmd(1);
-		while (readButton());
-		while (!readButton());
-	}
+	volatile uint32_t i = 0;
+
+	LcdFillScreen(0x001F);
+
+//	LcdPutPixel(100, 100, 0xF800);
+//	LcdPutPixel(10, 10, 0xF800);
+//	LcdPutPixel(50, 100, 0xF800);	
+
+//	LcdInvertDisplay(1);
+
+	return;
 }
 
 void buttonTest(void)

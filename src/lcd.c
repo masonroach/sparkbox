@@ -7,11 +7,11 @@
  * | Name | Pin  |
  * +------+------+
  * | FRAME| PB9  | <-- Trigger on new frame
- * | CS   | PB7  |
- * | D/C  | PB6  | <-- Stands for data/command
- * | WR   | PB1  |
- * | RD   | PB0  |
  * | RESET| PB8  |
+ * | NOE  | PD4  | <-- Read
+ * | NWE  | PD5  | <-- Write
+ * | NE1  | PD7  | <-- Chip Select
+ * | A18  | PD13 | <-- Register Select (C/D)
  * | DB0  | PD14 |
  * | DB1  | PD15 |
  * | DB2  | PD0  |
@@ -32,15 +32,15 @@
  */
 
 // Pointer to start address of FSMC
-// Magic number or something. Gotta try to find this somewhere in the
-//   datasheet/reference manual.
-volatile uint16_t *fsmc = (uint16_t *)0x60000000;
+static volatile uint16_t *fsmc_cmd = (uint16_t *)(0x60000000);
+static volatile uint16_t *fsmc_data = (uint16_t *)(0x60080000);
 
 /*
  * Prototypes for static functions
  */
 static void initFSMC(void);
 static void initILI9341(void);
+static void LcdSetPos(uint16_t x0, uint16_t x1, uint16_t y0, uint16_t y1);
 
 // Configure LCD
 void initLcd(void) {
@@ -52,66 +52,65 @@ void initLcd(void) {
 
 // Write a command to the LCD controller over FSMC
 void LcdWriteCmd(uint16_t cmd) {
-	// Pull DC low
-	LCD_DC_LOW;
-
-	// Set RD high
-	LCD_RD_HIGH;
-
-	// Pull CS low
-	LCD_CS_LOW;
-
-	// Pull WR low
-	LCD_WR_LOW;
 
 	// Set parallel data
-	*fsmc = cmd;
+	*fsmc_cmd = cmd;
 	
-	// Pull WR high
-	LCD_WR_HIGH;	// Rising edge captures data
-
-	// Set CS high
-	LCD_CS_HIGH;
 }
 
 // Write data to the LCD controller over FSMC
 void LcdWriteData(uint16_t data) {
-	// Set DC high
-	LCD_DC_HIGH;
-
-	// Pull CS low
-	LCD_CS_LOW;
-
-	// Set RD high
-	LCD_RD_HIGH;
 
 	// Set parallel data
-	*fsmc = data;
+	*fsmc_data = data;
 	
-	// Pull WR low, then high
-	LCD_WR_LOW;
-	LCD_WR_HIGH;	// Rising edge captures data
-
-	// Set CS high
-	LCD_CS_HIGH;
-
 }
 
 void LcdEnterSleep(void) {
-	LcdWriteCmd(0x28);	// Display off
-	LcdWriteCmd(0x10);	// Enter sleep mode
+	LcdWriteCmd(DISPLAY_OFF);	// Display off
+	LcdWriteCmd(ENTER_SLEEP_MODE);	// Enter sleep mode
 
 	return;
 }
 
 void LcdExitSleep(void) {
-	LcdWriteCmd(0x11);	// Sleep out
-	/******************/
-	/* DELAY 120MS    */
-	/******************/
-	LcdWriteCmd(0x29);	// Display On
+	LcdWriteCmd(SLEEP_OUT);	// Sleep out
+	delayms(120);
+	LcdWriteCmd(DISPLAY_ON);	// Display On
 
 	return;
+}
+
+void LcdPutPixel(uint16_t x, uint16_t y, uint16_t color) {
+	LcdSetPos(x, y, x, y);
+	LcdWriteData(color);
+}
+
+void LcdFillScreen(uint16_t color) {
+	uint32_t index = 200*200;
+	
+	LcdSetPos(0, 0, 200, 200);
+	while (index) {
+		LcdWriteData(color);
+	}
+}
+
+void LcdInvertDisplay(uint8_t invert) {
+	LcdWriteCmd(invert ? INVERSION_ON : INVERSION_OFF);
+}
+
+static void LcdSetPos(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1) {
+ 	LcdWriteCmd(COLUMN_ADDRESS_SET);
+	LcdWriteData(x0 >> 8);
+	LcdWriteData(x0 & 0xFF);
+	LcdWriteData(x1 >> 8);
+	LcdWriteData(x1 & 0xFF);
+	LcdWriteCmd(PAGE_ADDRESS_SET);
+	LcdWriteData(y0 >> 8);
+	LcdWriteData(y0 & 0xFF);
+	LcdWriteData(y1 >> 8);
+	LcdWriteData(y1 & 0xFF);
+	LcdWriteCmd(MEMORY_WRITE);
 }
 
 // Configure the FSMC port for LCD
@@ -128,31 +127,33 @@ static void initFSMC(void) {
 	/*
 	 * Initialize GPIOs
 	 */
-	// PB[0,1,6,7,8] as outputs
-	GPIOB->MODER &= ~(GPIO_MODER_MODER0 |	// Clear mode registers
-					  GPIO_MODER_MODER1 |
-					  GPIO_MODER_MODER6 |
-					  GPIO_MODER_MODER7 |
-					  GPIO_MODER_MODER8);
-	GPIOB->MODER |=  (GPIO_MODER_MODER0_0 |	// Set modes to output
-					  GPIO_MODER_MODER1_0 |
-					  GPIO_MODER_MODER6_0 |
-					  GPIO_MODER_MODER7_0 |
-					  GPIO_MODER_MODER8_0);
+	// PB[8,9] as outputs
+	GPIOB->MODER &= ~(GPIO_MODER_MODER8 |	// Clear mode registers
+					  GPIO_MODER_MODER9);
+	GPIOB->MODER |=  (GPIO_MODER_MODER8_0 |	// Set modes to output
+					  GPIO_MODER_MODER9_0);
 
 	// Rest of the GPIOs as alternate function
 	GPIOD->MODER &= ~(GPIO_MODER_MODER0  |	// Clear PDx mode registers
 					  GPIO_MODER_MODER1  |
+					  GPIO_MODER_MODER4  |
+					  GPIO_MODER_MODER5  |
+					  GPIO_MODER_MODER7  |
 					  GPIO_MODER_MODER8  |
 					  GPIO_MODER_MODER9  |
 					  GPIO_MODER_MODER10 |
+					  GPIO_MODER_MODER13 |
 					  GPIO_MODER_MODER14 |
 					  GPIO_MODER_MODER15);
 	GPIOD->MODER |=   GPIO_MODER_MODER0_1  |	// Set PDx modes to AF
 					  GPIO_MODER_MODER1_1  |
+					  GPIO_MODER_MODER4_1  |
+					  GPIO_MODER_MODER5_1  |
+					  GPIO_MODER_MODER7_1  |
 					  GPIO_MODER_MODER8_1  |
 					  GPIO_MODER_MODER9_1  |
 					  GPIO_MODER_MODER10_1 |
+					  GPIO_MODER_MODER13_1 |
 					  GPIO_MODER_MODER14_1 |
 					  GPIO_MODER_MODER15_1;
 
@@ -177,17 +178,25 @@ static void initFSMC(void) {
 					  GPIO_MODER_MODER15_1;
 
 	GPIOD->AFR[0] &= ~(GPIO_AFRL_AFSEL0 |	// Clear PDx AF registers
-					   GPIO_AFRL_AFSEL1);
+					   GPIO_AFRL_AFSEL1 |
+					   GPIO_AFRL_AFSEL4 |
+					   GPIO_AFRL_AFSEL5 |
+					   GPIO_AFRL_AFSEL7);
 	GPIOD->AFR[1] &= ~(GPIO_AFRH_AFSEL8  |
 					   GPIO_AFRH_AFSEL9  |
 					   GPIO_AFRH_AFSEL10 |
+					   GPIO_AFRH_AFSEL13 |
 					   GPIO_AFRH_AFSEL14 |
 					   GPIO_AFRH_AFSEL15);
 	GPIOD->AFR[0] |= (12 << GPIO_AFRL_AFSEL0_Pos) |	// Set PDx AF to 12 (FSMC)
-					 (12 << GPIO_AFRL_AFSEL1_Pos);
+					 (12 << GPIO_AFRL_AFSEL1_Pos) |
+					 (12 << GPIO_AFRL_AFSEL4_Pos) |
+					 (12 << GPIO_AFRL_AFSEL5_Pos) |
+					 (12 << GPIO_AFRL_AFSEL7_Pos);
 	GPIOD->AFR[1] |= (12 << GPIO_AFRH_AFSEL8_Pos)  |
 					 (12 << GPIO_AFRH_AFSEL9_Pos)  |
 					 (12 << GPIO_AFRH_AFSEL10_Pos) |
+					 (12 << GPIO_AFRH_AFSEL13_Pos) |
 					 (12 << GPIO_AFRH_AFSEL14_Pos) |
 					 (12 << GPIO_AFRH_AFSEL15_Pos);
 	
@@ -211,17 +220,18 @@ static void initFSMC(void) {
 					 (12 << GPIO_AFRH_AFSEL14_Pos) |
 					 (12 << GPIO_AFRH_AFSEL15_Pos);
 
-	GPIOB->OTYPER &= ~(GPIO_OTYPER_OT_0 |	// PBx push-pull
-					   GPIO_OTYPER_OT_1 |
-					   GPIO_OTYPER_OT_6 |
-					   GPIO_OTYPER_OT_7 |
-					   GPIO_OTYPER_OT_8);
+	GPIOB->OTYPER &= ~(GPIO_OTYPER_OT_8 |	// PBx push-pull
+					   GPIO_OTYPER_OT_9);
 
 	GPIOD->OTYPER &= ~(GPIO_OTYPER_OT_0  |	// PDx push-pull
 					   GPIO_OTYPER_OT_1  |
+					   GPIO_OTYPER_OT_4  |
+					   GPIO_OTYPER_OT_5  |
+					   GPIO_OTYPER_OT_7  |
 					   GPIO_OTYPER_OT_8  |
 					   GPIO_OTYPER_OT_9  |
 					   GPIO_OTYPER_OT_10 |
+					   GPIO_OTYPER_OT_13 |
 					   GPIO_OTYPER_OT_14 |
 					   GPIO_OTYPER_OT_15);
 
@@ -235,17 +245,18 @@ static void initFSMC(void) {
 					   GPIO_OTYPER_OT_14 |
 					   GPIO_OTYPER_OT_15);
 
-	GPIOB->OSPEEDR |= (GPIO_OSPEEDER_OSPEEDR0 |	// PBx very high speed
-					   GPIO_OSPEEDER_OSPEEDR1 |
-					   GPIO_OSPEEDER_OSPEEDR6 |
-					   GPIO_OSPEEDER_OSPEEDR7 |
-					   GPIO_OSPEEDER_OSPEEDR8);
+	GPIOB->OSPEEDR |= (GPIO_OSPEEDER_OSPEEDR8 |	// PBx very high speed
+					   GPIO_OSPEEDER_OSPEEDR9);
 
 	GPIOD->OSPEEDR |= (GPIO_OSPEEDER_OSPEEDR0  |	// PDx very high speed
 					   GPIO_OSPEEDER_OSPEEDR1  |
+					   GPIO_OSPEEDER_OSPEEDR4  |
+					   GPIO_OSPEEDER_OSPEEDR5  |
+					   GPIO_OSPEEDER_OSPEEDR7  |
 					   GPIO_OSPEEDER_OSPEEDR8  |
 					   GPIO_OSPEEDER_OSPEEDR9  |
 					   GPIO_OSPEEDER_OSPEEDR10 |
+					   GPIO_OSPEEDER_OSPEEDR13 |
 					   GPIO_OSPEEDER_OSPEEDR14 |
 					   GPIO_OSPEEDER_OSPEEDR15);
 
@@ -259,17 +270,18 @@ static void initFSMC(void) {
 					   GPIO_OSPEEDER_OSPEEDR14 |
 					   GPIO_OSPEEDER_OSPEEDR15);
 	
-	GPIOB->PUPDR &= ~(GPIO_PUPDR_PUPDR0 |	// PBx no pull-up/pull-down
-					  GPIO_PUPDR_PUPDR1 |
-					  GPIO_PUPDR_PUPDR6 |
-					  GPIO_PUPDR_PUPDR7 |
-					  GPIO_PUPDR_PUPDR8);
+	GPIOB->PUPDR &= ~(GPIO_PUPDR_PUPDR8 |	// PBx no pull-up/pull-down
+					  GPIO_PUPDR_PUPDR9);
 	
 	GPIOD->PUPDR &= ~(GPIO_PUPDR_PUPDR0  |	// PDx no pull-up/pull-down
 					  GPIO_PUPDR_PUPDR1  |
+					  GPIO_PUPDR_PUPDR4  |
+					  GPIO_PUPDR_PUPDR5  |
+					  GPIO_PUPDR_PUPDR7  |
 					  GPIO_PUPDR_PUPDR8  |
 					  GPIO_PUPDR_PUPDR9  |
 					  GPIO_PUPDR_PUPDR10 |
+					  GPIO_PUPDR_PUPDR13 |
 					  GPIO_PUPDR_PUPDR14 |
 					  GPIO_PUPDR_PUPDR15);
 
@@ -286,255 +298,107 @@ static void initFSMC(void) {
 	/*
 	 * Initialize FSMC using bank 1 NORSRAM1
 	 */
-//	FSMC_Bank1->BTCR[0] &= ~FSMC_BCR1_CBURSTRW;	// ???
+	FSMC_Bank1->BTCR[0] &= ~FSMC_BCR1_CBURSTRW;	// Burst mode disable
 	FSMC_Bank1->BTCR[0] &= ~FSMC_BCR1_ASYNCWAIT;	// Disable sync-wait signal
 	FSMC_Bank1->BTCR[0] &= ~FSMC_BCR1_EXTMOD;	// Disable extended mode
 	FSMC_Bank1->BTCR[0] &= ~FSMC_BCR1_WAITEN;	// Disable wait bit
 	FSMC_Bank1->BTCR[0] |=  FSMC_BCR1_WREN;		// Enable write operations
+	FSMC_Bank1->BTCR[0] &= ~FSMC_BCR1_WAITCFG;	// Wait timing before WRITE
 	FSMC_Bank1->BTCR[0] &= ~FSMC_BCR1_WRAPMOD;	// Disable wrapped burst mode
 	FSMC_Bank1->BTCR[0] &= ~FSMC_BCR1_BURSTEN;	// Disable burst mode
 	FSMC_Bank1->BTCR[0] |=  FSMC_BCR1_FACCEN;	// Enable flash operations
+	FSMC_Bank1->BTCR[0] &= ~FSMC_BCR1_WAITPOL;	// Wait signal polarity low
 	FSMC_Bank1->BTCR[0] &= ~FSMC_BCR1_MWID;		// Clear databus width bits
 	FSMC_Bank1->BTCR[0] |=  FSMC_BCR1_MWID_0;	// Databus width -> 16-bits
+	FSMC_Bank1->BTCR[0] &= ~FSMC_BCR1_MTYP;		// Memory type -> SRAM
 	FSMC_Bank1->BTCR[0] &= ~FSMC_BCR1_MUXEN;	// Disable data multiplexing
 	FSMC_Bank1->BTCR[0] |=  FSMC_BCR1_MBKEN;	// Enable memory bank
 
 	FSMC_Bank1->BTCR[1] &= ~FSMC_BTR1_ACCMOD;	// Access mode A
 	FSMC_Bank1->BTCR[1] &= ~FSMC_BTR1_DATAST;	// Clear DATAST bits
-	FSMC_Bank1->BTCR[1] |= (4 << FSMC_BTR1_DATAST_Pos);	// DATAST = 4 x HCLK
-	FSMC_Bank1->BTCR[1] &= ~FSMC_BTR1_BUSTURN;	// Set short bus turn around
-//	FSMC_Bank1->BTCR[1] &= ~FSMC_BTR1_ADDHLD;	// Disable Address hold
-	FSMC_Bank1->BTCR[1] &= ~FSMC_BTR1_ADDSET;	// Disable Address hold
+	FSMC_Bank1->BTCR[1] |= (8 << FSMC_BTR1_DATAST_Pos);	// DATAST = 4 x HCLK
+	FSMC_Bank1->BTCR[1] &= ~FSMC_BTR1_BUSTURN;	// Clear bus turn around bits
+	FSMC_Bank1->BTCR[1] |=  FSMC_BTR1_ADDHLD;	// Enable Address hold
+	FSMC_Bank1->BTCR[1] &= ~FSMC_BTR1_ADDSET;	// Clear Address hold
+	FSMC_Bank1->BTCR[1] |= (8 << FSMC_BTR1_ADDSET_Pos); // Set Address hold
 
 	return;
 }
 
 /******************************************************************************/
-/* FROM THE EXAMPLE CODE PROVIDED, NOT YET UPDATED ****************************/
+/* FROM PROVIDED EXAMPLE CODE, DO NOT CHANGE YET   ****************************/
 /******************************************************************************/
 static void initILI9341(void) {	 
-	volatile uint32_t i;
-
-	LCD_CS_HIGH;
+	LCD_RESET_HIGH;
 	delayms(5);
 	LCD_RESET_LOW;
 	delayms(10);
 	LCD_RESET_HIGH;
-	delayms(120);
+	delayms(250);
 
-	LcdWriteCmd(SOFTWARE_RESET);
-	delayms(120);
-	LcdWriteCmd(DISPLAY_OFF);
+	LcdWriteCmd(0xCB);  
+    LcdWriteData(0x39); 
+    LcdWriteData(0x2C); 
+    LcdWriteData(0x00); 
+    LcdWriteData(0x34); 
+    LcdWriteData(0x02); 
 
-/*
- 	LcdWriteCmd(0xCF);   
-	LcdWriteData(0x00); 
-	LcdWriteData(0xc3); 
-	LcdWriteData(0X30); 
-      
- 	LcdWriteCmd(0xED);   
-	LcdWriteData(0x64); 
-	LcdWriteData(0x03); 
-	LcdWriteData(0X12); 
-	LcdWriteData(0X81); 
-      
- 	LcdWriteCmd(0xE8);   
-	LcdWriteData(0x85); 
-	LcdWriteData(0x10); 
-	LcdWriteData(0x79); 
-      
- 	LcdWriteCmd(0xCB);   
-	LcdWriteData(0x39); 
-	LcdWriteData(0x2C); 
-	LcdWriteData(0x00); 
-	LcdWriteData(0x34); 
-	LcdWriteData(0x02); 
-      
- 	LcdWriteCmd(0xF7);   
-	LcdWriteData(0x20); 
-      
- 	LcdWriteCmd(0xEA);   
-	LcdWriteData(0x00); 
-	LcdWriteData(0x00); 
-      
- 	LcdWriteCmd(0xC0);    //Power control 
-	LcdWriteData(0x22);   //VRH[5:0] 
-      
- 	LcdWriteCmd(0xC1);    //Power control 
-	LcdWriteData(0x11);   //SAP[2:0];BT[3:0] 
-      
- 	LcdWriteCmd(0xC5);    //VCM control 
-	LcdWriteData(0x3d); 
-    //LCD_DataWrite_ILI9341(0x30); 
-	LcdWriteData(0x20); 
-      
- 	LcdWriteCmd(0xC7);    //VCM control2 
-    //LCD_DataWrite_ILI9341(0xBD); 
-	LcdWriteData(0xAA); //0xB0 
-    
- 	LcdWriteCmd(0x36);    // Memory Access Control 
-	LcdWriteData(0x08); 
-      
- 	LcdWriteCmd(0x3A);   
-	LcdWriteData(0x55); 
-    
- 	LcdWriteCmd(0xB1);   
-	LcdWriteData(0x00);   
-	LcdWriteData(0x13); 
-      
- 	LcdWriteCmd(0xB6);    // Display Function Control 
-	LcdWriteData(0x0A); 
-	LcdWriteData(0xA2); 
-    
- 	LcdWriteCmd(0xF6);     
-	LcdWriteData(0x01); 
-	LcdWriteData(0x30); 
-      
- 	LcdWriteCmd(0xF2);    // 3Gamma Function Disable 
-	LcdWriteData(0x00); 
-      
- 	LcdWriteCmd(0x26);    //Gamma curve selected 
-	LcdWriteData(0x01); 
-      
- 	LcdWriteCmd(0xE0);    //Set Gamma 
-	LcdWriteData(0x0F); 
-	LcdWriteData(0x3F); 
-	LcdWriteData(0x2F); 
-	LcdWriteData(0x0C); 
-	LcdWriteData(0x10); 
-	LcdWriteData(0x0A); 
-	LcdWriteData(0x53); 
-	LcdWriteData(0XD5); 
-	LcdWriteData(0x40); 
-	LcdWriteData(0x0A); 
-	LcdWriteData(0x13); 
-	LcdWriteData(0x03); 
-	LcdWriteData(0x08); 
-	LcdWriteData(0x03); 
-	LcdWriteData(0x00); 
-      
- 	LcdWriteCmd(0XE1);    //Set Gamma 
-	LcdWriteData(0x00); 
-	LcdWriteData(0x00); 
-	LcdWriteData(0x10); 
-	LcdWriteData(0x03); 
-	LcdWriteData(0x0F); 
-	LcdWriteData(0x05); 
-	LcdWriteData(0x2C); 
-	LcdWriteData(0xA2); 
-	LcdWriteData(0x3F); 
-	LcdWriteData(0x05); 
-	LcdWriteData(0x0E); 
-	LcdWriteData(0x0C); 
-	LcdWriteData(0x37); 
-	LcdWriteData(0x3C); 
-	LcdWriteData(0x0F); 
-      
- 	LcdWriteCmd(0x11);    //Exit Sleep 
-	for (i = 0; i < 500000; i++); //delayms(120);
- 	LcdWriteCmd(0x29);    //Display on 
-	for (i = 0; i < 200000; i++); //delayms(50);
-*/    //Power
-    LcdWriteCmd(POWER_1); //power control
-    LcdWriteData(0x26);
-    LcdWriteCmd(POWER_2); //power control
-    LcdWriteData(0x11);
-    LcdWriteCmd(VCOM_1); //vcom control
-    LcdWriteData(0x5c); //35
-    LcdWriteData(0x4c); //3E
-    LcdWriteCmd(VCOM_2); //vcom control
-    LcdWriteData(0x94);
+    LcdWriteCmd(0xCF);  
+    LcdWriteData(0x00); 
+    LcdWriteData(0XC1); 
+    LcdWriteData(0X30); 
 
-    //Pixel format
-    LcdWriteCmd(PIXEL_FORMAT_SET);
-    LcdWriteData(0x65); //16-bit 5-6-5 MCU
+    LcdWriteCmd(0xE8);  
+    LcdWriteData(0x85); 
+    LcdWriteData(0x00); 
+    LcdWriteData(0x78); 
 
-    //Memory access
-    LcdWriteCmd(MEMORY_ACCESS_CTRL);
-    LcdWriteData(0x0048); //Swap row/columns, RGB/BGR swap
+    LcdWriteCmd(0xEA);  
+    LcdWriteData(0x00); 
+    LcdWriteData(0x00); 
+ 
+    LcdWriteCmd(0xED);  
+    LcdWriteData(0x64); 
+    LcdWriteData(0x03); 
+    LcdWriteData(0X12); 
+    LcdWriteData(0X81); 
 
-    //Frame Rate
-    LcdWriteCmd(FRAME_RATE_NORMAL); // frame rate
-    LcdWriteData(0x00);
-    LcdWriteData(0x1B); //70
+    LcdWriteCmd(0xF7);  
+    LcdWriteData(0x20); 
+  
+    LcdWriteCmd(0xC0);    //Power control 
+    LcdWriteData(0x19);   //VRH[5:0] 
+ 
+    LcdWriteCmd(0xC1);    //Power control 
+    LcdWriteData(0x11);   //SAP[2:0];BT[3:0] 
 
-    //Gamma
-    LcdWriteCmd(ENABLE_3_GAMMA); // 3Gamma Function Disable
-    LcdWriteData(0x08);
+    LcdWriteCmd(0xC5);    //VCM control 
+    LcdWriteData(0x3d);   //Contrast
+    LcdWriteData(0x2B); 
+ 
+    LcdWriteCmd(0xC7);    //VCM control2 
+    LcdWriteData(0xC1);   //--
+ 
+    LcdWriteCmd(0x36);    // Memory Access Control 
+    LcdWriteData(0x48);   
 
-    LcdWriteCmd(GAMMA_SET);
-    LcdWriteData(0x01); // gamma set 4 gamma curve 01/02/04/08
+    LcdWriteCmd(0x3A);    
+    LcdWriteData(0x55); 
 
-    LcdWriteCmd(POSITIVE_GAMMA_CORRECT); //positive gamma correction
-    LcdWriteData(0x1f);
-    LcdWriteData(0x1a);
-    LcdWriteData(0x18);
-    LcdWriteData(0x0a);
-    LcdWriteData(0x0f);
-    LcdWriteData(0x06);
-    LcdWriteData(0x45);
-    LcdWriteData(0x87);
-    LcdWriteData(0x32);
-    LcdWriteData(0x0a);
-    LcdWriteData(0x07);
-    LcdWriteData(0x02);
-    LcdWriteData(0x07);
-    LcdWriteData(0x05);
-    LcdWriteData(0x00);
-
-    LcdWriteCmd(NEGATIVE_GAMMA_CORRECT); //negative gamma correction
-    LcdWriteData(0x00);
-    LcdWriteData(0x25);
-    LcdWriteData(0x27);
-    LcdWriteData(0x05);
-    LcdWriteData(0x10);
-    LcdWriteData(0x09);
-    LcdWriteData(0x3a);
-    LcdWriteData(0x78);
-    LcdWriteData(0x4d);
-    LcdWriteData(0x05);
-    LcdWriteData(0x18);
-    LcdWriteData(0x0d);
-    LcdWriteData(0x38);
-    LcdWriteData(0x3a);
-    LcdWriteData(0x1f);
-
-    //Set the column and page ranges
-    LcdWriteCmd(COLUMN_ADDRESS_SET); // column set
-    LcdWriteData(0x00);
-    LcdWriteData(0x00);
-    LcdWriteData(0x00);
-    LcdWriteData(0xEF);
-    LcdWriteCmd(PAGE_ADDRESS_SET); // page address set
-    LcdWriteData(0x00);
-    LcdWriteData(0x00);
-    LcdWriteData(0x01);
-    LcdWriteData(0x3F);
-
-    //entry mode set
-    LcdWriteCmd(ENTRY_MODE_SET);
-    LcdWriteData(0x07);
-
-    // display function control
-    LcdWriteCmd(DISPLAY_FUNCTION);
-    LcdWriteData(0x0a);
+    LcdWriteCmd(0xB1);    
+    LcdWriteData(0x00);  
+    LcdWriteData(0x18); 
+ 
+    LcdWriteCmd(0xB6);    // Display Function Control 
+    LcdWriteData(0x08); 
     LcdWriteData(0x82);
-    LcdWriteData(0x27);
-    LcdWriteData(0x00);
-
-    //MDT- for reading data back
-    LcdWriteCmd(INTERFACE_CONTROL);
-    LcdWriteData(0x01);
-    LcdWriteData(0x01);
-    LcdWriteData(0x00);
-
-    // Sleep Out
-    LcdWriteCmd(SLEEP_OUT);
-	delayms(120);
-
-    //Display On
-    LcdWriteCmd(DISPLAY_ON); //Turn the display on
-
+    LcdWriteData(0x27);  
+ 
+    LcdWriteCmd(0x11);    //Exit Sleep 
+    delayms(120); 
+				
+    LcdWriteCmd(0x29);    //Display on 
+    LcdWriteCmd(0x2c);
 
 	return;
 }
