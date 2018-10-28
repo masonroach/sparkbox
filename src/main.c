@@ -74,13 +74,7 @@ void systemInit(void) {
 void lcdTest(void) {
 	volatile uint32_t i = 0;
 
-	LcdFillScreen(0x001F);
-
-//	LcdPutPixel(100, 100, 0xF800);
-//	LcdPutPixel(10, 10, 0xF800);
-//	LcdPutPixel(50, 100, 0xF800);	
-
-//	LcdInvertDisplay(1);
+	LcdFillScreen(LCD_COLOR_BLUE);
 
 	return;
 }

@@ -87,10 +87,10 @@ void LcdPutPixel(uint16_t x, uint16_t y, uint16_t color) {
 }
 
 void LcdFillScreen(uint16_t color) {
-	uint32_t index = 200*200;
+	uint32_t index = LCD_PIXELS;
 	
-	LcdSetPos(0, 0, 200, 200);
-	while (index) {
+	LcdSetPos(0, 0, LCD_WIDTH, LCD_HEIGHT);
+	while (index--) {
 		LcdWriteData(color);
 	}
 }

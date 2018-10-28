@@ -38,9 +38,17 @@
 #define LCD_RESET_HIGH	GPIOB->ODR |= (1 << 8)
 #define LCD_RESET_LOW	GPIOB->ODR &= ~(1 << 8)
 
+// LCD dimensions
 #define LCD_WIDTH 240
 #define LCD_HEIGHT 320
 #define LCD_PIXELS LCD_WIDTH*LCD_HEIGHT
+
+// LCD sample colors (565 Format)
+#define LCD_COLOR_BLUE	0x001F
+#define LCD_COLOR_RED	0xF800
+#define LCD_COLOR_GREEN	0x07E0
+#define LCD_COLOR_BLACK 0x0000
+#define LCD_COLOR_WHITE 0xFFFF
 
 typedef enum {
 	NOP = 0x00,
