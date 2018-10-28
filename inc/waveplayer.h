@@ -82,8 +82,8 @@ Finally, the data chunk contains the sample data:
 /*  */
 #define REPEAT_ALWAYS -1
 
-// 168 MHz TIM6 clock
-#define TIM6FREQ 168000000
+// 84 MHz TIM6 clock
+#define TIM6FREQ 84000000
 /**
   * @}
   */  
@@ -110,6 +110,7 @@ typedef struct
   uint32_t  DataSize;
   uint32_t  TIM6ARRValue;
   uint32_t  SpeechDataOffset;
+  uint32_t *DataBuffer;
   uint16_t  Error;
 } WAV_Format;
 
@@ -125,7 +126,9 @@ typedef enum
   Unsupporetd_Bits_Per_Sample,
   Unvalid_DataChunk_ID,
   Unsupporetd_ExtraFormatBytes,
-  Unvalid_FactChunk_ID
+  Unvalid_FactChunk_ID,
+  BufferAllocationFailed,
+  FileReadFailed
 } ErrorCode;
 
 /**
@@ -181,10 +184,11 @@ typedef enum
   */
 // void Menu_WavePlayerFunc(void);
 void WAV_Init(void);
-uint8_t WAV_Import(const char* FileName, WAV_Format* W, uint32_t* Buffer);
-void WAV_Play(uint32_t Addr, WAV_Format* W, int numPlays);
+uint8_t WAV_Import(const char* FileName, WAV_Format* W);
+void WAV_Play(WAV_Format* W, int numPlays);
 void WAV_Pause(void);
 void WAV_Resume(void);
+void WAV_Destroy(WAV_Format* W);
 #ifdef __cplusplus
 }
 #endif

@@ -30,7 +30,6 @@ int main(void) {
 
 void systemInit(void) {
 	int8_t i = 0, e = 0;
-	volatile uint32_t j = 0;
 	
 	/* STM32F4xx HAL library initialization:
        - Configure the Flash prefetch, instruction and Data caches
@@ -48,13 +47,12 @@ void systemInit(void) {
 	initButton();
 	initButtons();
 	initLcd();
-//	WAV_Init();
+	WAV_Init();
 //	initSdSpi();
 	// RCC->AHB1ENR    |=   RCC_AHB1ENR_GPIODEN;
 	// RCC->AHB1ENR    |=   RCC_AHB1ENR_GPIOCEN;
 	
 
-	
 	/*
 	 * Initialization is complete. User can press the button to continue at
 	 * any time. Until then, a single serial message will be sent, and the
@@ -122,7 +120,6 @@ uint8_t sdTest(void) {
  	uint8_t wtext[] = "Sparkbox's first file!"; /* File write buffer */
  	TCHAR fileName[] = "sparkbox.txt"; 				  /* File name */
 	uint8_t rtext[100];
-	volatile int i;
 
 	if (FATFS_LinkDriver(&SD_Driver, SDPath) != 0) {goto end;}
 	if (f_mount(&SDFatFs, (TCHAR const*)SDPath, 0) != FR_OK) {goto end;}
@@ -151,13 +148,9 @@ end:
 	return -1;
 }
 
-#define BUFFER_BYTE 19802
-#define BUFFER_WORD ((BUFFER_BYTE / 4)+1)
 void WAV_test(void)
 {
-	uint8_t i=0;
-	char testFile[14] = "test.wav"; 
-	uint32_t* wavBuffer;
+	char testFile[20] = "youGotMail.wav"; 
 	WAV_Format* WAV;
 
 	WAV = (WAV_Format*)malloc(sizeof(WAV_Format));
@@ -166,20 +159,13 @@ void WAV_test(void)
 		return;
 	}
 
-	wavBuffer = (uint32_t*)malloc(sizeof(uint32_t) * BUFFER_WORD);
-	if (wavBuffer == NULL) {
-		ledOn(1);
-		return;
-	}
-
-
-	WAV_Import(testFile, WAV, wavBuffer);
+	WAV_Import(testFile, WAV);
 	if (WAV->Error != 0) {
 		ledOn(2);
 		return;
 	}
 
-	WAV_Play((uint32_t)wavBuffer, WAV, -1);
+	WAV_Play(WAV, -1);
 	if (WAV->Error != 0) {
 		ledOn(4);
 		return;
@@ -187,8 +173,7 @@ void WAV_test(void)
 	
 
 	// Don't want to free memory the DMA is transferring
-	// free(WAV);
-	// free(wavBuffer);
+	// WAV_Destroy(WAV);
 
 	return;
 	

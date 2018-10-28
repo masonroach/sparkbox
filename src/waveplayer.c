@@ -132,11 +132,15 @@ void WavePlayer_ReadAndParse(const char* WavName, WAV_Format* WAVE_Format)
 	uint32_t temp = 0x00;
 	uint32_t extraformatbytes = 0;
 	uint16_t TempBuffer[_MAX_SS];
-	uint8_t i, res;
+	uint8_t res;
 	
 	f_open(&F, WavName, FA_READ);
 
 	res = f_read(&F, TempBuffer, _MAX_SS, &BytesRead);
+	if (res) {
+		WAVE_Format->Error = FileReadFailed;
+		return;
+	}
 
 	/* Read chunkID, must be 'RIFF'  -------------------------------------------*/
 	temp = ReadUnit((uint8_t*)TempBuffer, 0, 4, BigEndian);
@@ -177,16 +181,14 @@ void WavePlayer_ReadAndParse(const char* WavName, WAV_Format* WAVE_Format)
 		return;
 	}
 
-	/* Read the number of channels, must be 0x01 (Mono) or 0x02 (Stereo) ----------------------*/
+	/* Read the number of channels, must be 0x01 (Mono) ----------------------*/
 	WAVE_Format->NumChannels = ReadUnit((uint8_t*)TempBuffer, 22, 2, LittleEndian);
 	
-	/*
-	if(WAVE_Format->NumChannels != WAVEPLAYER_CHANNEL){
+	if(WAVE_Format->NumChannels != CHANNEL_MONO){
 		f_close(&F);
 		WAVE_Format->Error = Unsupporetd_Number_Of_Channel;
-		return(&WAVE_Format);
+		return;
 	}
-	*/
 
 	/* Read the Sample Rate ----------------------------------------------------*/
 	WAVE_Format->SampleRate = ReadUnit((uint8_t*)TempBuffer, 24, 4, LittleEndian);
@@ -209,7 +211,7 @@ void WavePlayer_ReadAndParse(const char* WavName, WAV_Format* WAVE_Format)
 	/* Read the number of bits per sample --------------------------------------*/
 	WAVE_Format->BitsPerSample = ReadUnit((uint8_t*)TempBuffer, 34, 2, LittleEndian);
 	
-	if(WAVE_Format->BitsPerSample != BITS_PER_SAMPLE_16){
+	if (WAVE_Format->BitsPerSample != BITS_PER_SAMPLE_16) {
 		f_close(&F);
 		WAVE_Format->Error = Unsupporetd_Bits_Per_Sample;
 		return;
@@ -259,20 +261,26 @@ void WavePlayer_ReadAndParse(const char* WavName, WAV_Format* WAVE_Format)
 	* @brief  Reads .WAV file into memory
 	* @param  FileName: pointer to the wave file name to be read
 	* @param  FileLen: pointer to the wave struct
-	* @param  Buffer: pointer to the memory where WAV data is DMA accessible
 	* @retval None
 	*/
-uint8_t WAV_Import(const char* FileName, WAV_Format* W, uint32_t* Buffer)
+uint8_t WAV_Import(const char* FileName, WAV_Format* W)
 {
 	UINT BytesRead;
 
 	/* Read the Speech wave file status */
 	WavePlayer_ReadAndParse((const char*)FileName, W);
 
-	if(W->Error != Valid_WAVE_File){
+	if (W->Error != Valid_WAVE_File) {
 		return W->Error;
 	}
 	
+	/* Allocate memory for wav file */
+	W->DataBuffer = (uint32_t*)malloc(sizeof(uint8_t) * W->DataSize);
+	if (W->DataBuffer == NULL) {
+		W->Error = BufferAllocationFailed;
+		return W->Error;
+	}
+
 	/* Open wave data file */
 	f_open(&F, FileName, FA_READ);
 	
@@ -280,13 +288,13 @@ uint8_t WAV_Import(const char* FileName, WAV_Format* W, uint32_t* Buffer)
 	f_lseek(&F, W->SpeechDataOffset);
 
 	/* Store data in buffer selected by user */
- 	f_read(&F, Buffer, W->DataSize, &BytesRead);
+ 	f_read(&F, W->DataBuffer, W->DataSize, &BytesRead);
 
 	/* Close file */
 	f_close(&F);
 
-	/* Convert 16 Bit to 12 Bit format */
-	ToggleBufferSign(Buffer, W->DataSize / 4);
+	/* Convert 16 Bit Signed to 16 Bit Unsigned */
+	ToggleBufferSign(W->DataBuffer, W->DataSize / 4);
 
 	return 0;
 }  
@@ -373,7 +381,7 @@ static void ToggleBufferSign(uint32_t* pBuffer, uint32_t BufferSize)
 	* @param  Size: Buffer size  
 	* @retval None
 	*/
-void WAV_Play(uint32_t Addr, WAV_Format* W, int numPlays)
+void WAV_Play(WAV_Format* W, int numPlays)
 {
 	
 	// Do not play if number of plays is 0
@@ -400,9 +408,10 @@ void WAV_Play(uint32_t Addr, WAV_Format* W, int numPlays)
 	HAL_TIM_Base_Start(&htim6);
 	// Start DAC
 	HAL_DAC_Start(&hdac,DAC_CHANNEL_1);
-	// Start DAC with DMA
-	HAL_DAC_Start_DMA(&hdac, DAC_CHANNEL_1, (uint32_t*)Addr,
-		(uint32_t)(W->DataSize / 2), DAC_ALIGN_12B_R);
+	// Start DAC with DMA (12 Bit DAC)
+	// 12 bit left alignment ignores 4 lsb of 16 bit data
+	HAL_DAC_Start_DMA(&hdac, DAC_CHANNEL_1, W->DataBuffer,
+		(uint32_t)(W->DataSize / 2), DAC_ALIGN_12B_L);
 
 }
 
@@ -416,6 +425,13 @@ void WAV_Resume(void)
 {
 	/* Enable TIM6 if number of plays is nonzero */
 	if (numberPlays != 0) HAL_TIM_Base_Start(&htim6);
+}
+
+void WAV_Destroy(WAV_Format* W)
+{
+	/* Free the previously allocated data buffer */
+	free(W->DataBuffer);
+	return;
 }
 /**
 	* @brief  Executed at each timer interruption (option must be enabled)
