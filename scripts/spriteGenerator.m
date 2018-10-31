@@ -18,11 +18,20 @@ width = size(A, 2);
 
 %% Build the color palette
 palette = zeros(15, 3);
-pColors = 1;
+pColors = 0;
 for y = 1:height
     for x = 1:width
     
         if (A(y,x)) % Check to see if the pixel is transparent
+            % If no colors are in the palette yet, add the color
+            if (pColors == 0)
+                    palette(pColors+1, 1) = R(y,x);
+                    palette(pColors+1, 2) = G(y,x);
+                    palette(pColors+1, 3) = B(y,x);
+                    pColors = pColors + 1;
+                    
+                    continue;
+            end
             for pnum = 1:pColors
                 
                 % If the color is already on the palette, skip
@@ -34,9 +43,9 @@ for y = 1:height
                 
                 % If the color is not on the palette add it
                 if (pnum == pColors)
-                    palette(pColors, 1) = R(y,x);
-                    palette(pColors, 2) = G(y,x);
-                    palette(pColors, 3) = B(y,x);
+                    palette(pColors+1, 1) = R(y,x);
+                    palette(pColors+1, 2) = G(y,x);
+                    palette(pColors+1, 3) = B(y,x);
                     pColors = pColors + 1;
                     
                     break;
@@ -105,6 +114,7 @@ fclose(fout);
 %% DEBUGGING ONLY
 % Output c file
 
+% Print Headers
 coutName = strrep(inputPng, '.png', '.c');
 cout = fopen(coutName, 'w');
 fprintf(cout, 'const uint16_t fakeSpriteFile[] = {\n');
@@ -115,14 +125,19 @@ fprintf(cout, '\t0x%04X,\t// Reserved\n', 0);
 fprintf(cout, '\t0x%04X,\t// Reserved\n', 0);
 fprintf(cout, '\t0x%04X,\t// Reserved\n', 0);
 fprintf(cout, '\t0x%04X,\t// Reserved\n', 0);
+
+% Print palette
 for i = 1:15
     fprintf(cout, '\t0x%04X,\t// Palette.%d\n', finalPalette(i), i);
 end
 
+% Print data as uint16 to mimic being in a file
 for i = 1:4:size(converted)
     fprintf(cout, '\t0x%x%x%x%x,\t// Data[%d..%d]\n', converted(i+3), converted(i+2), converted(i+1), converted(i), i, i+3);
 end
 
+% Print footer
 fprintf(cout, '};\n');
 
+% Close file
 fclose(cout);
