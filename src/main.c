@@ -72,9 +72,50 @@ void systemInit(void) {
 }
 
 void lcdTest(void) {
-	volatile uint32_t i = 0;
+	uint8_t *test = (uint8_t *)"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-	LcdFillScreen(LCD_COLOR_BLUE);
+	// Test lcd coordinates/orientation
+	LcdPutPixel(0, 0, LCD_COLOR_RED);
+	LcdDrawRectangle(0, 0, 10, 10, LCD_COLOR_RED);
+	LcdPutPixel(319, 0, LCD_COLOR_BLUE);
+	LcdDrawRectangle(310, 0, 10, 10, LCD_COLOR_BLUE);
+	LcdPutPixel(0, 239, LCD_COLOR_GREEN);
+	LcdDrawRectangle(0, 229, 10, 10, LCD_COLOR_GREEN);
+
+	while (!readButton());
+	delayms(50);
+	while (readButton());
+
+	// Basic screen drawing tests
+	LcdFillScreen(LCD_COLOR_BLACK);
+	LcdDrawRectangle((LCD_WIDTH-70)/2, (LCD_HEIGHT-70)/2, 70, 70, LCD_COLOR_WHITE);
+	LcdDrawRectangle(10, 200, 300, 1, LCD_COLOR_WHITE);
+	LcdDrawString(20, 10, test, LCD_COLOR_WHITE, LCD_COLOR_BLACK);
+	LcdDrawString(140, 130, (uint8_t *)"SPARKBOX", LCD_COLOR_BLACK, LCD_COLOR_WHITE);
+	LcdDrawInt(20, 120, 256, LCD_COLOR_WHITE, LCD_COLOR_BLACK);
+	LcdDrawHex(20, 150, 0xDEAD, LCD_COLOR_WHITE, LCD_COLOR_BLACK);
+
+	while (!readButton());
+	delayms(50);
+	while (readButton())
+
+	// Test sprites
+	LcdFillScreenCheckered();
+	test_drawSprite();
+
+	while (!readButton());
+	delayms(50);
+	while (readButton())
+
+	// Test filling screen
+	while (1) {
+		LcdFillScreen(LCD_COLOR_BLUE);
+		delayms(1000);
+		LcdFillScreen(LCD_COLOR_RED);
+		delayms(1000);
+		LcdFillScreen(LCD_COLOR_GREEN);
+		delayms(1000);
+	}
 
 	return;
 }

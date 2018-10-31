@@ -22,7 +22,6 @@
 // #include "pwm.h"
 #include "sparkboxButtons.h"
 #include "waveplayer.h"
-// #include "stdlib.h"
-
+#include "sprite.h"
 
 #endif

@@ -40,7 +40,6 @@ static volatile uint16_t *fsmc_data = (uint16_t *)(0x60080000);
  */
 static void initFSMC(void);
 static void initILI9341(void);
-static void LcdSetPos(uint16_t x0, uint16_t x1, uint16_t y0, uint16_t y1);
 
 // Configure LCD
 void initLcd(void) {
@@ -81,25 +80,8 @@ void LcdExitSleep(void) {
 	return;
 }
 
-void LcdPutPixel(uint16_t x, uint16_t y, uint16_t color) {
-	LcdSetPos(x, y, x, y);
-	LcdWriteData(color);
-}
-
-void LcdFillScreen(uint16_t color) {
-	uint32_t index = LCD_PIXELS;
-	
-	LcdSetPos(0, 0, LCD_WIDTH, LCD_HEIGHT);
-	while (index--) {
-		LcdWriteData(color);
-	}
-}
-
-void LcdInvertDisplay(uint8_t invert) {
-	LcdWriteCmd(invert ? INVERSION_ON : INVERSION_OFF);
-}
-
-static void LcdSetPos(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1) {
+// Sets the drawing window for following write commands
+void LcdSetPos(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1) {
  	LcdWriteCmd(COLUMN_ADDRESS_SET);
 	LcdWriteData(x0 >> 8);
 	LcdWriteData(x0 & 0xFF);
@@ -112,6 +94,188 @@ static void LcdSetPos(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1) {
 	LcdWriteData(y1 & 0xFF);
 	LcdWriteCmd(MEMORY_WRITE);
 }
+
+// Draws a single pixel at (x, y)
+void LcdPutPixel(uint16_t x, uint16_t y, uint16_t color) {
+	LcdSetPos(x, y, x, y);
+	LcdWriteData(color);
+}
+
+// Fills the whole LCD screen with a single color
+void LcdFillScreen(uint16_t color) {
+	uint32_t index = LCD_PIXELS;
+	
+	LcdSetPos(0, 0, LCD_WIDTH, LCD_HEIGHT);
+	while (--index) {
+		LcdWriteData(color);
+	}
+}
+
+// Fills the screen with a checkerboard pattern
+void LcdFillScreenCheckered(void) {
+	uint32_t index = LCD_PIXELS;
+	
+	LcdSetPos(0, 0, LCD_WIDTH, LCD_HEIGHT);
+	while (--index) {
+		// Check checkered row, then column, and then xor them
+		if ((index%10 >= 5) ^ (index/240 % 10 >= 5)) {
+			LcdWriteData(LCD_COLOR_BLACK);
+		} else {
+			LcdWriteData(LCD_COLOR_WHITE);
+		}
+	}
+}
+
+// Draws a rectangle of width*height at (x, y)
+void LcdDrawRectangle(uint16_t x, uint16_t y, uint16_t width,
+	uint16_t height, uint16_t color) {
+	uint32_t index = width*height;
+	
+	LcdSetPos(x, y, x+width, y+height);
+	while (--index) {
+		LcdWriteData(color);
+	}
+}
+
+// Inverts all colors on the display
+void LcdInvertDisplay(uint8_t invert) {
+	LcdWriteCmd(invert ? INVERSION_ON : INVERSION_OFF);
+}
+
+// Optional text functions
+#if LCD_TEXT==1
+// Decoding array for chars
+const uint64_t charDecode[] = {
+	0x0000000000000000,	// 32	Space
+	0x0208208208000208,	// 33	!
+	0x0,	// 34	"
+	0x0492FD24924BF492, // 35	#
+	0x0,	// 36	$
+	0x0,	// 37	%
+	0x0,	// 38	&
+	0x0,	// 39	'
+	0x0,	// 40	(
+	0x0,	// 41	)
+	0x0,	// 42	*
+	0x0,	// 43	+
+	0x0,	// 44	,
+	0x0,	// 45	-
+	0x0,	// 46	.
+	0x0,	// 47	/
+	0x07A186186186185E,	// 48	0
+	0x021820820820821C,	// 49	1
+	0x07A184108421083F,	// 50	2
+	0x0FC108438106185E,	// 51	3
+	0x00862928BF082087,	// 52	4
+	0x0FE0820F8104185E,	// 53	5
+	0x01C8420FA186185E,	// 54	6
+	0x0FC1042082104104,	// 55	7
+	0x07A18617A186185E,	// 56	8
+	0x07A186185F042118,	// 57	9
+	0x0,	// 58	:
+	0x0,	// 59	;
+	0x0,	// 60	<
+	0x0000000FC003F000,	// 61	=
+	0x0,	// 62	>
+	0x0,	// 63	?
+	0x0,	// 64	@
+	0x07A186187F861861,	// 65	A
+	0x0FA1861FA186187E,	// 66	B
+	0x07A182082082085E,	// 67	C
+	0x0FA186186186187E,	// 68	D
+	0x0FE0820F2082083F,	// 69	E
+	0x0FE0820F20820820,	// 70	F
+	0x07A08209E186185E,	// 71	G
+	0x0861861FE1861861,	// 72	H
+	0x070820820820821C,	// 73	I
+	0x078208208249248C,	// 74	J
+	0x0862928C30A248A1,	// 75	K
+	0x082082082082083E,	// 76	L
+	0x08B6DAAAA28A28A2,	// 77	M
+	0x08A2CAAAA68A28A2,	// 78	N
+	0x07A186186186185E,	// 79	0
+	0x0FA1861FA0820820,	// 80	P
+	0x07A186186186178F,	// 81	Q
+	0x0FA1861FA8922861,	// 82	R
+	0x07A182078104185E,	// 83	S
+	0x0F88208208208208,	// 84	T
+	0x086186186186185E,	// 85	U
+	0x086186149249230C,	// 86	V
+	0x08A28A28AAAB6DA2,	// 87	W
+	0x08A28942085228A2,	// 88	X
+	0x08A2894208208208,	// 89	Y
+	0x0FC104210842083F	// 90	Z
+};
+
+// Draw a single character at given (x, y)
+void LcdDrawChar(uint16_t x, uint16_t y, uint8_t c,
+	uint16_t fontColor, uint16_t bgColor) {
+
+	uint8_t index = 60;
+	uint64_t charData = charDecode[c-32];
+	LcdSetPos(x, y, x+5, y+9);
+
+	while (index--) {
+		if ((charData >> index) & 1) LcdWriteData(fontColor);
+		else LcdWriteData(bgColor);
+	}
+}
+
+void LcdDrawString(uint16_t x, uint16_t y, uint8_t *c,
+	uint16_t fontColor, uint16_t bgColor) {
+
+	while (*c != '\0') {
+		LcdDrawChar(x, y, *c, fontColor, bgColor);
+		x += 7;
+		c++;
+	}
+}
+
+void LcdDrawInt(uint16_t x, uint16_t y, uint32_t num,
+	uint16_t fontColor, uint16_t bgColor) {
+	uint32_t i = 1;
+
+	if (num == 0) {
+		LcdDrawChar(x, y, '0', fontColor, bgColor);
+	}
+
+	// Find number of digits
+	while (num/10 > i) i*=10;
+
+	// Iterate through the digits from the top down
+	while (i) {
+		LcdDrawChar(x, y, (num/i % 10)+'0', fontColor, bgColor);
+		x += 7;
+		i /= 10;
+	}
+}
+
+void LcdDrawHex(uint16_t x, uint16_t y, uint32_t hex,
+	uint16_t fontColor, uint16_t bgColor) {
+	uint32_t i = 1;
+
+	LcdDrawString(x, y, (uint8_t *)"0X", fontColor, bgColor);
+	x += 14;
+
+	if (hex == 0) {
+		LcdDrawChar(x, y, '0', fontColor, bgColor);
+	}
+
+	// Find number of digits
+	while (hex/16 > i) i*=16;
+
+	// Iterate through the digits from the top down
+	while (i) {
+		if ((hex/i % 16) < 10) {
+			LcdDrawChar(x, y, (hex/i % 16)+'0', fontColor, bgColor);
+		} else {
+			LcdDrawChar(x, y, (hex/i % 16)-10+'A', fontColor, bgColor);
+		}
+		x += 7;
+		i /= 16;
+	}
+}
+#endif
 
 // Configure the FSMC port for LCD
 static void initFSMC(void) {
@@ -328,77 +492,75 @@ static void initFSMC(void) {
 /******************************************************************************/
 /* FROM PROVIDED EXAMPLE CODE, DO NOT CHANGE YET   ****************************/
 /******************************************************************************/
-static void initILI9341(void) {	 
+static void initILI9341(void) {
+	// Hardware reset
 	LCD_RESET_HIGH;
 	delayms(5);
 	LCD_RESET_LOW;
 	delayms(10);
 	LCD_RESET_HIGH;
 	delayms(250);
+	
+	LcdWriteCmd(POWER_A);  
+	LcdWriteData(0x39); 
+	LcdWriteData(0x2C); 
+	LcdWriteData(0x00); 
+	LcdWriteData(0x34); 
+	LcdWriteData(0x02); 
 
-	LcdWriteCmd(0xCB);  
-    LcdWriteData(0x39); 
-    LcdWriteData(0x2C); 
-    LcdWriteData(0x00); 
-    LcdWriteData(0x34); 
-    LcdWriteData(0x02); 
+	LcdWriteCmd(POWER_B);  
+	LcdWriteData(0x00); 
+	LcdWriteData(0XC1); 
+	LcdWriteData(0X30); 
 
-    LcdWriteCmd(0xCF);  
-    LcdWriteData(0x00); 
-    LcdWriteData(0XC1); 
-    LcdWriteData(0X30); 
+	LcdWriteCmd(DRIVER_TIMING_CONTROL_A);  
+	LcdWriteData(0x85); 
+	LcdWriteData(0x00); 
+	LcdWriteData(0x78); 
 
-    LcdWriteCmd(0xE8);  
-    LcdWriteData(0x85); 
-    LcdWriteData(0x00); 
-    LcdWriteData(0x78); 
-
-    LcdWriteCmd(0xEA);  
-    LcdWriteData(0x00); 
-    LcdWriteData(0x00); 
+	LcdWriteCmd(DRIVER_TIMING_CONTROL_B);
+	LcdWriteData(0x00); 
+	LcdWriteData(0x00); 
  
-    LcdWriteCmd(0xED);  
-    LcdWriteData(0x64); 
-    LcdWriteData(0x03); 
-    LcdWriteData(0X12); 
-    LcdWriteData(0X81); 
+	LcdWriteCmd(POWER_ON_SEQUENCE_CTRL);  
+	LcdWriteData(0x64); 
+	LcdWriteData(0x03); 
+	LcdWriteData(0X12); 
+	LcdWriteData(0X81); 
 
-    LcdWriteCmd(0xF7);  
-    LcdWriteData(0x20); 
+	LcdWriteCmd(PUMP_RATIO_CONTROL);
+	LcdWriteData(0x20); 
   
-    LcdWriteCmd(0xC0);    //Power control 
-    LcdWriteData(0x19);   //VRH[5:0] 
+	LcdWriteCmd(POWER_1);	//Power control 
+	LcdWriteData(0x19);   //VRH[5:0] 
  
-    LcdWriteCmd(0xC1);    //Power control 
-    LcdWriteData(0x11);   //SAP[2:0];BT[3:0] 
+	LcdWriteCmd(POWER_2);	//Power control 
+	LcdWriteData(0x11);   //SAP[2:0];BT[3:0] 
 
-    LcdWriteCmd(0xC5);    //VCM control 
-    LcdWriteData(0x3d);   //Contrast
-    LcdWriteData(0x2B); 
+	LcdWriteCmd(VCOM_1);	//VCM control 
+	LcdWriteData(0x3d);   //Contrast
+	LcdWriteData(0x2B); 
  
-    LcdWriteCmd(0xC7);    //VCM control2 
-    LcdWriteData(0xC1);   //--
+	LcdWriteCmd(VCOM_2);	//VCM control2 
+	LcdWriteData(0xC1);   //--
  
-    LcdWriteCmd(0x36);    // Memory Access Control 
-    LcdWriteData(0x48);   
+	LcdWriteCmd(MEMORY_ACCESS_CTRL);	// Memory Access Control 
+	LcdWriteData(0xE8);	// What we need
+//	LcdWriteData(0x48);	// Default/fast
 
-    LcdWriteCmd(0x3A);    
-    LcdWriteData(0x55); 
+	LcdWriteCmd(PIXEL_FORMAT_SET);	
+	LcdWriteData(0x55); 
 
-    LcdWriteCmd(0xB1);    
-    LcdWriteData(0x00);  
-    LcdWriteData(0x18); 
+	LcdWriteCmd(FRAME_RATE_NORMAL);
+	LcdWriteData(0x00);
+	LcdWriteData(0x18);
  
-    LcdWriteCmd(0xB6);    // Display Function Control 
-    LcdWriteData(0x08); 
-    LcdWriteData(0x82);
-    LcdWriteData(0x27);  
+	LcdWriteCmd(DISPLAY_FUNCTION);	// Display Function Control 
+	LcdWriteData(0x08); 
+	LcdWriteData(0x82);
+	LcdWriteData(0x27);  
  
-    LcdWriteCmd(0x11);    //Exit Sleep 
-    delayms(120); 
-				
-    LcdWriteCmd(0x29);    //Display on 
-    LcdWriteCmd(0x2c);
+	LcdExitSleep();
 
 	return;
 }

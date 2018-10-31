@@ -39,8 +39,8 @@
 #define LCD_RESET_LOW	GPIOB->ODR &= ~(1 << 8)
 
 // LCD dimensions
-#define LCD_WIDTH 240
-#define LCD_HEIGHT 320
+#define LCD_WIDTH 320
+#define LCD_HEIGHT 240
 #define LCD_PIXELS LCD_WIDTH*LCD_HEIGHT
 
 // LCD sample colors (565 Format)
@@ -146,6 +146,24 @@ void LcdEnterSleep(void);
 void LcdExitSleep(void);
 void LcdPutPixel(uint16_t x, uint16_t y, uint16_t color);
 void LcdFillScreen(uint16_t color);
+void LcdFillScreenCheckered(void);
 void LcdInvertDisplay(uint8_t invert);
+void LcdSetPos(uint16_t x0, uint16_t x1, uint16_t y0, uint16_t y1);
+void LcdDrawRectangle(uint16_t x, uint16_t y, uint16_t width,
+	uint16_t height, uint16_t color);
+
+// Change this to include text decoding functions
+#define LCD_TEXT 1
+#if LCD_TEXT==1
+void LcdDrawChar(uint16_t x, uint16_t y, uint8_t c,
+	uint16_t fontColor, uint16_t bgColor);
+void LcdDrawString(uint16_t x, uint16_t y, uint8_t *c,
+	uint16_t fontColor, uint16_t bgColor);
+void LcdDrawInt(uint16_t x, uint16_t y, uint32_t num,
+	uint16_t fontColor, uint16_t bgColor);
+void LcdDrawHex(uint16_t x, uint16_t y, uint32_t hex,
+	uint16_t fontColor, uint16_t bgColor);
+
+#endif
 
 #endif
