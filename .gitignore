@@ -3,3 +3,5 @@ main
 *.o
 *.bin
 *.swp
+*.asv
+*.png
