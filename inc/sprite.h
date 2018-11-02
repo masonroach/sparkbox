@@ -7,7 +7,8 @@
  * sparksprite file map:
  * Width:       16-bit
  * Height:      16-bit
- * Reserved[5]: 16-bits each
+ * nColors:		16-bit
+ * Reserved[4]: 16-bits each
  * Palette[16]: 16-bits each
  * ColorMap[x]: 4-bits each
  */

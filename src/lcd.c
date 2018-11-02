@@ -65,6 +65,14 @@ void LcdWriteData(uint16_t data) {
 	
 }
 
+// Read data from the LCD controller over FSMC
+uint16_t LcdReadData(void) {
+
+	// Read parallel data
+	return *fsmc_data;
+
+}
+
 void LcdEnterSleep(void) {
 	LcdWriteCmd(DISPLAY_OFF);	// Display off
 	LcdWriteCmd(ENTER_SLEEP_MODE);	// Enter sleep mode
@@ -92,13 +100,25 @@ void LcdSetPos(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1) {
 	LcdWriteData(y0 & 0xFF);
 	LcdWriteData(y1 >> 8);
 	LcdWriteData(y1 & 0xFF);
-	LcdWriteCmd(MEMORY_WRITE);
 }
 
 // Draws a single pixel at (x, y)
 void LcdPutPixel(uint16_t x, uint16_t y, uint16_t color) {
 	LcdSetPos(x, y, x, y);
+	LcdWriteCmd(MEMORY_WRITE);
 	LcdWriteData(color);
+}
+
+// Read a single pixel at (x, y)
+uint16_t LcdReadPixel(uint16_t x, uint16_t y) {
+	uint16_t temp = 0x0000;
+	LcdSetPos(x, y, x, y);
+	LcdWriteCmd(MEMORY_READ);
+	LcdReadData();	// Send dummy read signal
+	temp = LcdReadData();	// Get R[7..0], G[7..0]
+	temp = (temp & 0xF800) | ((temp & 0xFC) << 3);	// Convert to R[5], G[6]
+	temp |= LcdReadData() >> 11;	// Get B[8], convetrt to B[5]
+	return temp;
 }
 
 // Fills the whole LCD screen with a single color
@@ -106,6 +126,8 @@ void LcdFillScreen(uint16_t color) {
 	uint32_t index = LCD_PIXELS;
 	
 	LcdSetPos(0, 0, LCD_WIDTH, LCD_HEIGHT);
+	LcdWriteCmd(MEMORY_WRITE);
+
 	while (--index) {
 		LcdWriteData(color);
 	}
@@ -116,12 +138,14 @@ void LcdFillScreenCheckered(void) {
 	uint32_t index = LCD_PIXELS;
 	
 	LcdSetPos(0, 0, LCD_WIDTH, LCD_HEIGHT);
+	LcdWriteCmd(MEMORY_WRITE);
+
 	while (--index) {
 		// Check checkered row, then column, and then xor them
 		if ((index%10 >= 5) ^ (index/240 % 10 >= 5)) {
-			LcdWriteData(LCD_COLOR_BLACK);
+			LcdWriteData(LCD_COLOR_DGRAY);
 		} else {
-			LcdWriteData(LCD_COLOR_WHITE);
+			LcdWriteData(LCD_COLOR_LGRAY);
 		}
 	}
 }
@@ -132,6 +156,8 @@ void LcdDrawRectangle(uint16_t x, uint16_t y, uint16_t width,
 	uint32_t index = width*height;
 	
 	LcdSetPos(x, y, x+width, y+height);
+	LcdWriteCmd(MEMORY_WRITE);
+
 	while (--index) {
 		LcdWriteData(color);
 	}
@@ -213,7 +239,9 @@ void LcdDrawChar(uint16_t x, uint16_t y, uint8_t c,
 
 	uint8_t index = 60;
 	uint64_t charData = charDecode[c-32];
+
 	LcdSetPos(x, y, x+5, y+9);
+	LcdWriteCmd(MEMORY_WRITE);
 
 	while (index--) {
 		if ((charData >> index) & 1) LcdWriteData(fontColor);
@@ -240,7 +268,7 @@ void LcdDrawInt(uint16_t x, uint16_t y, uint32_t num,
 	}
 
 	// Find number of digits
-	while (num/10 > i) i*=10;
+	while (num/10 >= i) i*=10;
 
 	// Iterate through the digits from the top down
 	while (i) {
@@ -434,10 +462,10 @@ static void initFSMC(void) {
 					   GPIO_OSPEEDER_OSPEEDR14 |
 					   GPIO_OSPEEDER_OSPEEDR15);
 	
-	GPIOB->PUPDR &= ~(GPIO_PUPDR_PUPDR8 |	// PBx no pull-up/pull-down
+	GPIOB->PUPDR &= ~(GPIO_PUPDR_PUPDR8 |	// PBx clear pull-up/pull-down
 					  GPIO_PUPDR_PUPDR9);
 	
-	GPIOD->PUPDR &= ~(GPIO_PUPDR_PUPDR0  |	// PDx no pull-up/pull-down
+	GPIOD->PUPDR &= ~(GPIO_PUPDR_PUPDR0  |	// PDx clear pull-up/pull-down
 					  GPIO_PUPDR_PUPDR1  |
 					  GPIO_PUPDR_PUPDR4  |
 					  GPIO_PUPDR_PUPDR5  |
@@ -449,7 +477,7 @@ static void initFSMC(void) {
 					  GPIO_PUPDR_PUPDR14 |
 					  GPIO_PUPDR_PUPDR15);
 
-	GPIOE->PUPDR &= ~(GPIO_PUPDR_PUPDR7  |	// PEx no pull-up/pull-down
+	GPIOE->PUPDR &= ~(GPIO_PUPDR_PUPDR7  |	// PEx clear pull-up/pull-down
 					  GPIO_PUPDR_PUPDR8  |
 					  GPIO_PUPDR_PUPDR9  |
 					  GPIO_PUPDR_PUPDR10 |
@@ -480,11 +508,11 @@ static void initFSMC(void) {
 
 	FSMC_Bank1->BTCR[1] &= ~FSMC_BTR1_ACCMOD;	// Access mode A
 	FSMC_Bank1->BTCR[1] &= ~FSMC_BTR1_DATAST;	// Clear DATAST bits
-	FSMC_Bank1->BTCR[1] |= (8 << FSMC_BTR1_DATAST_Pos);	// DATAST = 4 x HCLK
+	FSMC_Bank1->BTCR[1] |= (12 << FSMC_BTR1_DATAST_Pos);	// DATAST = 4 x HCLK
 	FSMC_Bank1->BTCR[1] &= ~FSMC_BTR1_BUSTURN;	// Clear bus turn around bits
 	FSMC_Bank1->BTCR[1] |=  FSMC_BTR1_ADDHLD;	// Enable Address hold
 	FSMC_Bank1->BTCR[1] &= ~FSMC_BTR1_ADDSET;	// Clear Address hold
-	FSMC_Bank1->BTCR[1] |= (8 << FSMC_BTR1_ADDSET_Pos); // Set Address hold
+	FSMC_Bank1->BTCR[1] |= (12 << FSMC_BTR1_ADDSET_Pos); // Set Address hold
 
 	return;
 }
@@ -546,7 +574,7 @@ static void initILI9341(void) {
  
 	LcdWriteCmd(MEMORY_ACCESS_CTRL);	// Memory Access Control 
 	LcdWriteData(0xE8);	// What we need
-//	LcdWriteData(0x48);	// Default/fast
+//	LcdWriteData(0x08);	// Default/fast
 
 	LcdWriteCmd(PIXEL_FORMAT_SET);	
 	LcdWriteData(0x55); 

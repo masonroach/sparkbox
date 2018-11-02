@@ -73,13 +73,14 @@ void systemInit(void) {
 
 void lcdTest(void) {
 	uint8_t *test = (uint8_t *)"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+	uint16_t temp;
 
 	// Test lcd coordinates/orientation
-	LcdPutPixel(0, 0, LCD_COLOR_RED);
+	LcdPutPixel(20, 20, LCD_COLOR_RED);
 	LcdDrawRectangle(0, 0, 10, 10, LCD_COLOR_RED);
-	LcdPutPixel(319, 0, LCD_COLOR_BLUE);
+	LcdPutPixel(299, 20, LCD_COLOR_BLUE);
 	LcdDrawRectangle(310, 0, 10, 10, LCD_COLOR_BLUE);
-	LcdPutPixel(0, 239, LCD_COLOR_GREEN);
+	LcdPutPixel(20, 219, LCD_COLOR_GREEN);
 	LcdDrawRectangle(0, 229, 10, 10, LCD_COLOR_GREEN);
 
 	while (!readButton());
@@ -93,7 +94,18 @@ void lcdTest(void) {
 	LcdDrawString(20, 10, test, LCD_COLOR_WHITE, LCD_COLOR_BLACK);
 	LcdDrawString(140, 130, (uint8_t *)"SPARKBOX", LCD_COLOR_BLACK, LCD_COLOR_WHITE);
 	LcdDrawInt(20, 120, 256, LCD_COLOR_WHITE, LCD_COLOR_BLACK);
+	LcdDrawInt(20, 180, 10, LCD_COLOR_WHITE, LCD_COLOR_BLACK);
 	LcdDrawHex(20, 150, 0xDEAD, LCD_COLOR_WHITE, LCD_COLOR_BLACK);
+
+	while (!readButton());
+	delayms(50);
+	while (readButton())
+
+	LcdFillScreen(0xDEAD);
+	delayms(2000);
+	temp = LcdReadPixel(50, 50);
+	LcdDrawHex(10, 10, temp, LCD_COLOR_WHITE, LCD_COLOR_BLACK);
+	ledMap(temp);
 
 	while (!readButton());
 	delayms(50);

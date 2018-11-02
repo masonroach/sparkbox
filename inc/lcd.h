@@ -49,6 +49,8 @@
 #define LCD_COLOR_GREEN	0x07E0
 #define LCD_COLOR_BLACK 0x0000
 #define LCD_COLOR_WHITE 0xFFFF
+#define LCD_COLOR_LGRAY 0xE73C
+#define LCD_COLOR_DGRAY 0x18E3
 
 typedef enum {
 	NOP = 0x00,
@@ -142,9 +144,11 @@ typedef enum {
 void initLcd(void);
 void LcdWriteCmd(uint16_t cmd);
 void LcdWriteData(uint16_t data);
+uint16_t LcdReadData(void);
 void LcdEnterSleep(void);
 void LcdExitSleep(void);
 void LcdPutPixel(uint16_t x, uint16_t y, uint16_t color);
+uint16_t LcdReadPixel(uint16_t x, uint16_t y);
 void LcdFillScreen(uint16_t color);
 void LcdFillScreenCheckered(void);
 void LcdInvertDisplay(uint8_t invert);
