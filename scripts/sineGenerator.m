@@ -5,14 +5,19 @@
 Fs = 44.1e3;
 
 % To meet spec, frequencies must be between .1-3 kHz
-f1 = 100;
-f2 = 100;
-f3 = 100;
-f4 = 100;
+f1 = 500;
+f2 = 500;
+f3 = 500;
+f4 = 500;
 
+% Round frequency to nearest 5 Hz to limit array size
+f1_rd = round(f1 / 5) * 5;
+f2_rd = round(f2 / 5) * 5;
+f3_rd = round(f3 / 5) * 5;
+f4_rd = round(f4 / 5) * 5;
 
 % Frequency of the combined waveform
-f = gcd(gcd(gcd(f1,f2), f3), f4);
+f = gcd(gcd(gcd(f1_rd,f2_rd), f3_rd), f4_rd);
 
 % Find number of samples to represent frequency f
 numSamples = floor(Fs/f);
@@ -20,9 +25,18 @@ numSamples = floor(Fs/f);
 % Find data points
 n = linspace(0,numSamples, numSamples);
 y = sin(2*pi*n*f1/Fs)+sin(2*pi*n*f2/Fs)+sin(2*pi*n*f3/Fs)+sin(2*pi*n*f4/Fs);
-% Scale data to 
+% Scale data to int16 size
 y = y + abs(min(y));
 y = round(y / max(y) * (2^(16) - 1)) - 2^(15) - 1;
+
+y_before = y;
+% Remove any noise/clacking
+diff = y(numSamples-1) - y(1);
+while (diff > 0)
+  numSamples = numSamples - 1;
+  y = y(1:numSamples);
+  diff = y(numSamples-1) - y(1);
+endwhile
 
 % Plot simulated DAC output
 nsim = linspace(0, numSamples * 10, numSamples * 10);
