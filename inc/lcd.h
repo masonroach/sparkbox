@@ -37,6 +37,8 @@
 
 #define LCD_RESET_HIGH	GPIOB->ODR |= (1 << 8)
 #define LCD_RESET_LOW	GPIOB->ODR &= ~(1 << 8)
+#define LCD_FPS_HIGH	GPIOB->ODR |= (1 << 9)
+#define LCD_FPS_LOW		GPIOB->ODR &= ~(1 << 9)
 
 // LCD dimensions
 #define LCD_WIDTH 320
@@ -44,13 +46,14 @@
 #define LCD_PIXELS LCD_WIDTH*LCD_HEIGHT
 
 // LCD sample colors (565 Format)
-#define LCD_COLOR_BLUE	0x001F
-#define LCD_COLOR_RED	0xF800
-#define LCD_COLOR_GREEN	0x07E0
-#define LCD_COLOR_BLACK 0x0000
-#define LCD_COLOR_WHITE 0xFFFF
-#define LCD_COLOR_LGRAY 0xE73C
-#define LCD_COLOR_DGRAY 0x18E3
+#define LCD_COLOR_BLUE	 0x001F
+#define LCD_COLOR_RED	 0xF800
+#define LCD_COLOR_GREEN	 0x07E0
+#define LCD_COLOR_BLACK  0x0000
+#define LCD_COLOR_WHITE  0xFFFF
+#define LCD_COLOR_LGRAY  0xE73C
+#define LCD_COLOR_DGRAY  0x18E3
+#define LCD_COLOR_YELLOW 0xFFE0
 
 typedef enum {
 	NOP = 0x00,
@@ -167,7 +170,6 @@ void LcdDrawInt(uint16_t x, uint16_t y, uint32_t num,
 	uint16_t fontColor, uint16_t bgColor);
 void LcdDrawHex(uint16_t x, uint16_t y, uint32_t hex,
 	uint16_t fontColor, uint16_t bgColor);
-
 #endif
 
 #endif

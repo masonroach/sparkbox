@@ -582,17 +582,17 @@ void test_drawSprite() {
 	test_get16();	// half-word7 : trash
 
 	// Write headers to the screen
-	LcdDrawString(250, 20, (uint8_t *)"W =", LCD_COLOR_WHITE, LCD_COLOR_BLACK);
-	LcdDrawString(250, 40, (uint8_t *)"H =", LCD_COLOR_WHITE, LCD_COLOR_BLACK);
-	LcdDrawString(250, 60, (uint8_t *)"PALETTE", LCD_COLOR_WHITE, LCD_COLOR_BLACK);
-	LcdDrawInt(278, 20, width, LCD_COLOR_WHITE, LCD_COLOR_BLACK);
-	LcdDrawInt(278, 40, height, LCD_COLOR_WHITE, LCD_COLOR_BLACK);
+	LcdDrawString(250, 10, (uint8_t *)"W =", LCD_COLOR_WHITE, LCD_COLOR_BLACK);
+	LcdDrawString(250, 30, (uint8_t *)"H =", LCD_COLOR_WHITE, LCD_COLOR_BLACK);
+	LcdDrawString(250, 50, (uint8_t *)"PALETTE", LCD_COLOR_WHITE, LCD_COLOR_BLACK);
+	LcdDrawInt(278, 10, width, LCD_COLOR_WHITE, LCD_COLOR_BLACK);
+	LcdDrawInt(278, 30, height, LCD_COLOR_WHITE, LCD_COLOR_BLACK);
 
 	// Save the palette from the file to the array and display them
 	for (i = 0; i < numColors; i++) {
 		colors[i] = test_get16();
-		LcdDrawRectangle(250, 80 + 12*i, 10, 10, colors[i]);
-		LcdDrawInt(270, 80 + 12*i, i+1, LCD_COLOR_WHITE, LCD_COLOR_BLACK);
+		LcdDrawRectangle(250, 70 + 12*i, 10, 10, colors[i]);
+		LcdDrawInt(270, 70 + 12*i, i+1, LCD_COLOR_WHITE, LCD_COLOR_BLACK);
 	}
 
 	// Throw away the rest of the palette
@@ -600,6 +600,7 @@ void test_drawSprite() {
 
 	// Draw the sprite
 	LcdSetPos(120-width/2, 120-height/2, 120+width/2-1, 120+height/2-1);
+	LcdWriteCmd(MEMORY_WRITE);
 	for (i = 0; i < (width*height)/4; i++) {
 		temp = test_get16();	// Get 4-pixels worth of data
 		LcdWriteData(colors[(temp & 0x000F)-1]);	// Draw a pixel

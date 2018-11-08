@@ -102,7 +102,6 @@ void lcdTest(void) {
 	while (readButton())
 
 	LcdFillScreen(0xDEAD);
-	delayms(2000);
 	temp = LcdReadPixel(50, 50);
 	LcdDrawHex(10, 10, temp, LCD_COLOR_WHITE, LCD_COLOR_BLACK);
 	ledMap(temp);
@@ -112,7 +111,6 @@ void lcdTest(void) {
 	while (readButton())
 
 	// Test sprites
-	LcdFillScreenCheckered();
 	test_drawSprite();
 
 	while (!readButton());
@@ -120,13 +118,10 @@ void lcdTest(void) {
 	while (readButton())
 
 	// Test filling screen
-	while (1) {
+	while (!readButton()) {
 		LcdFillScreen(LCD_COLOR_BLUE);
-		delayms(1000);
 		LcdFillScreen(LCD_COLOR_RED);
-		delayms(1000);
 		LcdFillScreen(LCD_COLOR_GREEN);
-		delayms(1000);
 	}
 
 	return;

@@ -17,11 +17,12 @@
 #include "led.h"
 #include "button.h"
 #include "lcd.h"
-// #include "rand.h"
+// #include "rng.h"
 // #include "sd.h"
 // #include "pwm.h"
 #include "sparkboxButtons.h"
 #include "waveplayer.h"
 #include "sprite.h"
+#include "video.h"
 
 #endif

@@ -1,5 +1,4 @@
 #include "lcd.h"
-
 /*
  * +-------------+
  * | Connections |
@@ -124,13 +123,17 @@ uint16_t LcdReadPixel(uint16_t x, uint16_t y) {
 // Fills the whole LCD screen with a single color
 void LcdFillScreen(uint16_t color) {
 	uint32_t index = LCD_PIXELS;
-	
+
 	LcdSetPos(0, 0, LCD_WIDTH, LCD_HEIGHT);
 	LcdWriteCmd(MEMORY_WRITE);
 
+	LCD_FPS_HIGH;
+	
 	while (--index) {
 		LcdWriteData(color);
 	}
+
+	LCD_FPS_LOW;
 }
 
 // Fills the screen with a checkerboard pattern
