@@ -5,10 +5,10 @@
 Fs = 44.1e3;
 
 % To meet spec, frequencies must be between .1-3 kHz
-f1 = 500;
-f2 = 500;
-f3 = 500;
-f4 = 500;
+f1 = 110;
+f2 = 220;
+f3 = 440;
+f4 = 880;
 
 % Round frequency to nearest 5 Hz to limit array size
 f1_rd = round(f1 / 5) * 5;
@@ -36,7 +36,7 @@ while (diff > 0)
   numSamples = numSamples - 1;
   y = y(1:numSamples);
   diff = y(numSamples-1) - y(1);
-endwhile
+end
 
 % Plot simulated DAC output
 nsim = linspace(0, numSamples * 10, numSamples * 10);
@@ -49,18 +49,18 @@ grid on;
 
 % Generate WAV file data here
 % Find subchunksize and chunksize
-subchunkSize = length(y) * 2;
+subchunkSize = length(y) * 2 - 2;
 chunkSize = 36 + subchunkSize;
 
 % Always overwrite previously existing file
 fid = fopen('sinewave.wav', 'w', 'b');
 
 % Write RIFF specifier
-fputs(fid, 'RIFF');
+fprintf(fid, 'RIFF');
 % Write chunk size
 fwrite(fid, chunkSize,'uint32', 'l');
 % Write WAV format specifier
-fputs(fid, 'WAVEfmt');
+fprintf(fid, 'WAVEfmt');
 fwrite(fid, 32,'uint8');
 % Write subchunkSize1 = 16
 fwrite(fid, 16,'uint32', 'l');
@@ -77,7 +77,7 @@ fwrite(fid, 1*16/8,'uint16', 'l');
 % Write bitsPerSample = 16
 fwrite(fid, 16,'uint16', 'l');
 % Write 'data' specifier
-fputs(fid, 'data');
+fprintf(fid, 'data');
 % Write subchunkSize2
 fwrite(fid, subchunkSize,'uint32', 'l');
 % Write all data
