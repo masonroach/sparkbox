@@ -3,14 +3,16 @@ clear variables
 clear figures
 
 %% Input parameters
-inputPng = sprintf('testSprite.png');
+inputPng = sprintf('testSprite3.png');
 outputFile = strrep(inputPng, '.png', '.sparksprite');
 
 %% Parse png data
 [RGB, map, alpha] = imread(inputPng);
-R = bitsrl(RGB(:,:,1), 3);
-G = bitsrl(RGB(:,:,2), 2);
-B = bitsrl(RGB(:,:,3), 3);
+% Seperate into RGBA. When diving uint8 in MATLAB, automatically rounds.
+% ./8 rounds to the third LSB.
+R = RGB(:,:,1)./8;
+G = RGB(:,:,2)./4;
+B = RGB(:,:,3)./8;
 A = bitsrl(alpha, 7);
 
 height = size(A, 1);
@@ -114,9 +116,11 @@ fclose(fout);
 %% DEBUGGING ONLY
 % Output c file
 
-% Print Headers
+% Open file
 coutName = strrep(inputPng, '.png', '.c');
 cout = fopen(coutName, 'w');
+
+% Print Headers
 fprintf(cout, 'const uint16_t fakeSpriteFile[] = {\n');
 fprintf(cout, '\t0x%04X,\t// Width = %d\n', width, width);
 fprintf(cout, '\t0x%04X,\t// Height = %d\n', height, height);
