@@ -17,13 +17,12 @@ int main(void) {
 
 	lcdTest();
 
-/*	
 	if (!sdTest()) {
 		ledError(2);
 		WAV_test();
 	}
 	buttonTest();
-*/	
+	
 	while(1);
 	return 1;
 }
@@ -59,7 +58,7 @@ void systemInit(void) {
 	 * LEDs will continue to light up in a circle.
 	 */
 //	usartSendString("Initialized. Press button to continue.\r\n");
-	while (!readButton()) {
+	while (1/*!readButton()*/) {
 		i > 8 ? i = 0 : i++;
 		ledMap((0xFF >> (8-i)) & 0xFF);
 //		ledMap(0xFF & rand32());
@@ -72,8 +71,10 @@ void systemInit(void) {
 }
 
 void lcdTest(void) {
-	uint8_t *test = (uint8_t *)"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+	uint8_t *testString = (uint8_t *)"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 	uint16_t temp;
+	sprite testSprite;
+	sprite *tSprite;
 
 	// Test lcd coordinates/orientation
 	LcdPutPixel(20, 20, LCD_COLOR_RED);
@@ -91,7 +92,7 @@ void lcdTest(void) {
 	LcdFillScreen(LCD_COLOR_BLACK);
 	LcdDrawRectangle((LCD_WIDTH-70)/2, (LCD_HEIGHT-70)/2, 70, 70, LCD_COLOR_WHITE);
 	LcdDrawRectangle(10, 200, 300, 1, LCD_COLOR_WHITE);
-	LcdDrawString(20, 10, test, LCD_COLOR_WHITE, LCD_COLOR_BLACK);
+	LcdDrawString(20, 10, testString, LCD_COLOR_WHITE, LCD_COLOR_BLACK);
 	LcdDrawString(140, 130, (uint8_t *)"SPARKBOX", LCD_COLOR_BLACK, LCD_COLOR_WHITE);
 	LcdDrawInt(20, 120, 256, LCD_COLOR_WHITE, LCD_COLOR_BLACK);
 	LcdDrawInt(20, 180, 10, LCD_COLOR_WHITE, LCD_COLOR_BLACK);
@@ -101,22 +102,37 @@ void lcdTest(void) {
 	delayms(50);
 	while (readButton())
 
-	LcdFillScreen(0xDEAD);
+	// Test reading a pixel
+	LcdFillScreen(0xFEED);
 	temp = LcdReadPixel(50, 50);
 	LcdDrawHex(10, 10, temp, LCD_COLOR_WHITE, LCD_COLOR_BLACK);
-	ledMap(temp);
+	
 
 	while (!readButton());
 	delayms(50);
 	while (readButton())
+	delayms(1000);
 
 	// Test sprites
+	if (test_getSprite(&testSprite)) {
+		// ERROR
+		ledError(LED_ERROR);
+	}
+	drawSprite(&testSprite);
+
+	while (!readButton());
+	delayms(50);
+	while (readButton())
+	delayms(1000);
+/*
+	test_fseek(0, TEST_SEEK_SET);
 	test_drawSprite();
 
 	while (!readButton());
 	delayms(50);
 	while (readButton())
-
+	delayms(1000);
+*/
 	// Test filling screen
 	while (!readButton()) {
 		LcdFillScreen(LCD_COLOR_BLUE);

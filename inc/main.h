@@ -1,6 +1,8 @@
 #ifndef MAINH
 #define MAINH
 
+#include <stdlib.h>
+
 /* Include architecture register definitions */
 #include "stm32f4xx.h"
 #include "core_cm4.h"
