@@ -48,7 +48,9 @@ DAC_HandleTypeDef hdac;
 DMA_HandleTypeDef hdma_dac1;
 TIM_HandleTypeDef htim6;
 
+// Globally keep track of the number of plays
 int numberPlays;
+WAV_Format *playingWav;
 FIL F;
 
 /** @defgroup WAVEPLAYER_Private_Functions
@@ -280,6 +282,9 @@ uint8_t WAV_Import(const char* FileName, WAV_Format* W)
 		W->Error = BufferAllocationFailed;
 		return W->Error;
 	}
+	
+	
+	playingWav = W;
 
 	/* Open wave data file */
 	f_open(&F, FileName, FA_READ);
@@ -306,28 +311,60 @@ uint8_t WAV_Import(const char* FileName, WAV_Format* W)
 	*/
 void DMA1_Stream5_IRQHandler(void)
 {
+	uint32_t *bufferStart;
+	uint32_t bufferSize;
+	
 	HAL_DMA_IRQHandler(&hdma_dac1);
 	
-	// If the last play has occurred, stop
-	if (numberPlays == 1) HAL_TIM_Base_Stop(&htim6);
-	else if (numberPlays <= REPEAT_ALWAYS) numberPlays = REPEAT_ALWAYS;
-	else numberPlays--;
-	// If DMA transfer is complete
-	//if(DMA1->HISR & DMA_HISR_TCIF5) {
-		// Clear transfer complete bit (writing 1 clears bit)
-	//	DMA1->HIFCR |= DMA_HIFCR_CTCIF5;
+	// If the wav file is larger than DMA max size
+	// Need to do multitransfer
+	if (playingWav->DataSize / 2 > 65535) {
+		// Stop DMA transfer
+		HAL_DAC_Stop_DMA(&hdac, DAC_CHANNEL_1);
+	
+		// Set new data position for next transfer
+		playingWav->DataPos += 65535;
 
-		// Clear control register
-		// DMA1_Stream5->CR = 0x0;
+		// Determine the next transfer
+		if (playingWav->DataPos + 65535 <= playingWav->DataSize / 2) {
+			// Still need another full DMA transfer
+			bufferSize = 65535;
+			// DataBuffer is 32 bit pointer, DataPos is 16 bit
+			bufferStart = playingWav->DataBuffer + (playingWav->DataPos * 2);
+		} else if (playingWav->DataPos < playingWav->DataSize / 2) {
+			// Still need another DMA transfer, but not max size
+			bufferSize = playingWav->DataSize / 2 - playingWav->DataPos;
+			// DataBuffer is 32 bit pointer, DataPos is 16 bit
+            bufferStart = playingWav->DataBuffer + (playingWav->DataPos * 2);
+		} else {
+			// Finished a WAV file, restart if number of plays is fine
+			bufferStart = playingWav->DataBuffer;
+			// Already know this is a multitransfer WAV file, set to max size
+			bufferSize = 65535;
+	
+			if (numberPlays == 1) {
+        		HAL_TIM_Base_Stop(&htim6);
+        	} else if (numberPlays <= REPEAT_ALWAYS) {
+        	    numberPlays = REPEAT_ALWAYS;
+        	} else {
+         	   numberPlays--;
+        	}
+		}
 
-		/* Disable TIM6 counter */
-        // TIM6->CR1 &= ~TIM_CR1_CEN;
-		
-		// Disable TIM6 counter if done playing
-		// if (numberPlays != REPEAT_ALWAYS && --numberPlays == 0)
-    	//	HAL_DAC_Stop_DMA(&hdac, DAC_CHANNEL_1);
-		
-	//}
+		HAL_DAC_Start_DMA(&hdac, DAC_CHANNEL_1, bufferStart,
+        bufferSize, DAC_ALIGN_12B_L);
+	
+	} else {
+		// WAV file is played entirely in 1 DMA transfer 
+		// If the last play has occurred, stop
+    	if (numberPlays == 1) {
+    	    HAL_TIM_Base_Stop(&htim6);
+    	} else if (numberPlays <= REPEAT_ALWAYS) {
+    	    numberPlays = REPEAT_ALWAYS;
+    	} else {
+    	    numberPlays--;
+    	}
+	}
 }
 
 /**
@@ -383,6 +420,7 @@ static void ToggleBufferSign(uint32_t* pBuffer, uint32_t BufferSize)
 	*/
 void WAV_Play(WAV_Format* W, int numPlays)
 {
+	uint32_t bufferSize;
 	
 	// Do not play if number of plays is 0
 	if (numPlays == 0) return;
@@ -408,10 +446,19 @@ void WAV_Play(WAV_Format* W, int numPlays)
 	HAL_TIM_Base_Start(&htim6);
 	// Start DAC
 	HAL_DAC_Start(&hdac,DAC_CHANNEL_1);
+
+	// If the buffer size is greater than max DMA transfer size,
+	// set to max size and interrupt will handle the rest
+	if (W->DataSize / 2 > 65535) {
+		bufferSize = 65535;
+	} else {
+		bufferSize = W->DataSize / 2;
+	}
+	
 	// Start DAC with DMA (12 Bit DAC)
 	// 12 bit left alignment ignores 4 lsb of 16 bit data
 	HAL_DAC_Start_DMA(&hdac, DAC_CHANNEL_1, W->DataBuffer,
-		(uint32_t)(W->DataSize / 2), DAC_ALIGN_12B_L);
+		bufferSize, DAC_ALIGN_12B_L);
 
 }
 
@@ -421,6 +468,10 @@ void WAV_Pause(void)
 	HAL_TIM_Base_Stop(&htim6);
 }
 
+/*
+ * WAV_Resume is designed so after a file has finished playing a fixed number
+ * of times, a call to this function will cause the file to play forever.
+ */
 void WAV_Resume(void)
 {
 	/* Enable TIM6 if number of plays is nonzero */

@@ -5,3 +5,6 @@ main
 *.swp
 *.asv
 *.png
+*.sparksprite
+scripts/*.c
+scripts/*.wav

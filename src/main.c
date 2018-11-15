@@ -208,7 +208,7 @@ end:
 
 void WAV_test(void)
 {
-	char testFile[20] = "youGotMail.wav"; 
+	char testFile[20] = "sinewave.wav"; 
 	WAV_Format* WAV;
 
 	WAV = (WAV_Format*)malloc(sizeof(WAV_Format));
