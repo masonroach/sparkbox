@@ -17,13 +17,11 @@ int main(void) {
 
 	lcdTest();
 
-/*	
 	if (!sdTest()) {
 		ledError(2);
 		WAV_test();
 	}
 	buttonTest();
-*/	
 	while(1);
 	return 1;
 }
@@ -102,7 +100,7 @@ void lcdTest(void) {
 	while (readButton())
 
 	LcdFillScreen(0xDEAD);
-	temp = LcdReadPixel(50, 50);
+	//temp = LcdReadPixel(50, 50);
 	LcdDrawHex(10, 10, temp, LCD_COLOR_WHITE, LCD_COLOR_BLACK);
 	ledMap(temp);
 
@@ -192,7 +190,7 @@ end:
 
 void WAV_test(void)
 {
-	char testFile[20] = "youGotMail.wav"; 
+	char testFile[20] = "sinewave.wav"; 
 	WAV_Format* WAV;
 
 	WAV = (WAV_Format*)malloc(sizeof(WAV_Format));

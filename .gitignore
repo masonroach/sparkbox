@@ -7,3 +7,4 @@ main
 *.png
 *.sparksprite
 scripts/*.c
+scripts/*.wav
