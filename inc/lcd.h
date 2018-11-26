@@ -10,8 +10,8 @@
  * +------+------+
  * | Name | Pin  |
  * +------+------+
- * | FRAME| PB9  | <-- Trigger on new frame
- * | RESET| PB8  |
+ * | FRAME| PA7  | <-- Trigger on new frame
+ * | RESET| PA6  |
  * | NOE  | PD4  | <-- Read
  * | NWE  | PD5  | <-- Write
  * | NE1  | PD7  | <-- Chip Select
@@ -35,10 +35,14 @@
  * +------+------+
  */
 
-#define LCD_RESET_HIGH	GPIOB->ODR |= (1 << 8)
-#define LCD_RESET_LOW	GPIOB->ODR &= ~(1 << 8)
-#define LCD_FPS_HIGH	GPIOB->ODR |= (1 << 9)
-#define LCD_FPS_LOW		GPIOB->ODR &= ~(1 << 9)
+//#define LCD_RESET_HIGH	GPIOB->ODR |= (1 << 8)
+//#define LCD_RESET_LOW	GPIOB->ODR &= ~(1 << 8)
+#define LCD_RESET_HIGH	GPIOA->ODR |= (1 << 6)
+#define LCD_RESET_LOW	GPIOA->ODR &= ~(1 << 6)
+//#define LCD_FPS_HIGH	GPIOB->ODR |= (1 << 9)
+//#define LCD_FPS_LOW		GPIOB->ODR &= ~(1 << 9)
+#define LCD_FPS_HIGH	GPIOA->ODR |= (1 << 7)
+#define LCD_FPS_LOW		GPIOA->ODR &= ~(1 << 7)
 
 // LCD dimensions
 #define LCD_WIDTH 320

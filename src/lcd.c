@@ -5,8 +5,8 @@
  * +------+------+
  * | Name | Pin  |
  * +------+------+
- * | FRAME| PB9  | <-- Trigger on new frame
- * | RESET| PB8  |
+ * | FRAME| PA7  | <-- Trigger on new frame
+ * | RESET| PA6  |
  * | NOE  | PD4  | <-- Read
  * | NWE  | PD5  | <-- Write
  * | NE1  | PD7  | <-- Chip Select
@@ -314,7 +314,7 @@ static void initFSMC(void) {
 	/*
 	 * Initialize Clocks
 	 */
-	RCC->AHB1ENR |= (RCC_AHB1ENR_GPIOBEN |	// Enable GPIOB clock
+	RCC->AHB1ENR |= (RCC_AHB1ENR_GPIOAEN |	// Enable GPIOA clock
 					 RCC_AHB1ENR_GPIODEN |	// Enable GPIOD clock
 					 RCC_AHB1ENR_GPIOEEN);	// Enable GPIOE clock
 	RCC->AHB3ENR |=  RCC_AHB3ENR_FSMCEN;	// Enable FSMC clock
@@ -322,11 +322,11 @@ static void initFSMC(void) {
 	/*
 	 * Initialize GPIOs
 	 */
-	// PB[8,9] as outputs
-	GPIOB->MODER &= ~(GPIO_MODER_MODER8 |	// Clear mode registers
-					  GPIO_MODER_MODER9);
-	GPIOB->MODER |=  (GPIO_MODER_MODER8_0 |	// Set modes to output
-					  GPIO_MODER_MODER9_0);
+	// PA[6,7] as outputs
+	GPIOA->MODER &= ~(GPIO_MODER_MODER6 |	// Clear mode registers
+					  GPIO_MODER_MODER7);
+	GPIOA->MODER |=  (GPIO_MODER_MODER6_0 |	// Set modes to output
+					  GPIO_MODER_MODER7_0);
 
 	// Rest of the GPIOs as alternate function
 	GPIOD->MODER &= ~(GPIO_MODER_MODER0  |	// Clear PDx mode registers
@@ -415,8 +415,8 @@ static void initFSMC(void) {
 					 (12 << GPIO_AFRH_AFSEL14_Pos) |
 					 (12 << GPIO_AFRH_AFSEL15_Pos);
 
-	GPIOB->OTYPER &= ~(GPIO_OTYPER_OT_8 |	// PBx push-pull
-					   GPIO_OTYPER_OT_9);
+	GPIOA->OTYPER &= ~(GPIO_OTYPER_OT_6 |	// PBx push-pull
+					   GPIO_OTYPER_OT_7);
 
 	GPIOD->OTYPER &= ~(GPIO_OTYPER_OT_0  |	// PDx push-pull
 					   GPIO_OTYPER_OT_1  |
@@ -440,8 +440,8 @@ static void initFSMC(void) {
 					   GPIO_OTYPER_OT_14 |
 					   GPIO_OTYPER_OT_15);
 
-	GPIOB->OSPEEDR |= (GPIO_OSPEEDER_OSPEEDR8 |	// PBx very high speed
-					   GPIO_OSPEEDER_OSPEEDR9);
+	GPIOA->OSPEEDR |= (GPIO_OSPEEDER_OSPEEDR6 |	// PBx very high speed
+					   GPIO_OSPEEDER_OSPEEDR7);
 
 	GPIOD->OSPEEDR |= (GPIO_OSPEEDER_OSPEEDR0  |	// PDx very high speed
 					   GPIO_OSPEEDER_OSPEEDR1  |
@@ -465,8 +465,8 @@ static void initFSMC(void) {
 					   GPIO_OSPEEDER_OSPEEDR14 |
 					   GPIO_OSPEEDER_OSPEEDR15);
 	
-	GPIOB->PUPDR &= ~(GPIO_PUPDR_PUPDR8 |	// PBx clear pull-up/pull-down
-					  GPIO_PUPDR_PUPDR9);
+	GPIOA->PUPDR &= ~(GPIO_PUPDR_PUPDR6 |	// PBx clear pull-up/pull-down
+					  GPIO_PUPDR_PUPDR7);
 	
 	GPIOD->PUPDR &= ~(GPIO_PUPDR_PUPDR0  |	// PDx clear pull-up/pull-down
 					  GPIO_PUPDR_PUPDR1  |
@@ -511,11 +511,11 @@ static void initFSMC(void) {
 
 	FSMC_Bank1->BTCR[1] &= ~FSMC_BTR1_ACCMOD;	// Access mode A
 	FSMC_Bank1->BTCR[1] &= ~FSMC_BTR1_DATAST;	// Clear DATAST bits
-	FSMC_Bank1->BTCR[1] |= (12 << FSMC_BTR1_DATAST_Pos);	// DATAST = 4 x HCLK
+	FSMC_Bank1->BTCR[1] |= (4 << FSMC_BTR1_DATAST_Pos);	// DATAST = 4 x HCLK
 	FSMC_Bank1->BTCR[1] &= ~FSMC_BTR1_BUSTURN;	// Clear bus turn around bits
 	FSMC_Bank1->BTCR[1] |=  FSMC_BTR1_ADDHLD;	// Enable Address hold
 	FSMC_Bank1->BTCR[1] &= ~FSMC_BTR1_ADDSET;	// Clear Address hold
-	FSMC_Bank1->BTCR[1] |= (12 << FSMC_BTR1_ADDSET_Pos); // Set Address hold
+	FSMC_Bank1->BTCR[1] |= (4 << FSMC_BTR1_ADDSET_Pos); // Set Address hold
 
 	return;
 }
