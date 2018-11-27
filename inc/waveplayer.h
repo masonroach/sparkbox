@@ -111,6 +111,7 @@ typedef struct
   uint32_t  TIM6ARRValue;
   uint32_t  SpeechDataOffset;
   uint32_t *DataBuffer;
+  uint32_t  DataPos;
   uint16_t  Error;
 } WAV_Format;
 

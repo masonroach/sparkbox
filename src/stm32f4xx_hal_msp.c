@@ -193,7 +193,7 @@ static void HAL_FSMC_MspInit(void){
   FSMC_Initialized = 1;
   /* Peripheral clock enable */
   __HAL_RCC_FSMC_CLK_ENABLE();
-
+  
   /** FSMC GPIO Configuration  
   PE7   ------> FSMC_D4
   PE8   ------> FSMC_D5
@@ -220,8 +220,8 @@ static void HAL_FSMC_MspInit(void){
   PD7   ------> FSMC_NE1
   PG9   ------> FSMC_NCE3
   */
-  GPIO_InitStruct.Pin = GPIO_PIN_7|GPIO_PIN_8|GPIO_PIN_9|GPIO_PIN_10
-                          |GPIO_PIN_11|GPIO_PIN_12|GPIO_PIN_13|GPIO_PIN_14
+  GPIO_InitStruct.Pin = GPIO_PIN_7|GPIO_PIN_8|GPIO_PIN_9|GPIO_PIN_10 
+                          |GPIO_PIN_11|GPIO_PIN_12|GPIO_PIN_13|GPIO_PIN_14 
                           |GPIO_PIN_15;
   GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
@@ -229,9 +229,9 @@ static void HAL_FSMC_MspInit(void){
   GPIO_InitStruct.Alternate = GPIO_AF12_FSMC;
   HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
 
-  GPIO_InitStruct.Pin = GPIO_PIN_8|GPIO_PIN_9|GPIO_PIN_10|GPIO_PIN_11
-                          |GPIO_PIN_12|GPIO_PIN_13|GPIO_PIN_14|GPIO_PIN_15
-                          |GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_4|GPIO_PIN_5
+  GPIO_InitStruct.Pin = GPIO_PIN_8|GPIO_PIN_9|GPIO_PIN_10|GPIO_PIN_11 
+                          |GPIO_PIN_12|GPIO_PIN_13|GPIO_PIN_14|GPIO_PIN_15 
+                          |GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_4|GPIO_PIN_5 
                           |GPIO_PIN_6|GPIO_PIN_7;
   GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
@@ -283,7 +283,7 @@ static void HAL_FSMC_MspDeInit(void){
   FSMC_DeInitialized = 1;
   /* Peripheral clock enable */
   __HAL_RCC_FSMC_CLK_DISABLE();
-
+  
   /** FSMC GPIO Configuration  
   PE7   ------> FSMC_D4
   PE8   ------> FSMC_D5
@@ -310,13 +310,13 @@ static void HAL_FSMC_MspDeInit(void){
   PD7   ------> FSMC_NE1
   PG9   ------> FSMC_NCE3
   */
-  HAL_GPIO_DeInit(GPIOE, GPIO_PIN_7|GPIO_PIN_8|GPIO_PIN_9|GPIO_PIN_10
-                          |GPIO_PIN_11|GPIO_PIN_12|GPIO_PIN_13|GPIO_PIN_14
+  HAL_GPIO_DeInit(GPIOE, GPIO_PIN_7|GPIO_PIN_8|GPIO_PIN_9|GPIO_PIN_10 
+                          |GPIO_PIN_11|GPIO_PIN_12|GPIO_PIN_13|GPIO_PIN_14 
                           |GPIO_PIN_15);
 
-  HAL_GPIO_DeInit(GPIOD, GPIO_PIN_8|GPIO_PIN_9|GPIO_PIN_10|GPIO_PIN_11
-                          |GPIO_PIN_12|GPIO_PIN_13|GPIO_PIN_14|GPIO_PIN_15
-                          |GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_4|GPIO_PIN_5
+  HAL_GPIO_DeInit(GPIOD, GPIO_PIN_8|GPIO_PIN_9|GPIO_PIN_10|GPIO_PIN_11 
+                          |GPIO_PIN_12|GPIO_PIN_13|GPIO_PIN_14|GPIO_PIN_15 
+                          |GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_4|GPIO_PIN_5 
                           |GPIO_PIN_6|GPIO_PIN_7);
 
   HAL_GPIO_DeInit(GPIOG, GPIO_PIN_9);
@@ -346,16 +346,3 @@ void HAL_NAND_MspDeInit(NAND_HandleTypeDef* hnand){
   /* USER CODE END NAND_MspDeInit 1 */
 }
 
-/* USER CODE BEGIN 1 */
-
-/* USER CODE END 1 */
-
-/**
-  * @}
-  */
-
-/**
-  * @}
-  */
-
-/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
