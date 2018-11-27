@@ -36,6 +36,7 @@
 /** @defgroup WAVEPLAYER_Private_FunctionPrototypes
   * @{
   */
+void toggleBuffers(void);
 static void WavePlayer_ReadAndParse(const char* WavName, WAV_Format* WAVE_Format);
 static void ToggleBufferSign(uint32_t* pBuffer, uint32_t BufferSize);
 uint32_t ReadUnit(uint8_t *buffer, uint8_t idx, uint8_t NbrOfBytes, Endianness BytesFormat);
@@ -43,19 +44,44 @@ uint32_t ReadUnit(uint8_t *buffer, uint8_t idx, uint8_t NbrOfBytes, Endianness B
   * @}
   */
 
+// Buffers for playing from SD card
+uint16_t *audioBuffer1;
+uint16_t *audioBuffer2;
+
+// 0 if currently playing buffer 2 (reading 1)
+// 1 if currently playing buffer 1 (reading 2)
+uint8_t buffer = 0;
+
+// 0 if neither buffer needs to be read before the other finishes
+// 1 if one buffer needs to be read before the other finishes playing
+uint8_t readyToRead = 0;
+
+// Define statements to select READ_BUFFER or PLAY_BUFFER
+// based on which is being played and which is being filled
+#define READ_BUFFER (buffer ? audioBuffer2 : audioBuffer1)
+#define PLAY_BUFFER (buffer ? audioBuffer1 : audioBuffer2)
+
 // Handles for initialization
 DAC_HandleTypeDef hdac;
 DMA_HandleTypeDef hdma_dac1;
 TIM_HandleTypeDef htim6;
 
 // Globally keep track of the number of plays
-int numberPlays;
+int32_t numberPlays;
 WAV_Format *playingWav;
 FIL F;
 
 /** @defgroup WAVEPLAYER_Private_Functions
   * @{
   */
+
+/*
+ * Toggles which buffer is being filled and which is being played
+ */
+void toggleBuffers(void)
+{
+	buffer = !buffer;
+}
 
 /**
   * @brief  Wave player Initialization
@@ -66,6 +92,12 @@ void WAV_Init(void)
 {
 	DAC_ChannelConfTypeDef sConfig;
 	TIM_MasterConfigTypeDef sMasterConfig;
+	
+	audioBuffer1 = (uint16_t*)malloc(sizeof(uint8_t) * AUD_BUF_BYTES);
+	audioBuffer2 = (uint16_t*)malloc(sizeof(uint8_t) * AUD_BUF_BYTES);
+
+	// If memory allocation failed, stop here and return
+	if (audioBuffer1 == NULL || audioBuffer2 == NULL) return;
 
 	/* GPIO Ports Clock Enable */
 	__HAL_RCC_GPIOA_CLK_ENABLE();
@@ -79,10 +111,6 @@ void WAV_Init(void)
     /* Enable the DMA IRQ --------------------------------------*/
     NVIC_SetPriority(DMA1_Stream5_IRQn, 0x40);
     NVIC_EnableIRQ(DMA1_Stream5_IRQn);
-
-    /* Enable Transfer Complete Interrupt on channel 5 */
-    //DMA1_Stream5->CR |= DMA_SxCR_TCIE;
-
 
 	/******************************* Init DAC channel 1 (PA4) *******************/
 
@@ -110,24 +138,10 @@ void WAV_Init(void)
 
 }
 
-/**
-	* @brief  Checks the format of the .WAV file and gets information about the audio
-	*         format. This is done by reading the value of a number of parameters
-	*         stored in the file header and comparing these to the values expected
-	*         authenticates the format of a standard .WAV  file (44 bytes will be read).
-	*         If  it is a valid .WAV file format, it continues reading the header
-	*         to determine the  audio format such as the sample rate and the sampled
-	*         data size. If the audio format is supported by this application, it
-	*         retrieves the audio format in WAVE_Format structure and returns a zero
-	*         value. Otherwise the function fails and the return value is nonzero.
-	*         In this case, the return value specifies the cause of  the function
-	*         fails. The error codes that can be returned by this function are declared
-	*         in the header file.
-	* @param  WavName: wav file name
-	* @param  FileLen: wav file length   
-	* @retval Zero value if the function succeed, otherwise it returns a nonzero 
-	*         value which specifies the error code.
-	*/
+/*
+ * Attempts to read and parse a WAV file on SD card
+ * Any error code is stored in WAVE_Format->Error
+ */
 void WavePlayer_ReadAndParse(const char* WavName, WAV_Format* WAVE_Format)
 {
 	UINT BytesRead;
@@ -245,7 +259,7 @@ void WavePlayer_ReadAndParse(const char* WavName, WAV_Format* WAVE_Format)
 	if(temp != DATA_ID){
 		f_close(&F);
 		WAVE_Format->Error = Unvalid_DataChunk_ID;
-                return;
+		return;
 	}
 
 	/* Read the number of sample data ------------------------------------------*/
@@ -253,118 +267,167 @@ void WavePlayer_ReadAndParse(const char* WavName, WAV_Format* WAVE_Format)
 										4, LittleEndian);
 
 	WAVE_Format->SpeechDataOffset += 4;
-	// WaveCounter =  SpeechDataOffset;
 	f_close(&F);
 	WAVE_Format->Error = Valid_WAVE_File;
-        return;
+	return;
 }
 
 /**
-	* @brief  Reads .WAV file into memory
+	* @brief  Reads .WAV file and saves needed info in struct W
 	* @param  FileName: pointer to the wave file name to be read
 	* @param  FileLen: pointer to the wave struct
 	* @retval None
 	*/
 uint8_t WAV_Import(const char* FileName, WAV_Format* W)
 {
-	UINT BytesRead;
+	uint8_t i = 0;
 
 	/* Read the Speech wave file status */
 	WavePlayer_ReadAndParse((const char*)FileName, W);
+
+	// Copy Filename up to 64 characters to WAV_Format struct
+	while (FileName[i] != '\0' && i < 64) {
+		W->Filename[i] = FileName[i];
+	} 
 
 	if (W->Error != Valid_WAVE_File) {
 		return W->Error;
 	}
 	
-	/* Allocate memory for wav file */
-	W->DataBuffer = (uint32_t*)malloc(sizeof(uint8_t) * W->DataSize);
-	if (W->DataBuffer == NULL) {
-		W->Error = BufferAllocationFailed;
-		return W->Error;
-	}
-	
-	
-	playingWav = W;
-
-	/* Open wave data file */
-	f_open(&F, FileName, FA_READ);
-	
-	/* Jump to wave data */
-	f_lseek(&F, W->SpeechDataOffset);
-
-	/* Store data in buffer selected by user */
- 	f_read(&F, W->DataBuffer, W->DataSize, &BytesRead);
-
-	/* Close file */
-	f_close(&F);
-
-	/* Convert 16 Bit Signed to 16 Bit Unsigned */
-	ToggleBufferSign(W->DataBuffer, W->DataSize / 4);
 
 	return 0;
 }  
 	
 /**
-	* @brief  DMA transfer complete 
+	* @brief  DMA transfer complete
 	* @param  None
 	* @retval None
 	*/
 void DMA1_Stream5_IRQHandler(void)
 {
-	uint32_t *bufferStart;
-	uint32_t bufferSize;
+	// PLay entire buffer unless changed later
+	uint32_t bufferSize = AUD_BUF_BYTES / 2;
+	
+	// This function is responsible for setting the next read position
+	// playingWav->DataPos is location of next sample to read from file
 	
 	HAL_DMA_IRQHandler(&hdma_dac1);
-	
-	// If the wav file is larger than DMA max size
-	// Need to do multitransfer
-	if (playingWav->DataSize / 2 > 65535) {
-		// Stop DMA transfer
-		HAL_DAC_Stop_DMA(&hdac, DAC_CHANNEL_1);
-	
-		// Set new data position for next transfer
-		playingWav->DataPos += 65535;
 
-		// Determine the next transfer
-		if (playingWav->DataPos + 65535 <= playingWav->DataSize / 2) {
-			// Still need another full DMA transfer
-			bufferSize = 65535;
-			// DataBuffer is 32 bit pointer, DataPos is 16 bit
-			bufferStart = playingWav->DataBuffer + (playingWav->DataPos * 2);
-		} else if (playingWav->DataPos < playingWav->DataSize / 2) {
-			// Still need another DMA transfer, but not max size
-			bufferSize = playingWav->DataSize / 2 - playingWav->DataPos;
-			// DataBuffer is 32 bit pointer, DataPos is 16 bit
-            bufferStart = playingWav->DataBuffer + (playingWav->DataPos * 2);
-		} else {
-			// Finished a WAV file, restart if number of plays is fine
-			bufferStart = playingWav->DataBuffer;
-			// Already know this is a multitransfer WAV file, set to max size
-			bufferSize = 65535;
-	
-			if (numberPlays == 1) {
-        		HAL_TIM_Base_Stop(&htim6);
-        	} else if (numberPlays <= REPEAT_ALWAYS) {
-        	    numberPlays = REPEAT_ALWAYS;
-        	} else {
-         	   numberPlays--;
-        	}
-		}
-
-		HAL_DAC_Start_DMA(&hdac, DAC_CHANNEL_1, bufferStart,
-        bufferSize, DAC_ALIGN_12B_L);
-	
-	} else {
-		// WAV file is played entirely in 1 DMA transfer 
-		// If the last play has occurred, stop
+	// Has a WAV file just completed?
+	if (playingWav->DataPos - AUD_BUF_BYTES < 0) {
+		// Determine to stop playing WAV file
     	if (numberPlays == 1) {
+			// Done, stop timer but set up transfer in case user
+			// wishes to restart WAV file
     	    HAL_TIM_Base_Stop(&htim6);
+			numberPlays = 0;
+			// Reset next data read
+			playingWav->DataPos = 0;
     	} else if (numberPlays <= REPEAT_ALWAYS) {
     	    numberPlays = REPEAT_ALWAYS;
     	} else {
     	    numberPlays--;
     	}
+
+		// For a WAV restart, other buffer is ready so play it
+		// Timer is stopped for non repeating WAV files
+	
+		playingWav->DataPos -= playingWav->DataSize;
+
+	} else {
+		// Not done playing, start playing other buffer
+		if (numberPlays == 1 &&
+		(playingWav->DataPos + AUD_BUF_BYTES > playingWav->DataSize)) {
+			// Not repeating another time and audio buffer is larger than
+			// remaining number of samples to be played
+			// Only play remaining samples, even though buffer is filled
+			// as if the file is repeating
+			bufferSize = playingWav->DataSize - playingWav->DataPos;
+			playingWav->DataPos = playingWav->DataSize;
+		} else if (playingWav->DataPos + AUD_BUF_BYTES > playingWav->DataSize) {
+			// Remaining samples less than buffer size, but a repeat is coming
+			// So start playing the beginning of the new file
+			playingWav->DataPos -= (playingWav->DataSize - AUD_BUF_BYTES);
+		} else {
+			playingWav->DataPos += AUD_BUF_BYTES;
+		}
 	}
+
+	// Make sure the new data position is valid (non negative)
+	// Reset data position to zero if a WAV file is done playing
+	if (playingWav->DataPos < 0 || \
+	playingWav->DataPos >= playingWav->DataSize || \
+	numberPlays == 0) {
+		playingWav->DataPos = 0;
+	}
+	
+	// Swap which buffer is playing before playing the new buffer
+	toggleBuffers();
+
+	HAL_DAC_Start_DMA(&hdac, DAC_CHANNEL_1, (uint32_t*)PLAY_BUFFER,
+	bufferSize, DAC_ALIGN_12B_L);
+	
+	// Set flag so the other buffer can be filled now
+	readyToRead = 1;
+}
+
+/*
+ * This function updates the WAV file buffers
+ * by reading in new samples to fill the buffer
+ * If not enough samples exist before end of file,
+ * this will fill the remainder from the beginning
+ * of the file. This means a WAV file cannot be less than
+ * half of the size of the buffer (Over 1600 2 byte samples)
+ * This function must be called again with enough time to 
+ * execute before the other buffer is done playing
+ */
+FRESULT WAV_Update(void)
+{
+	FRESULT res;
+	UINT BytesRead;
+	
+	// If WAV data does not need to be read, return
+	if (!readyToRead) return 0;
+
+	/* Open wave data file */
+    res = f_open(&F, playingWav->Filename, FA_READ);
+	if (res != FR_OK) return res;
+	
+    /* Jump to correct wave data */
+    res = f_lseek(&F, playingWav->SpeechDataOffset + playingWav->DataPos);
+	if (res != FR_OK) return res;
+
+	// Read WAV data
+	if (playingWav->DataPos + AUD_BUF_BYTES > playingWav->DataSize) {
+		// This will reach the end of the file
+        res = f_read(&F, READ_BUFFER, playingWav->DataSize, &BytesRead);
+		if (res != FR_OK) return res;
+        playingWav->DataPos = AUD_BUF_BYTES - playingWav->DataSize;
+        // Set file pointer to correct position again
+        res = f_lseek(&F, playingWav->SpeechDataOffset + playingWav->DataPos);
+		if (res != FR_OK) return res;
+        // Read remaining data
+        res = f_read(&F, (uint16_t*)((uint8_t*)READ_BUFFER + playingWav->DataSize),
+        AUD_BUF_BYTES - playingWav->DataSize, &BytesRead);
+		if (res != FR_OK) return res;
+	} else {
+		// Remaining sample data is of grater size than buffer
+		// so read in samples to fill buffer
+        res = f_read(&F, READ_BUFFER, AUD_BUF_BYTES, &BytesRead);
+		if (res != FR_OK) return res;
+        playingWav->DataPos = AUD_BUF_BYTES;
+	}
+
+    /* Close file */
+    f_close(&F);
+
+	/* Convert 16 Bit Signed to 16 Bit Unsigned */
+	ToggleBufferSign((uint32_t*)READ_BUFFER, AUD_BUF_BYTES / 4);
+
+	/* Finished reading into the read buffer, no longer ready to read */
+	readyToRead = 0;
+	
+	return res;
 }
 
 /**
@@ -413,9 +476,10 @@ static void ToggleBufferSign(uint32_t* pBuffer, uint32_t BufferSize)
 }
 
 /**
-	* @brief  Starts playing audio stream from the audio Media.
-	* @param  Addr: Buffer address 
-	* @param  Size: Buffer size  
+	* @brief  Starts playing audio stream from the audio Media. Only
+	* works for audio files of size not less than half of 
+	* the audio buffer size (6400 bytes)
+	* 
 	* @retval None
 	*/
 void WAV_Play(WAV_Format* W, int numPlays)
@@ -429,9 +493,21 @@ void WAV_Play(WAV_Format* W, int numPlays)
 	// This allows interrupt to call this function with a decrement
 	if (numPlays < 0) numPlays = REPEAT_ALWAYS;
 	
+	// Reset data position to 0
+	W->DataPos = 0;
+
+	// Save the currently playing WAV file
+	playingWav = W;
+	
 	/* Save data for DMA interrupt */
 	numberPlays = numPlays;
 
+	/* Set read ready flag */
+	readyToRead = 1;
+	
+	/* Read correct data into read buffer */
+	WAV_Update();
+	
 	/* Deinitialize everything */
 	HAL_TIM_Base_Stop(&htim6);
     HAL_DAC_Stop(&hdac,DAC_CHANNEL_1);
@@ -447,18 +523,25 @@ void WAV_Play(WAV_Format* W, int numPlays)
 	// Start DAC
 	HAL_DAC_Start(&hdac,DAC_CHANNEL_1);
 
-	// If the buffer size is greater than max DMA transfer size,
-	// set to max size and interrupt will handle the rest
-	if (W->DataSize / 2 > 65535) {
-		bufferSize = 65535;
-	} else {
+	// If the buffer size is greater than the WAV file
+	// and no repeats, only play WAV file contents
+	if (W->DataPos < AUD_BUF_BYTES && numberPlays == 1) {
 		bufferSize = W->DataSize / 2;
+	} else {
+		bufferSize = AUD_BUF_BYTES;
 	}
+	
+	// Swap read and play buffers so we play the data just read
+	toggleBuffers();
 	
 	// Start DAC with DMA (12 Bit DAC)
 	// 12 bit left alignment ignores 4 lsb of 16 bit data
-	HAL_DAC_Start_DMA(&hdac, DAC_CHANNEL_1, W->DataBuffer,
+	HAL_DAC_Start_DMA(&hdac, DAC_CHANNEL_1, (uint32_t*)PLAY_BUFFER,
 		bufferSize, DAC_ALIGN_12B_L);
+
+	// Set flag so the other buffer can be filled now
+	readyToRead = 1;
+	
 
 }
 
@@ -474,16 +557,10 @@ void WAV_Pause(void)
  */
 void WAV_Resume(void)
 {
-	/* Enable TIM6 if number of plays is nonzero */
-	if (numberPlays != 0) HAL_TIM_Base_Start(&htim6);
+	/* Enable TIM6 */
+	HAL_TIM_Base_Start(&htim6);
 }
 
-void WAV_Destroy(WAV_Format* W)
-{
-	/* Free the previously allocated data buffer */
-	free(W->DataBuffer);
-	return;
-}
 /**
 	* @brief  Executed at each timer interruption (option must be enabled)
 	* @param  None

@@ -86,8 +86,11 @@ Finally, the data chunk contains the sample data:
 #define TIM6FREQ 84000000
 /**
   * @}
-  */  
- 
+  */
+
+// Each audio Buffer size = 6400 Bytes, total = 12800 Bytes 
+#define AUD_BUF_BYTES 6400
+
 /** @defgroup WAVEPLAYER_Exported_Types
   * @{
   */
@@ -112,6 +115,7 @@ typedef struct
   uint32_t  SpeechDataOffset;
   uint32_t *DataBuffer;
   uint32_t  DataPos;
+  char      Filename[64];
   uint16_t  Error;
 } WAV_Format;
 
@@ -183,13 +187,12 @@ typedef enum
 /** @defgroup WAVEPLAYER_Exported_functions
   * @{
   */
-// void Menu_WavePlayerFunc(void);
 void WAV_Init(void);
 uint8_t WAV_Import(const char* FileName, WAV_Format* W);
 void WAV_Play(WAV_Format* W, int numPlays);
+FRESULT WAV_Update(void);
 void WAV_Pause(void);
 void WAV_Resume(void);
-void WAV_Destroy(WAV_Format* W);
 #ifdef __cplusplus
 }
 #endif
