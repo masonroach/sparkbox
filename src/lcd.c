@@ -576,8 +576,7 @@ static void initILI9341(void) {
 	LcdWriteData(0xC1);   //--
  
 	LcdWriteCmd(MEMORY_ACCESS_CTRL);	// Memory Access Control 
-	LcdWriteData(0xE8);	// What we need
-//	LcdWriteData(0x08);	// Default/fast
+	LcdWriteData(0x3C);	// Horizontal RGB
 
 	LcdWriteCmd(PIXEL_FORMAT_SET);	
 	LcdWriteData(0x55); 

@@ -3,13 +3,14 @@ clear variables
 clear figures
 
 %% Input parameters
-inputPng = sprintf('testSprite3.png');
+inputPng = input('Input .png file to convert: ', 's');
+numFrames = input('Input the number of frames in the sprite sheet: ');
 outputFile = strrep(inputPng, '.png', '.sparksprite');
 
 %% Parse png data
 [RGB, map, alpha] = imread(inputPng);
 % Seperate into RGBA. When diving uint8 in MATLAB, automatically rounds.
-% ./8 rounds to the third LSB.
+% Dividing on powers of two imitates right shifting with roundings.
 R = RGB(:,:,1)./8;
 G = RGB(:,:,2)./4;
 B = RGB(:,:,3)./8;
@@ -96,10 +97,12 @@ fwrite(fout, size(A, 1), 'uint16');
 fwrite(fout, size(A, 2), 'uint16');
 
 % uint16: number of colors in the palette
-fwrite(fout, pnum, 'uint16');
+fwrite(fout, pColors, 'uint16');
+
+% uint16: numFrames
+fwrite(fout, numFrames, 'uint16');
 
 % uint16: Reserved
-fwrite(fout, 0, 'uint16');
 fwrite(fout, 0, 'uint16');
 fwrite(fout, 0, 'uint16');
 fwrite(fout, 0, 'uint16');
@@ -125,7 +128,7 @@ fprintf(cout, 'const uint16_t fakeSpriteFile[] = {\n');
 fprintf(cout, '\t0x%04X,\t// Width = %d\n', width, width);
 fprintf(cout, '\t0x%04X,\t// Height = %d\n', height, height);
 fprintf(cout, '\t0x%04X,\t// Colors = %d\n', pColors, pColors);
-fprintf(cout, '\t0x%04X,\t// Reserved\n', 0);
+fprintf(cout, '\t0x%04X,\t// numFrames = %d\n', numFrames, numFrames);
 fprintf(cout, '\t0x%04X,\t// Reserved\n', 0);
 fprintf(cout, '\t0x%04X,\t// Reserved\n', 0);
 fprintf(cout, '\t0x%04X,\t// Reserved\n', 0);
