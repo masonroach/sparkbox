@@ -3,6 +3,8 @@
 uint16_t *videoBuffer1;
 uint16_t *videoBuffer2;
 
+uint16_t *indexBuffer;
+
 // 0 if currently playing buffer 2 (reading 1)
 // 1 if currently playing buffer 1 (reading 2)
 uint8_t videoBuffer = 0;
@@ -28,9 +30,13 @@ void initVideo(void)
 	// Allocate memory for video buffers
 	videoBuffer1 = (uint16_t*)malloc(sizeof(uint8_t) * VID_BUF_BYTES);
 	videoBuffer2 = (uint16_t*)malloc(sizeof(uint8_t) * VID_BUF_BYTES);
+	// Buffer storing indexes of palette data is 1/4 size of video buffers
+	indexBuffer = (uint16_t*)malloc(sizeof(uint8_t) * VID_BUF_BYTES / 4);
 
 	// If memory allocation failed, stop here and return
-	if (videoBuffer1 == NULL || videoBuffer2 == NULL) return;
+	if (videoBuffer1 == NULL || 
+		videoBuffer2 == NULL || 
+		indexBuffer == NULL) return;
 
 	// Initialize DMA for video
 	/* DMA controller clock enable */
@@ -52,10 +58,6 @@ void initVideo(void)
 	sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
 	HAL_TIMEx_MasterConfigSynchronization(&htim7, &sMasterConfig);
 	
-	// Stop DMA but turn on Timer 7
-	HAL_DMA_Abort_IT(&hdma_tim7_up);
-	HAL_TIM_Base_Start(&htim7);
-	
 }
 /**
 	* @brief Reads the corrct data into the correct video buffer
@@ -65,6 +67,12 @@ void initVideo(void)
 FRESULT readToVideoBuffer(void)
 {
 	// Based on number of transfers left, read correct data into READ_BUFFER
+	// bufferTransfers stores number of unfinished transfers to LCD with DMA
+
+	// Read indexes into indexBuffer from SD
+
+	// Write actual colors to READ_BUFFER
+
 	return FR_OK;
 }
 
@@ -78,13 +86,16 @@ void updateFrame(void)
 	// Stop old DMA transfers
 	HAL_DMA_Abort_IT(&hdma_tim7_up);
 
-	// Write new frame to SD card based on layers and sprites
-
-	// Initialize LCD to be ready for continuous raw data
+	// Initialize LCD to be ready for continuous data
+	LcdSetPos(0, 0, LCD_WIDTH, LCD_HEIGHT);
+    LcdWriteCmd(MEMORY_WRITE);
 	
-	// read new frame from SD card to LCD
+	// read new frame into one videoBuffer
 	readToVideoBuffer();
 	toggleVideoBuffers();
+
+	// Frame update is beginning, set FPS pin high
+	LCD_FPS_HIGH;
 
 	// Start new transfer, configuring DMA user callbacks
 	HAL_DMA_Start_IT(&hdma_tim7_up, (uint32_t)PLAY_BUFFER, (uint32_t)(fsmc_data),
@@ -111,17 +122,23 @@ void DMA1_Stream2_IRQHandler(void)
 {
 	HAL_DMA_IRQHandler(&hdma_tim7_up);
 
+	// Stop transfer if it is somehow still occurring
+	HAL_DMA_Abort_IT(&hdma_tim7_up);
+
 	// Update number of buffer transfers remaining
 	bufferTransfers--;
 	toggleVideoBuffers();
 
 	if (bufferTransfers == 0) {
-		// Frame is completely written to LCD, start new transfer
+		// Frame is completely written to LCD, get ready for next transfer
 		// Reset buffer transfer counter
 		bufferTransfers = NUM_TRANSFERS;
 		
 		// Stop timer to stop DMA
 		HAL_TIM_Base_Stop(&htim7);
+
+		// Done updating frame, set FPS pin low
+		LCD_FPS_LOW;
 	} else {
 		// Start new transfer, configuring DMA user callbacks
 		HAL_DMA_Start_IT(&hdma_tim7_up, (uint32_t)PLAY_BUFFER, (uint32_t)(fsmc_data), 

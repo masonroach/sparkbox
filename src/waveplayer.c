@@ -139,16 +139,14 @@ void WAV_Init(void)
 	
 	/******************************* Stdby Configuration *************************/
 	/* Configure PA9 as output*/
-	/* Configure GPIO pin Output Level */
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_RESET);
-
-	/*Configure GPIO pin : PA9 */
 	GPIO_InitStruct.Pin = GPIO_PIN_9;
 	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
 	HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 	
+	/* Configure GPIO pin Output Level */
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_RESET);
 }
 
 /*
@@ -321,7 +319,7 @@ void DMA1_Stream5_IRQHandler(void)
 	// PLay entire buffer unless changed later
 	uint32_t bufferSize = AUD_BUF_BYTES / 2;
 	
-	// This function is responsible for setting the next read position
+	// This IT handler is responsible for setting the next read position
 	// playingWav->DataPos is location of next sample to read from file
 	
 	HAL_DMA_IRQHandler(&hdma_dac1);
