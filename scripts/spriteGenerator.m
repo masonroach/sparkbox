@@ -16,14 +16,14 @@ G = RGB(:,:,2)./4;
 B = RGB(:,:,3)./8;
 A = bitsrl(alpha, 7);
 
-height = size(A, 1);
-width = size(A, 2);
+sheetHeight = size(A, 1);
+sheetWidth = size(A, 2);
 
 %% Build the color palette
 palette = zeros(15, 3);
 pColors = 0;
-for y = 1:height
-    for x = 1:width
+for y = 1:sheetHeight
+    for x = 1:sheetWidth
     
         if (A(y,x)) % Check to see if the pixel is transparent
             % If no colors are in the palette yet, add the color
@@ -63,12 +63,12 @@ finalPalette = bitsll(palette(:, 1), 11) ...
     + bitsll(palette(:, 2), 5) + palette(:, 3);
 
 % Convert the picture to an array
-converted = zeros(width*height,1);
-for y = 1:height
-    for x = 1:width
+converted = zeros(ceil(sheetWidth*sheetHeight/4)*4,1);
+for y = 1:sheetHeight
+    for x = 1:sheetWidth
         % Check to see if the pixel is transparent
         if (~A(y,x))
-            converted((y-1)*width + x) = 0; % write 0 for transparent values
+            converted((y-1)*sheetWidth + x) = 0; % write 0 for transparent values
             continue;
         end
         
@@ -78,7 +78,7 @@ for y = 1:height
                  (G(y,x) == palette(pnum, 2)) && ...
                  (B(y,x) == palette(pnum, 3)) )
                 
-                converted((y-1)*width + x) = pnum;
+                converted((y-1)*sheetWidth + x) = pnum;
                 break;
             end
         end
@@ -91,18 +91,17 @@ fout = fopen(outputFile, 'w');
 
 % Write metadata
 % uint16: Width
-fwrite(fout, size(A, 1), 'uint16');
+fwrite(fout, sheetWidth, 'uint16');
 
 % uint16: Height
-fwrite(fout, size(A, 2), 'uint16');
+fwrite(fout, sheetHeight/numFrames, 'uint16');
 
 % uint16: number of colors in the palette
-fwrite(fout, pColors, 'uint16');
-
-% uint16: numFrames
-fwrite(fout, numFrames, 'uint16');
+fwrite(fout, bitand(numFrames, 255)*(2^8) ...
+    + bitand(0, 15)*(2^4) + bitand(pColors, 15), 'uint16');
 
 % uint16: Reserved
+fwrite(fout, 0, 'uint16');
 fwrite(fout, 0, 'uint16');
 fwrite(fout, 0, 'uint16');
 fwrite(fout, 0, 'uint16');
@@ -125,10 +124,10 @@ cout = fopen(coutName, 'w');
 
 % Print Headers
 fprintf(cout, 'const uint16_t fakeSpriteFile[] = {\n');
-fprintf(cout, '\t0x%04X,\t// Width = %d\n', width, width);
-fprintf(cout, '\t0x%04X,\t// Height = %d\n', height, height);
-fprintf(cout, '\t0x%04X,\t// Colors = %d\n', pColors, pColors);
-fprintf(cout, '\t0x%04X,\t// numFrames = %d\n', numFrames, numFrames);
+fprintf(cout, '\t0x%04X,\t// Width = %d\n', sheetWidth, sheetWidth);
+fprintf(cout, '\t0x%04X,\t// Height = %d\n', sheetHeight/numFrames, sheetHeight/numFrames);
+fprintf(cout, '\t0x%02X%01X%01X,\t// numFrames = %d, 4 reserved bits, Colors = %d\n', numFrames, 0, pColors, numFrames, pColors);
+fprintf(cout, '\t0x%04X,\t// Reserved\n', 0);
 fprintf(cout, '\t0x%04X,\t// Reserved\n', 0);
 fprintf(cout, '\t0x%04X,\t// Reserved\n', 0);
 fprintf(cout, '\t0x%04X,\t// Reserved\n', 0);
