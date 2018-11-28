@@ -37,7 +37,7 @@
   * @{
   */
 void toggleBuffers(void);
-static void WavePlayer_ReadAndParse(const char* WavName, WAV_Format* WAVE_Format);
+static void WavePlayer_ReadAndParse(WAV_Format* WAVE_Format);
 static void ToggleBufferSign(uint32_t* pBuffer, uint32_t BufferSize);
 uint32_t ReadUnit(uint8_t *buffer, uint8_t idx, uint8_t NbrOfBytes, Endianness BytesFormat);
 /**
@@ -92,6 +92,7 @@ void WAV_Init(void)
 {
 	DAC_ChannelConfTypeDef sConfig;
 	TIM_MasterConfigTypeDef sMasterConfig;
+	GPIO_InitTypeDef GPIO_InitStruct;
 	
 	audioBuffer1 = (uint16_t*)malloc(sizeof(uint8_t) * AUD_BUF_BYTES);
 	audioBuffer2 = (uint16_t*)malloc(sizeof(uint8_t) * AUD_BUF_BYTES);
@@ -135,14 +136,26 @@ void WAV_Init(void)
 	sMasterConfig.MasterOutputTrigger = TIM_TRGO_UPDATE;
 	sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
 	HAL_TIMEx_MasterConfigSynchronization(&htim6, &sMasterConfig);
+	
+	/******************************* Stdby Configuration *************************/
+	/* Configure PA9 as output*/
+	/* Configure GPIO pin Output Level */
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_RESET);
 
+	/*Configure GPIO pin : PA9 */
+	GPIO_InitStruct.Pin = GPIO_PIN_9;
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+	HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+	
 }
 
 /*
  * Attempts to read and parse a WAV file on SD card
  * Any error code is stored in WAVE_Format->Error
  */
-void WavePlayer_ReadAndParse(const char* WavName, WAV_Format* WAVE_Format)
+void WavePlayer_ReadAndParse(WAV_Format* WAVE_Format)
 {
 	UINT BytesRead;
 	uint32_t temp = 0x00;
@@ -150,7 +163,7 @@ void WavePlayer_ReadAndParse(const char* WavName, WAV_Format* WAVE_Format)
 	uint16_t TempBuffer[_MAX_SS];
 	uint8_t res;
 	
-	f_open(&F, WavName, FA_READ);
+	f_open(&F, WAVE_Format->Filename, FA_READ);
 
 	res = f_read(&F, TempBuffer, _MAX_SS, &BytesRead);
 	if (res) {
@@ -282,13 +295,13 @@ uint8_t WAV_Import(const char* FileName, WAV_Format* W)
 {
 	uint8_t i = 0;
 
-	/* Read the Speech wave file status */
-	WavePlayer_ReadAndParse((const char*)FileName, W);
-
 	// Copy Filename up to 64 characters to WAV_Format struct
 	while (FileName[i] != '\0' && i < 64) {
 		W->Filename[i] = FileName[i];
-	} 
+	}
+ 
+	/* Read the Speech wave file status */
+	WavePlayer_ReadAndParse(W);
 
 	if (W->Error != Valid_WAVE_File) {
 		return W->Error;
