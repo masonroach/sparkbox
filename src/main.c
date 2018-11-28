@@ -14,7 +14,7 @@ FIL MyFile;     /* File object */
 int main(void) {
 	
 	systemInit();
-
+	
 	lcdTest();
 
 	if (!sdTest()) {
@@ -45,8 +45,8 @@ void systemInit(void) {
 	initLeds();
 	initButton();
 	initButtons();
-	initLcd();
 	WAV_Init();
+	initLcd();
 //	initSdSpi();
 	// RCC->AHB1ENR    |=   RCC_AHB1ENR_GPIODEN;
 	// RCC->AHB1ENR    |=   RCC_AHB1ENR_GPIOCEN;
@@ -58,7 +58,7 @@ void systemInit(void) {
 	 * LEDs will continue to light up in a circle.
 	 */
 //	usartSendString("Initialized. Press button to continue.\r\n");
-	while (1/*!readButton()*/) {
+	while (!readButton()) {
 		i > 8 ? i = 0 : i++;
 		ledMap((0xFF >> (8-i)) & 0xFF);
 //		ledMap(0xFF & rand32());
@@ -71,10 +71,10 @@ void systemInit(void) {
 }
 
 void lcdTest(void) {
+	uint8_t leds = 0x00;
 	uint8_t *testString = (uint8_t *)"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-	uint16_t temp;
-	sprite testSprite;
-	sprite *tSprite;
+	uint32_t pixel;
+	sprite *testSprite;
 
 	// Test lcd coordinates/orientation
 	LcdPutPixel(20, 20, LCD_COLOR_RED);
@@ -83,6 +83,7 @@ void lcdTest(void) {
 	LcdDrawRectangle(310, 0, 10, 10, LCD_COLOR_BLUE);
 	LcdPutPixel(20, 219, LCD_COLOR_GREEN);
 	LcdDrawRectangle(0, 229, 10, 10, LCD_COLOR_GREEN);
+	ledOn(leds++);
 
 	while (!readButton());
 	delayms(50);
@@ -97,6 +98,7 @@ void lcdTest(void) {
 	LcdDrawInt(20, 120, 256, LCD_COLOR_WHITE, LCD_COLOR_BLACK);
 	LcdDrawInt(20, 180, 10, LCD_COLOR_WHITE, LCD_COLOR_BLACK);
 	LcdDrawHex(20, 150, 0xDEAD, LCD_COLOR_WHITE, LCD_COLOR_BLACK);
+	ledOn(leds++);
 
 	while (!readButton());
 	delayms(50);
@@ -104,9 +106,30 @@ void lcdTest(void) {
 
 	// Test reading a pixel
 	LcdFillScreen(0xFEED);
-	temp = LcdReadPixel(50, 50);
-	LcdDrawHex(10, 10, temp, LCD_COLOR_WHITE, LCD_COLOR_BLACK);
-	
+	LcdDrawString(10, 10, (uint8_t *)"888 FORMAT = ", LCD_COLOR_WHITE, LCD_COLOR_BLACK);
+	LcdDrawString(10, 30, (uint8_t *)"565 FORMAT = ", LCD_COLOR_WHITE, LCD_COLOR_BLACK);
+	pixel = LcdReadPixel(50, 50);
+	LcdDrawHex(100, 10, pixel, LCD_COLOR_WHITE, LCD_COLOR_BLACK);
+	LcdDrawHex(100, 30, COLOR_888_TO_565(pixel), LCD_COLOR_WHITE, LCD_COLOR_BLACK);
+	ledOn(leds++);
+
+	while (!readButton());
+	delayms(50);
+	while (readButton());
+
+	// Malloc testing
+	LcdFillScreen(0x1234);
+	testSprite = test_getSprite();
+	if (testSprite == NULL) {
+		// ERROR
+		ledError(LED_ERROR);
+	}
+	LcdDrawString(10, 10, (uint8_t *)"MALLOC TEST", LCD_COLOR_WHITE, LCD_COLOR_BLACK);
+	LcdDrawString(10, 30, (uint8_t *)"SPRITE", LCD_COLOR_WHITE, LCD_COLOR_BLACK);
+	LcdDrawString(10, 50, (uint8_t *)"PALETTE", LCD_COLOR_WHITE, LCD_COLOR_BLACK);
+	LcdDrawHex(70, 30, (uint32_t)testSprite, LCD_COLOR_WHITE, LCD_COLOR_BLACK);
+	LcdDrawHex(70, 50, (uint32_t)(testSprite->palette), LCD_COLOR_WHITE, LCD_COLOR_BLACK);
+	ledOn(leds++);
 
 	while (!readButton());
 	delayms(50);
@@ -114,31 +137,25 @@ void lcdTest(void) {
 	delayms(1000);
 
 	// Test sprites
-	if (test_getSprite(&testSprite)) {
+	if (testSprite == NULL) {
 		// ERROR
 		ledError(LED_ERROR);
 	}
-	drawSprite(&testSprite);
+	drawSpriteDebug(testSprite);
+	ledOn(leds++);
 
 	while (!readButton());
 	delayms(50);
 	while (readButton())
-	delayms(1000);
-/*
-	test_fseek(0, TEST_SEEK_SET);
-	test_drawSprite();
+	ledOn(leds++);
 
-	while (!readButton());
-	delayms(50);
-	while (readButton())
-	delayms(1000);
-*/
 	// Test filling screen
 	while (!readButton()) {
 		LcdFillScreen(LCD_COLOR_BLUE);
 		LcdFillScreen(LCD_COLOR_RED);
 		LcdFillScreen(LCD_COLOR_GREEN);
 	}
+	ledAllOff();
 
 	return;
 }

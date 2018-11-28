@@ -31,8 +31,8 @@
  */
 
 // Pointer to start address of FSMC
-static volatile uint16_t *fsmc_cmd = (uint16_t *)(0x60000000);
-static volatile uint16_t *fsmc_data = (uint16_t *)(0x60080000);
+volatile uint16_t * const fsmc_cmd = (uint16_t *)(0x60000000);
+volatile uint16_t * const fsmc_data = (uint16_t *)(0x60080000);
 
 /*
  * Prototypes for static functions
@@ -109,14 +109,13 @@ void LcdPutPixel(uint16_t x, uint16_t y, uint16_t color) {
 }
 
 // Read a single pixel at (x, y)
-uint16_t LcdReadPixel(uint16_t x, uint16_t y) {
-	uint16_t temp = 0x0000;
+uint32_t LcdReadPixel(uint16_t x, uint16_t y) {
+	uint32_t temp = 0x00000000;
 	LcdSetPos(x, y, x, y);
 	LcdWriteCmd(MEMORY_READ);
 	LcdReadData();	// Send dummy read signal
-	temp = LcdReadData();	// Get R[7..0], G[7..0]
-	temp = (temp & 0xF800) | ((temp & 0xFC) << 3);	// Convert to R[5], G[6]
-	temp |= LcdReadData() >> 11;	// Get B[8], convetrt to B[5]
+	temp = LcdReadData() << 8;	// Get R[7..0], G[7..0]
+	temp |= LcdReadData() >> 8;	// Get B[8]
 	return temp;
 }
 

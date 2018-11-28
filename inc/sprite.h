@@ -1,8 +1,10 @@
 #ifndef SPARK_SPRITE
 #define SPARK_SPRITE
 
-//#include <stdlib.h>
+#include <stdlib.h>
 #include <stdint.h>
+#include "ff.h"
+
 /*
  * sparksprite file map:
  * Width:       16-bit
@@ -15,27 +17,44 @@
  * ColorMap[x]: 4-bits each
  */
 
-typedef struct sprite {
-
-	/* Need some kind of file pointer */
-
+typedef struct {
+	FIL file;
 	uint16_t width;
 	uint16_t height;
+	uint16_t xpos;
+	uint16_t ypos;
+	uint16_t numColors;
+	uint16_t *palette;
 	uint8_t numFrames;
-	uint8_t numColors;
-	uint16_t palette[15];
+	uint8_t curFrame;
+	uint8_t flags;
 } sprite;
 
 typedef enum {
+	HIDE = 0x80,
+	CYCLE_FRAMES = 0x40,
+//	reserved = 0x20,
+//	reserved = 0x10,
+//	reserved = 0x08,
+//	reserved = 0x04,
+//	reserved = 0x02,
+//	reserved = 0x01
+} SPRITE_FLAG;
+
+typedef enum {
 	NOT_ENOUGH_MEMORY = 1,
+	NO_FILE_ACCESS = 2,
 	
 } SPRITE_ERROR;
 
-#define SAMPLE_SPRITE 4
+void drawSprite(sprite *inSprite);
+
+#define SAMPLE_SPRITE 5
 #if SAMPLE_SPRITE>0
 #include "lcd.h"
-void drawSprite(sprite *inSprite);
-uint8_t test_getSprite(sprite *inSprite);
+#include "sparkboxButtons.h"
+void drawSpriteDebug(sprite *inSprite);
+sprite *test_getSprite(void);
 uint16_t test_get16(void);
 uint16_t test_fseek(int32_t offset, uint8_t whence);
 

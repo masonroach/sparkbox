@@ -44,6 +44,12 @@
 #define LCD_FPS_HIGH	GPIOA->ODR |= (1 << 7)
 #define LCD_FPS_LOW		GPIOA->ODR &= ~(1 << 7)
 
+// Conversion between pixel colors
+#define COLOR_888_TO_565(color)	\
+	(((color&0xF80000) >> 8) | \
+	((color&0x00FC00) >> 5) | \
+	((color&0x0000F8) >> 3))
+
 // LCD dimensions
 #define LCD_WIDTH 320
 #define LCD_HEIGHT 240
@@ -155,7 +161,7 @@ uint16_t LcdReadData(void);
 void LcdEnterSleep(void);
 void LcdExitSleep(void);
 void LcdPutPixel(uint16_t x, uint16_t y, uint16_t color);
-uint16_t LcdReadPixel(uint16_t x, uint16_t y);
+uint32_t LcdReadPixel(uint16_t x, uint16_t y);
 void LcdFillScreen(uint16_t color);
 void LcdFillScreenCheckered(void);
 void LcdInvertDisplay(uint8_t invert);
