@@ -47,7 +47,7 @@ uint8_t SystemClock_Config(void) {
 	RCC_OscInitStruct.PLL.PLLM = 10; // Clock division (2<=PLLM<=63)
 	RCC_OscInitStruct.PLL.PLLN = 210; // Clock multiplication (50<=PLLN<=432)
 	RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2; // PLLP = 2, 4, 6, or 8
-	RCC_OscInitStruct.PLL.PLLQ = 10; // 2<=PLLQ<=15 SDIO and RNG clock divider (SDIO<=48MHz)
+	RCC_OscInitStruct.PLL.PLLQ = 10; // 2<=PLLQ<=15 SDIO and RNG clock divider (SDIO<=48MHz when PLLQ = 7)
 	// fPLLout = 16e6 * 210 / 10 / 2
 	HAL_RCC_OscConfig(&RCC_OscInitStruct);
 	
