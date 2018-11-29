@@ -40,6 +40,7 @@
 #include "stm32f4xx_hal.h"
 extern DMA_HandleTypeDef hdma_dac1;
 
+extern DMA_HandleTypeDef hdma_tim7_up;
 /* USER CODE BEGIN 0 */
 
 /* USER CODE END 0 */
@@ -160,6 +161,37 @@ void HAL_TIM_Base_MspInit(TIM_HandleTypeDef* htim_base)
 
   /* USER CODE END TIM6_MspInit 1 */
   }
+  else if(htim_base->Instance==TIM7)
+  {
+  /* USER CODE BEGIN TIM7_MspInit 0 */
+
+  /* USER CODE END TIM7_MspInit 0 */
+    /* Peripheral clock enable */
+    __HAL_RCC_TIM7_CLK_ENABLE();
+  
+    /* TIM7 DMA Init */
+    /* TIM7_UP Init */
+    hdma_tim7_up.Instance = DMA1_Stream2;
+    hdma_tim7_up.Init.Channel = DMA_CHANNEL_1;
+    hdma_tim7_up.Init.Direction = DMA_MEMORY_TO_PERIPH;
+    hdma_tim7_up.Init.PeriphInc = DMA_PINC_DISABLE;
+    hdma_tim7_up.Init.MemInc = DMA_MINC_ENABLE;
+    hdma_tim7_up.Init.PeriphDataAlignment = DMA_PDATAALIGN_HALFWORD;
+    hdma_tim7_up.Init.MemDataAlignment = DMA_MDATAALIGN_HALFWORD;
+    hdma_tim7_up.Init.Mode = DMA_NORMAL;
+    hdma_tim7_up.Init.Priority = DMA_PRIORITY_HIGH;
+    hdma_tim7_up.Init.FIFOMode = DMA_FIFOMODE_DISABLE;
+    HAL_DMA_Init(&hdma_tim7_up);
+
+    __HAL_LINKDMA(htim_base,hdma[TIM_DMA_ID_UPDATE],hdma_tim7_up);
+
+    /* TIM7 interrupt Init */
+    //NVIC_SetPriority(TIM7_IRQn, 0x30);
+    //NVIC_EnableIRQ(TIM7_IRQn);
+  /* USER CODE BEGIN TIM7_MspInit 1 */
+
+  /* USER CODE END TIM7_MspInit 1 */
+  }
 
 }
 
@@ -177,5 +209,21 @@ void HAL_TIM_Base_MspDeInit(TIM_HandleTypeDef* htim_base)
 
   /* USER CODE END TIM6_MspDeInit 1 */
   }
+  else if(htim_base->Instance==TIM7)
+  {
+  /* USER CODE BEGIN TIM7_MspDeInit 0 */
 
+  /* USER CODE END TIM7_MspDeInit 0 */
+    /* Peripheral clock disable */
+    __HAL_RCC_TIM7_CLK_DISABLE();
+
+    /* TIM7 DMA DeInit */
+    HAL_DMA_DeInit(htim_base->hdma[TIM_DMA_ID_UPDATE]);
+
+    /* TIM7 interrupt DeInit */
+    HAL_NVIC_DisableIRQ(TIM7_IRQn);
+  /* USER CODE BEGIN TIM7_MspDeInit 1 */
+
+  /* USER CODE END TIM7_MspDeInit 1 */
+  }
 }
