@@ -17,10 +17,11 @@ int main(void) {
 	
 	lcdTest();
 
-	if (!sdTest()) {
+/*	if (!sdTest()) {
 		ledError(2);
 		WAV_test();
-	}
+	}*/
+
 	buttonTest();
 	
 	while(1);
@@ -47,6 +48,7 @@ void systemInit(void) {
 	initButtons();
 	WAV_Init();
 	initLcd();
+	initVideo();
 //	initSdSpi();
 	// RCC->AHB1ENR    |=   RCC_AHB1ENR_GPIODEN;
 	// RCC->AHB1ENR    |=   RCC_AHB1ENR_GPIOCEN;
@@ -76,6 +78,8 @@ void lcdTest(void) {
 	uint32_t pixel;
 	sprite *testSprite;
 
+	
+
 	// Test lcd coordinates/orientation
 	LcdPutPixel(20, 20, LCD_COLOR_RED);
 	LcdDrawRectangle(0, 0, 10, 10, LCD_COLOR_RED);
@@ -102,7 +106,7 @@ void lcdTest(void) {
 
 	while (!readButton());
 	delayms(50);
-	while (readButton())
+	while (readButton());
 
 	// Test reading a pixel
 	LcdFillScreen(0xFEED);
@@ -146,7 +150,7 @@ void lcdTest(void) {
 
 	while (!readButton());
 	delayms(50);
-	while (readButton())
+	while (readButton());
 	ledOn(leds++);
 
 	// Test filling screen
@@ -156,6 +160,14 @@ void lcdTest(void) {
 		LcdFillScreen(LCD_COLOR_GREEN);
 	}
 	ledAllOff();
+
+	// Test frame updating with DMA
+	while (1) {
+		if (readButton()) {
+			while (readButton());
+			updateFrame();
+		}
+	}
 
 	return;
 }

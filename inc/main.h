@@ -25,6 +25,6 @@
 #include "sparkboxButtons.h"
 #include "waveplayer.h"
 #include "sprite.h"
-//#include "video.h"
+#include "video.h"
 
 #endif
