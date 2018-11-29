@@ -292,7 +292,7 @@ void LcdDrawHex(uint16_t x, uint16_t y, uint32_t hex,
 	}
 
 	// Find number of digits
-	while (hex/16 > i) i*=16;
+	while (hex/16 >= i) i*=16;
 
 	// Iterate through the digits from the top down
 	while (i) {

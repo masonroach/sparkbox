@@ -75,8 +75,8 @@ void drawSpriteDebug(sprite *inSprite) {
 	LcdDrawString(250, 2, (uint8_t *)"W =", LCD_COLOR_WHITE, LCD_COLOR_BLACK);
 	LcdDrawString(250, 14, (uint8_t *)"H =", LCD_COLOR_WHITE, LCD_COLOR_BLACK);
 	LcdDrawString(250, 26, (uint8_t *)"F =", LCD_COLOR_WHITE, LCD_COLOR_BLACK);
-	//LcdDrawString(250, 38, (uint8_t *)"RESERVED", LCD_COLOR_WHITE, LCD_COLOR_BLACK);
 	LcdDrawString(250, 50, (uint8_t *)"PALETTE", LCD_COLOR_WHITE, LCD_COLOR_BLACK);
+
 	LcdDrawInt(278, 2, inSprite->width, LCD_COLOR_WHITE, LCD_COLOR_BLACK);
 	LcdDrawInt(278, 14, inSprite->height, LCD_COLOR_WHITE, LCD_COLOR_BLACK);
 	LcdDrawInt(278, 26, inSprite->curFrame, LCD_COLOR_WHITE, LCD_COLOR_BLACK);
@@ -85,19 +85,24 @@ void drawSpriteDebug(sprite *inSprite) {
 	for (i = 0; i < inSprite->numColors; i++) {
 		LcdDrawRectangle(245, 62 + 12*i, 10, 10, inSprite->palette[i]);
 		LcdDrawInt(260, 62 + 12*i, i+1, LCD_COLOR_WHITE, LCD_COLOR_BLACK);
-//		LcdDrawHex(275, 62 + 12*i, inSprite->palette[i], LCD_COLOR_WHITE, LCD_COLOR_BLACK);
 	}
 
+	// Set sprite position to middle of screen
 	inSprite->xpos = 120 - inSprite->width/2;
 	inSprite->ypos = 120 - inSprite->height/2;
 
-	LcdDrawInt(10, 10, filePointer, LCD_COLOR_WHITE, LCD_COLOR_BLACK);
-
 	// Draw the sprite
 	while (!ALL_BUTTONS) {
+		// Update frame number
+		LcdDrawRectangle(278, 26, 40, 10, LCD_COLOR_BLACK);
 		LcdDrawInt(278, 26, inSprite->curFrame, LCD_COLOR_WHITE, LCD_COLOR_BLACK);
-		drawSprite(inSprite);
-		delayms(50);
+
+		// Draw the sprite
+		LcdDrawInt(10, 10, drawSprite(inSprite), LCD_COLOR_WHITE, LCD_COLOR_BLACK);
+
+		/* TEMPORARY UNTIL VIDEO WORKS */
+		// Go to next frame after delay
+		delayms(1000);
 		inSprite->curFrame++;
 		if (inSprite->curFrame == inSprite->numFrames) inSprite->curFrame = 0;
 	}
@@ -124,7 +129,6 @@ uint16_t test_fseek(int32_t offset, uint8_t whence) {
 			// Not implemented. Can't find EOF with just an array and I don't need it
 			break;
 		default:
-			offset = offset;	// nop
 			break;
 	}
 
@@ -133,21 +137,46 @@ uint16_t test_fseek(int32_t offset, uint8_t whence) {
 }
 #endif
 
-void drawSprite(sprite *inSprite) {
-	uint16_t temp, i;
+uint32_t drawSprite(sprite *inSprite) {
+	uint16_t temp;
+	uint32_t i = 0, p;
 
 	// Move file pointer to beginning of sprite frame
 	test_fseek(22 + inSprite->curFrame*inSprite->width*inSprite->height/4UL, TEST_SEEK_SET);
 
+	// Set drawing window on the LCD
 	LcdSetPos(inSprite->xpos, inSprite->ypos, inSprite->xpos + inSprite->width-1, inSprite->ypos + inSprite->height-1);
 	LcdWriteCmd(MEMORY_WRITE);
-	for (i = 0; i < (inSprite->width * inSprite->height)/4; i++) {
-		temp = test_get16();	// Get 4-pixels worth of data
+
+	// Check if frame beginning lands on a 16-bit boundry
+	if ((p = (inSprite->curFrame * inSprite->width * inSprite->height) % 4)) {
+		// If not, get the needed pixels. p = number of pixels to skip
+		temp = test_get16();
+		while (p + i < 4) {
+			LcdWriteData(inSprite->palette[((temp & (0x000F<<((p+i)*4)))>>((p+i)*4))-1]);	// Draw a pixel
+			i++;
+		}
+	}
+
+	// Write the rest of the pixels
+	for ( ; i < (inSprite->width * inSprite->height) - 4; i+=4) {
+		temp = test_get16();	// Get 4 pixels worth of data
 		LcdWriteData(inSprite->palette[(temp & 0x000F)-1]);	// Draw a pixel
 		LcdWriteData(inSprite->palette[((temp & 0x00F0)>>4)-1]);	// Draw a pixel
 		LcdWriteData(inSprite->palette[((temp & 0x0F00)>>8)-1]);	// Draw a pixel
 		LcdWriteData(inSprite->palette[((temp & 0xF000)>>12)-1]);	// Draw a pixel
 	}
+
+	// Get tail set of pixels
+	temp = test_get16();	// Get 4 pixels worth of data
+	p = 0;
+	while (i < (inSprite->width * inSprite->height)) {
+		LcdWriteData(inSprite->palette[((temp & (0x000F << (p*4)))>>(p*4))-1]);
+		p++;
+		i++;
+	}
+
+	return i;
 
 }
 

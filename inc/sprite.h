@@ -32,7 +32,7 @@ typedef struct {
 
 typedef enum {
 	HIDE = 0x80,
-	CYCLE_FRAMES = 0x40,
+	ANIMATED = 0x40,
 //	reserved = 0x20,
 //	reserved = 0x10,
 //	reserved = 0x08,
@@ -47,9 +47,9 @@ typedef enum {
 	
 } SPRITE_ERROR;
 
-void drawSprite(sprite *inSprite);
+uint32_t drawSprite(sprite *inSprite);
 
-#define SAMPLE_SPRITE 5
+#define SAMPLE_SPRITE 6
 #if SAMPLE_SPRITE>0
 #include "lcd.h"
 #include "sparkboxButtons.h"
