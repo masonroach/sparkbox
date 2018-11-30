@@ -10,14 +10,14 @@ f2 = 220;
 f3 = 440;
 f4 = 880;
 
-% Round frequency to nearest 5 Hz to limit array size
-f1_rd = round(f1 / 5) * 5;
-f2_rd = round(f2 / 5) * 5;
-f3_rd = round(f3 / 5) * 5;
-f4_rd = round(f4 / 5) * 5;
+% Round frequency to nearest 1 Hz for gcd calculation
+f1 = round(f1);
+f2 = round(f2);
+f3 = round(f3);
+f4 = round(f4);
 
 % Frequency of the combined waveform
-f = gcd(gcd(gcd(f1_rd,f2_rd), f3_rd), f4_rd);
+f = gcd(gcd(gcd(f1,f2), f3), f4);
 
 % Find number of samples to represent frequency f
 numSamples = floor(Fs/f);
@@ -36,6 +36,11 @@ while (diff > 0)
   numSamples = numSamples - 1;
   y = y(1:numSamples);
   diff = y(numSamples-1) - y(1);
+end
+
+% Pad array to be greater than half the audio buffer size
+while (length(y) <= 3200)
+	y = [y, y];
 end
 
 % Plot simulated DAC output
