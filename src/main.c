@@ -160,14 +160,16 @@ void lcdTest(void) {
 		LcdFillScreen(LCD_COLOR_GREEN);
 	}
 	ledAllOff();
+	delayms(50);
+	while (readButton());
 
 	// Test frame updating with DMA
-	while (1) {
-		if (readButton()) {
-			while (readButton());
-			updateFrame();
-		}
+	while (!readButton()) {
+		updateFrame();
+		delayms(49);
 	}
+	delayms(50);
+	while (readButton());
 
 	return;
 }

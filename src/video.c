@@ -182,7 +182,7 @@ void TIM7_IRQHandler(void)
 	(uint32_t)PLAY_BUFFER, (uint32_t)(fsmc_data),
 	(uint32_t)(VID_BUF_BYTES / 2));
 
-    if (bufferTransfers < NUM_TRANSFERS) {
+    if (bufferTransfers < NUM_TRANSFERS-1) {
         // Read new data into other buffer
         readToVideoBuffer();
     } else {
