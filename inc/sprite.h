@@ -5,6 +5,9 @@
 #include <stdint.h>
 #include "ff.h"
 
+#define MAX_LAYERS 8
+#define MAX_SPRITES 32
+
 /*
  * sparksprite file map:
  * Width:       16-bit
@@ -28,7 +31,13 @@ typedef struct {
 	uint8_t numFrames;
 	uint8_t curFrame;
 	uint8_t flags;
+	uint8_t tag;
 } sprite;
+
+typedef struct {
+	sprite **sprites;
+	uint8_t size;
+} spriteList;
 
 typedef enum {
 	HIDE = 0x80,
@@ -44,15 +53,20 @@ typedef enum {
 typedef enum {
 	NOT_ENOUGH_MEMORY = 1,
 	NO_FILE_ACCESS = 2,
-	
+	TOO_MANY_SPRITES = 3,
+
 } SPRITE_ERROR;
 
+// sprite functions
+sprite *initSprite(uint8_t *filename);
+sprite *copySprite(sprite * const inSprite);
 uint32_t drawSprite(sprite *inSprite);
+void destroySprite(sprite *inSprite);
 
 #define SAMPLE_SPRITE 6
 #if SAMPLE_SPRITE>0
 #include "lcd.h"
-#include "sparkboxButtons.h"
+#include "button.h"
 void drawSpriteDebug(sprite *inSprite);
 sprite *test_getSprite(void);
 uint16_t test_get16(void);

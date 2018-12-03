@@ -1,5 +1,15 @@
 #include "sprite.h"
 
+// Static functions
+static uint8_t spritesAllocatedAdd(sprite *inSprite);
+static uint8_t spritesAllocatedRemove(sprite *inSprite);
+
+// Global list to keep track of all initialized sprites
+spriteList spritesAllocated = {NULL, 0};
+
+// Global list to keep track of sprite layers being shown
+spriteList spriteLayers = {NULL, 0};
+
 #if SAMPLE_SPRITE>0
 extern const uint16_t fakeSpriteFile[];
 
@@ -14,6 +24,13 @@ sprite *test_getSprite(void) {
 	// Allocate space for sprite
 	targetSprite = (sprite *)malloc(sizeof(sprite));
 	if (targetSprite == NULL) {
+		return NULL;
+	}
+
+	// Get the tag for the sprite
+	if (spritesAllocatedAdd(targetSprite)) {
+		// If failed, free memory and break
+		free(targetSprite);
 		return NULL;
 	}
 
@@ -44,6 +61,7 @@ sprite *test_getSprite(void) {
 	targetSprite->palette = (uint16_t *)malloc(
 		(targetSprite->numColors) * sizeof(uint16_t));
 	if (targetSprite->palette == NULL) {
+		spritesAllocatedRemove(targetSprite);
 		free(targetSprite);
 		return NULL;
 	}
@@ -92,13 +110,13 @@ void drawSpriteDebug(sprite *inSprite) {
 	inSprite->ypos = 120 - inSprite->height/2;
 
 	// Draw the sprite
-	while (!ALL_BUTTONS) {
+	while (!readButton()) {
 		// Update frame number
 		LcdDrawRectangle(278, 26, 40, 10, LCD_COLOR_BLACK);
 		LcdDrawInt(278, 26, inSprite->curFrame, LCD_COLOR_WHITE, LCD_COLOR_BLACK);
 
 		// Draw the sprite
-		LcdDrawInt(10, 10, drawSprite(inSprite), LCD_COLOR_WHITE, LCD_COLOR_BLACK);
+		drawSprite(inSprite);
 
 		/* TEMPORARY UNTIL VIDEO WORKS */
 		// Go to next frame after delay
@@ -137,6 +155,35 @@ uint16_t test_fseek(int32_t offset, uint8_t whence) {
 }
 #endif
 
+/*
+ * srite functions
+ */
+// Initializes a sprite struct from a given filename
+sprite *initSprite(uint8_t *filename) {
+	// TODO
+	return NULL;
+}
+
+// Copy one sprite to another
+sprite *copySprite(sprite * const inSprite) {
+	// TODO
+	return NULL;
+}
+
+// Frees memory allocated by a sprite
+void destroySprite(sprite *inSprite) {
+
+	// Free memory
+	free(inSprite->palette);
+	free(inSprite);
+	
+	/*******************/
+	/* CLOSE FILE HERE */
+	/*******************/
+}
+
+// Draw the full sprite on the screen. Note: this does not work the same way as
+// video, this is mostly for debugging purposes.
 uint32_t drawSprite(sprite *inSprite) {
 	uint16_t temp;
 	uint32_t i = 0, p;
@@ -180,11 +227,51 @@ uint32_t drawSprite(sprite *inSprite) {
 
 }
 
-void destroySprite(sprite *inSprite) {
-	free(inSprite->palette);
-	free(inSprite);
+/*
+ * spriteList functions
+ */
+// Add a sprite pointer to the spritesAllocated list
+// Return 0 on success, !0 on failure
+static uint8_t spritesAllocatedAdd(sprite *inSprite) {
+	sprite **newPointer;
+
+	// Check if too many sprites are already allocated
+	if (spritesAllocated.size >= MAX_SPRITES) {
+		return TOO_MANY_SPRITES;
+	}
 	
-	/*******************/
-	/* CLOSE FILE HERE */
-	/*******************/
+	// Reallocate memory for array of structs
+	newPointer = (sprite **)realloc(spritesAllocated.sprites, spritesAllocated.size+1 * sizeof(sprite));
+	if (newPointer == NULL) {
+		return NOT_ENOUGH_MEMORY;
+	}
+	spritesAllocated.sprites = newPointer;
+	
+	// Put the sprite at the end of the array
+	spritesAllocated.sprites[spritesAllocated.size] = inSprite;
+
+	// Keep track of tag in inSprite
+	inSprite->tag = spritesAllocated.size;
+
+	// Increment size to reflect new size	
+	spritesAllocated.size++;
+
+	return 0;
+}
+
+// Add a sprite pointer to the spritesAllocated list
+// Return 0 on success, !0 on failure
+static uint8_t spritesAllocatedRemove(sprite *inSprite) {
+	uint16_t i;
+	
+	// Remove the element and move the rest of the elements back
+	for (i = inSprite->tag; i < spritesAllocated.size - 1; i++) {
+		spritesAllocated.sprites[i] = spritesAllocated.sprites[i + 1];
+	}
+
+	// Decrement size
+	spritesAllocated.size--;
+
+	return 0;
+
 }

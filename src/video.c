@@ -59,11 +59,11 @@ void initVideo(void)
 	HAL_TIMEx_MasterConfigSynchronization(&htim7, &sMasterConfig);
 	
 }
-/**
-	* @brief Reads the corrct data into the correct video buffer
-	*
-	*
-	*/
+/*
+ * @brief Reads the corrct data into the correct video buffer
+ *
+ *
+ */
 FRESULT readToVideoBuffer(void)
 {
 	// Based on number of transfers left, read correct data into READ_BUFFER
@@ -76,11 +76,11 @@ FRESULT readToVideoBuffer(void)
 	return FR_OK;
 }
 
-/**
-	* @brief Update the frame on the LCD
-	*
-	*
-	*/
+/*
+ * @brief Update the frame on the LCD
+ *
+ *
+ */
 void updateFrame(void)
 {
 	// Stop old DMA transfers
@@ -113,11 +113,11 @@ void toggleVideoBuffers(void)
     videoBuffer = !videoBuffer;
 }
 
-/**
-	* @brief DMA transfer complete
-	*
-	*
-	*/
+/*
+ * @brief DMA transfer complete
+ *
+ *
+ */
 void DMA1_Stream2_IRQHandler(void)
 {
 	HAL_DMA_IRQHandler(&hdma_tim7_up);

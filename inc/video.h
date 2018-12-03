@@ -19,7 +19,11 @@
 // Timer 7 frequency
 #define TIM7FREQ 84000000UL
 
+// Address to write pixel data
 #define LCD_DATA_ADDR 0x60080000UL
+
+// Default background color
+#define VIDEO_BG LCD_COLOR_BLACK
 
 // LCD writes no less than 186 nS apart
 // LCD write frequency no greater than 5.376 MHz

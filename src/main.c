@@ -10,6 +10,7 @@ void buttonTest(void);
 FATFS SDFatFs;  /* File system object for SD card logical drive */
 char SDPath[4]; /* SD card logical drive path */
 FIL MyFile;     /* File object */
+extern spriteList spritesAllocated;
 
 int main(void) {
 	
@@ -118,17 +119,30 @@ void lcdTest(void) {
 	while (readButton());
 
 	// Malloc testing
+	// Add testSprite
+	LcdDrawHex(120, 120, (uint32_t)spritesAllocated.sprites, LCD_COLOR_WHITE, 0x1234);
+	LcdDrawInt(50, 140, (uint32_t)spritesAllocated.size, LCD_COLOR_WHITE, 0x1234);
 	LcdFillScreen(0x1234);
+
 	testSprite = test_getSprite();
 	if (testSprite == NULL) {
 		// ERROR
 		ledError(LED_ERROR);
 	}
-	LcdDrawString(10, 10, (uint8_t *)"MALLOC TEST", LCD_COLOR_WHITE, LCD_COLOR_BLACK);
-	LcdDrawString(10, 30, (uint8_t *)"SPRITE", LCD_COLOR_WHITE, LCD_COLOR_BLACK);
-	LcdDrawString(10, 50, (uint8_t *)"PALETTE", LCD_COLOR_WHITE, LCD_COLOR_BLACK);
-	LcdDrawHex(70, 30, (uint32_t)testSprite, LCD_COLOR_WHITE, LCD_COLOR_BLACK);
-	LcdDrawHex(70, 50, (uint32_t)(testSprite->palette), LCD_COLOR_WHITE, LCD_COLOR_BLACK);
+
+	LcdDrawString(10, 10, (uint8_t *)"MALLOC TEST", LCD_COLOR_WHITE, 0x1234);
+	LcdDrawString(10, 30, (uint8_t *)"SPRITE", LCD_COLOR_WHITE, 0x1234);
+	LcdDrawString(10, 50, (uint8_t *)"PALETTE", LCD_COLOR_WHITE, 0x1234);
+	LcdDrawHex(70, 30, (uint32_t)testSprite, LCD_COLOR_WHITE, 0x1234);
+	LcdDrawHex(70, 50, (uint32_t)(testSprite->palette), LCD_COLOR_WHITE, 0x1234);
+
+	// Testing spritesAllocated struct
+	LcdDrawString(10, 100, (uint8_t *)"SPRITESALLOCATED", LCD_COLOR_WHITE, 0x1234);
+	LcdDrawString(10, 120, (uint8_t *)"SPRITES POINTER", LCD_COLOR_WHITE, 0x1234);
+	LcdDrawString(10, 140, (uint8_t *)"SIZE", LCD_COLOR_WHITE, 0x1234);
+	LcdDrawHex(120, 120, (uint32_t)spritesAllocated.sprites, LCD_COLOR_WHITE, 0x1234);
+	LcdDrawInt(50, 140, (uint32_t)spritesAllocated.size, LCD_COLOR_WHITE, 0x1234);
+
 	ledOn(leds++);
 
 	while (!readButton());
