@@ -169,14 +169,17 @@ void lcdTest(void) {
 	spriteLayersAdd(testSprite);
 	delayms(1000);
 
-	// Move file pointer to beginning of sprite frame
-	offset = ((testSprite->width * testSprite->height) + 3) / 4;
-	test_fseek(22 + testSprite->curFrame * offset, TEST_SEEK_SET);
-	LcdFillScreen(COLOR_888_TO_565(0x00000));
-	for (i = 0; i < 50; i++) testGetRow(i);
 	ledOn(leds++);
+	while (!readButton()) {
+		testSprite->curFrame++;
+		if (testSprite->curFrame == testSprite->numFrames) testSprite->curFrame = 0;
+		// Move file pointer to beginning of sprite frame
+		offset = ((testSprite->width * testSprite->height) + 3) / 4;
+		test_fseek(22 + testSprite->curFrame * offset, TEST_SEEK_SET);
+		for (i = 0; i < LCD_HEIGHT; i++) testGetRow(i);
+		delayms(49);
+	}
 
-	while (!readButton());
 	delayms(50);
 	while (readButton());
 	ledOn(leds++);

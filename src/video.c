@@ -208,7 +208,7 @@ uint8_t testGetRow(const uint8_t row) {
 	uint8_t layer;
 	uint16_t pixel;
 	static uint16_t temp;
-	static index = 3;
+	static uint8_t index = 3;
 
 	// TODO: index values and temp values will have to be stored for each sprite
 	
