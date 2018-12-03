@@ -26,11 +26,6 @@
 // Default background color
 #define VIDEO_BG LCD_COLOR_BLACK
 
-// LCD writes no less than 186 nS apart
-// LCD write frequency no greater than 5.376 MHz
-// PSC of 15 -> LCD write feq = 84 MHz / (1 + 15) = 5.25 MHz
-#define TIM7PSC 15
-
 // The filename of the frame buffer on SD card
 #define FRAME_FILE "mason.bin"
 
