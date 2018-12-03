@@ -45,7 +45,6 @@ void systemInit(void) {
 
 //	initUsart();
 	initLeds();
-	initButton();
 	initButtons();
 	WAV_Init();
 	initLcd();

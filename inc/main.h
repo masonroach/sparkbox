@@ -22,7 +22,6 @@
 // #include "rng.h"
 // #include "sd.h"
 // #include "pwm.h"
-#include "sparkboxButtons.h"
 #include "waveplayer.h"
 #include "sprite.h"
 #include "video.h"
