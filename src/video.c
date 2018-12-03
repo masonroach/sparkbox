@@ -19,7 +19,6 @@ DMA_HandleTypeDef hdma_memtomem_dma2_stream5;
 TIM_HandleTypeDef htim7;
 FIL BUF;
 
-
 void toggleVideoBuffers(void);
 FRESULT readToVideoBuffer(void);
 
@@ -174,8 +173,6 @@ void TIM7_IRQHandler(void)
 {
 	HAL_TIM_IRQHandler(&htim7);
 	
-    // Update number of buffer transfers remaining
-    toggleVideoBuffers();
 
 	// Start the new transfer before reading
 	HAL_DMA_Start_IT(&hdma_memtomem_dma2_stream5,
@@ -204,4 +201,68 @@ void TIM7_IRQHandler(void)
     	WAV_Update();
     }
 
+}
+
+// For testing purposes of the videoGetRow function
+uint8_t testGetRow(const uint8_t row) {
+	uint8_t layer;
+	uint16_t pixel;
+	static uint16_t temp;
+	static index = 3;
+
+	// TODO: index values and temp values will have to be stored for each sprite
+	
+	// Iterate through finding the value fo each pixel in the row
+	for (pixel = 0; pixel < LCD_WIDTH; pixel++) {
+
+		// Check each layer for a valid pixel
+		for (layer = 0; layer < spriteLayers.size; layer++) {
+
+			// Check bounds of the sprite
+			if ((row >= spriteLayers.sprites[layer]->ypos) &&
+			 (row < spriteLayers.sprites[layer]->ypos + spriteLayers.sprites[layer]->height) &&
+			 (pixel >= spriteLayers.sprites[layer]->xpos) &&
+			 (pixel < spriteLayers.sprites[layer]->xpos + spriteLayers.sprites[layer]->width)) {
+
+				// Valid bounds, fetch the pixel of the sprite
+				if (index >= 3) {
+					temp = test_get16();	// Fetch 4 pixels of data
+					index = 0;	// Reset the index value
+				} else {
+					// Shift the index before checking the pixel
+					index++;
+				}
+
+				// TODO: this value should be stored if it does not equal 0.
+				//       Should inline assembly be used here?
+				// Check the alpha value of the pixel
+				if (temp & (0x000F << (index * 4))) {
+
+					// TODO: Put the pixel into the video buffer
+					
+					// For testing purposes, just place the pixel
+					LcdPutPixel(pixel, row, spriteLayers.sprites[layer]->palette
+						[((temp & (0x000F << (index * 4))) >> (index * 4))-1]);
+					
+					// When a pixel is found, stop the nail, ignore other layers
+					goto pixelFound;
+				}
+
+				// If the pixel is transparent, move to the next layer
+			
+			}
+		
+		}
+
+		// If a non-transparent pixel was not found on all layers,
+		// use the default background color
+		// TODO: Put the pixel into the video buffer
+		
+		// For testing purposes, just place the pixel
+		LcdPutPixel(pixel, row, VIDEO_BG);	
+pixelFound:
+		pixel = pixel;		// nop();
+	}
+
+	return 0;
 }

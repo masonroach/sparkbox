@@ -78,8 +78,8 @@ void lcdTest(void) {
 	uint8_t *testString = (uint8_t *)"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 	uint32_t pixel;
 	sprite *testSprite;
-
-	
+	uint8_t i;
+	uint32_t offset;
 
 	// Test lcd coordinates/orientation
 	LcdPutPixel(20, 20, LCD_COLOR_RED);
@@ -155,27 +155,32 @@ void lcdTest(void) {
 	delayms(1000);
 
 	// Test sprites
-	if (testSprite == NULL) {
-		// ERROR
-		ledError(LED_ERROR);
-	}
 	drawSpriteDebug(testSprite);
+	ledOn(leds++);
+
+	while (!readButton());
+	delayms(50);
+	while (readButton())
+
+	// Test getting a row for video
+	LcdFillScreen(COLOR_888_TO_565(0x00A591));
+	testSprite->xpos = 0;
+	testSprite->ypos = 0;
+	drawSprite(testSprite);
+	spriteLayersAdd(testSprite);
+	delayms(1000);
+
+	// Move file pointer to beginning of sprite frame
+	offset = ((testSprite->width * testSprite->height) + 3) / 4;
+	test_fseek(22 + testSprite->curFrame * offset, TEST_SEEK_SET);
+	LcdFillScreen(COLOR_888_TO_565(0x00000));
+	for (i = 0; i < 50; i++) testGetRow(i);
 	ledOn(leds++);
 
 	while (!readButton());
 	delayms(50);
 	while (readButton());
 	ledOn(leds++);
-
-	// Test filling screen
-	while (!readButton()) {
-		LcdFillScreen(LCD_COLOR_BLUE);
-		LcdFillScreen(LCD_COLOR_RED);
-		LcdFillScreen(LCD_COLOR_GREEN);
-	}
-	ledAllOff();
-	delayms(50);
-	while (readButton());
 
 	// Test frame updating with DMA
 	while (!readButton()) {
@@ -184,6 +189,7 @@ void lcdTest(void) {
 	}
 	delayms(50);
 	while (readButton());
+	ledAllOff();
 
 	return;
 }

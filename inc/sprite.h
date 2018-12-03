@@ -32,6 +32,7 @@ typedef struct {
 	uint8_t curFrame;
 	uint8_t flags;
 	uint8_t tag;
+	uint8_t layer;
 } sprite;
 
 typedef struct {
@@ -62,8 +63,11 @@ sprite *initSprite(uint8_t *filename);
 sprite *copySprite(sprite * const inSprite);
 uint32_t drawSprite(sprite *inSprite);
 void destroySprite(sprite *inSprite);
+uint8_t spriteLayersInsert(sprite *inSprite, uint8_t layer);
+uint8_t spriteLayersAdd(sprite *inSprite);
+uint8_t spriteLayersRemove(sprite *inSprite);
 
-#define SAMPLE_SPRITE 6
+#define SAMPLE_SPRITE 5
 #if SAMPLE_SPRITE>0
 #include "lcd.h"
 #include "button.h"

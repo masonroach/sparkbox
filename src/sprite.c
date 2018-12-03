@@ -120,7 +120,7 @@ void drawSpriteDebug(sprite *inSprite) {
 
 		/* TEMPORARY UNTIL VIDEO WORKS */
 		// Go to next frame after delay
-		delayms(1000);
+		delayms(50);
 		inSprite->curFrame++;
 		if (inSprite->curFrame == inSprite->numFrames) inSprite->curFrame = 0;
 	}
@@ -187,23 +187,18 @@ void destroySprite(sprite *inSprite) {
 uint32_t drawSprite(sprite *inSprite) {
 	uint16_t temp;
 	uint32_t i = 0, p;
+	uint32_t offset;
+
+	// Find the offset of each frame for the file pointer
+	// If width*height is not a multiple of 4, rounds up before dividing
+	offset = ((inSprite->width * inSprite->height) + 3) / 4;
 
 	// Move file pointer to beginning of sprite frame
-	test_fseek(22 + inSprite->curFrame*inSprite->width*inSprite->height/4UL, TEST_SEEK_SET);
+	test_fseek(22 + inSprite->curFrame*offset, TEST_SEEK_SET);
 
 	// Set drawing window on the LCD
 	LcdSetPos(inSprite->xpos, inSprite->ypos, inSprite->xpos + inSprite->width-1, inSprite->ypos + inSprite->height-1);
 	LcdWriteCmd(MEMORY_WRITE);
-
-	// Check if frame beginning lands on a 16-bit boundry
-	if ((p = (inSprite->curFrame * inSprite->width * inSprite->height) % 4)) {
-		// If not, get the needed pixels. p = number of pixels to skip
-		temp = test_get16();
-		while (p + i < 4) {
-			LcdWriteData(inSprite->palette[((temp & (0x000F<<((p+i)*4)))>>((p+i)*4))-1]);	// Draw a pixel
-			i++;
-		}
-	}
 
 	// Write the rest of the pixels
 	for ( ; i < (inSprite->width * inSprite->height) - 4; i+=4) {
@@ -228,7 +223,7 @@ uint32_t drawSprite(sprite *inSprite) {
 }
 
 /*
- * spriteList functions
+ * spritesAllocated functions
  */
 // Add a sprite pointer to the spritesAllocated list
 // Return 0 on success, !0 on failure
@@ -262,7 +257,7 @@ static uint8_t spritesAllocatedAdd(sprite *inSprite) {
 // Add a sprite pointer to the spritesAllocated list
 // Return 0 on success, !0 on failure
 static uint8_t spritesAllocatedRemove(sprite *inSprite) {
-	uint16_t i;
+	uint8_t i;
 	
 	// Remove the element and move the rest of the elements back
 	for (i = inSprite->tag; i < spritesAllocated.size - 1; i++) {
@@ -274,4 +269,87 @@ static uint8_t spritesAllocatedRemove(sprite *inSprite) {
 
 	return 0;
 
+}
+
+/*
+ * spriteLayer functions
+ */
+// Add a sprite pointer to the spriteLayer list at the given position
+// Return 0 on success, !0 on failure
+uint8_t spriteLayersInsert(sprite *inSprite, uint8_t layer) {
+	uint8_t i;
+	sprite **newPointer;
+
+	// Check if too many sprites are already allocated
+	if (spriteLayers.size >= MAX_LAYERS) {
+		return TOO_MANY_SPRITES;
+	}
+	
+	// Reallocate memory for array of structs
+	newPointer = (sprite **)realloc(spriteLayers.sprites, spriteLayers.size+1 * sizeof(sprite));
+	if (newPointer == NULL) {
+		return NOT_ENOUGH_MEMORY;
+	}
+	spriteLayers.sprites = newPointer;
+	
+	// Move the layers after the given index down
+	for (i = spritesAllocated.size; i > layer + 1; i--) {
+		spriteLayers.sprites[i] = spriteLayers.sprites[i-1];
+	}
+
+	// Insert the sprite at the given index
+	spriteLayers.sprites[layer] = inSprite;
+
+	// Keep track of tag in inSprite
+	inSprite->layer = layer;
+
+	// Increment size to reflect new size	
+	spriteLayers.size++;
+
+	return 0;
+}
+
+// Append a sprite pointer to the spriteLayer list
+// Return 0 on success, !0 on failure
+uint8_t spriteLayersAdd(sprite *inSprite) {
+	sprite **newPointer;
+
+	// Check if too many sprites are already allocated
+	if (spriteLayers.size >= MAX_LAYERS) {
+		return TOO_MANY_SPRITES;
+	}
+	
+	// Reallocate memory for array of structs
+	newPointer = (sprite **)realloc(spriteLayers.sprites, spriteLayers.size+1 * sizeof(sprite));
+	if (newPointer == NULL) {
+		return NOT_ENOUGH_MEMORY;
+	}
+	spriteLayers.sprites = newPointer;
+	
+	// Insert the sprite at the given index
+	spriteLayers.sprites[spriteLayers.size] = inSprite;
+
+	// Keep track of tag in inSprite
+	inSprite->layer = spriteLayers.size;
+
+	// Increment size to reflect new size	
+	spriteLayers.size++;
+
+	return 0;
+}
+
+// Remove the given sprite from the spriteLayers list
+// Return 0 on success, !0 on failure
+uint8_t spriteLayersRemove(sprite *inSprite) {
+	uint8_t i;
+	
+	// Remove the element and move the rest of the elements back
+	for (i = inSprite->layer; i < spriteLayers.size - 1; i++) {
+		spriteLayers.sprites[i] = spriteLayers.sprites[i + 1];
+	}
+
+	// Decrement size
+	spriteLayers.size--;
+
+	return 0;
 }

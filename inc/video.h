@@ -24,23 +24,17 @@
 #define LCD_DATA_ADDR 0x60080000UL
 
 // Default background color
-#define VIDEO_BG LCD_COLOR_BLACK
-
-// LCD writes no less than 186 nS apart
-// LCD write frequency no greater than 5.376 MHz
-// PSC of 15 -> LCD write feq = 84 MHz / (1 + 15) = 5.25 MHz
-#define TIM7PSC 15
-
-// The filename of the frame buffer on SD card
-#define FRAME_FILE "mason.bin"
+#define VIDEO_BG COLOR_888_TO_565(0x00A591)
 
 // PSC 99 ARR 299
 #define TIM7PSC 99
 #define TIM7ARR 299
 
 extern volatile uint16_t * const fsmc_data;
+extern spriteList spriteLayers;
 
 int8_t initVideo(void);
 void updateFrame(void);
+uint8_t testGetRow(const uint8_t row);
 
 #endif
