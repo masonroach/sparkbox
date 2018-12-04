@@ -16,14 +16,16 @@ G = RGB(:,:,2)./4;
 B = RGB(:,:,3)./8;
 A = bitsrl(alpha, 7);
 
+% Get dimensions
+width = size(A, 2);
 sheetHeight = size(A, 1);
-sheetWidth = size(A, 2);
+frameHeight = sheetHeight/numFrames;
 
 %% Build the color palette
 palette = zeros(15, 3);
 pColors = 0;
 for y = 1:sheetHeight
-    for x = 1:sheetWidth
+    for x = 1:width
     
         if (A(y,x)) % Check to see if the pixel is transparent
             % If no colors are in the palette yet, add the color
@@ -62,24 +64,28 @@ end
 finalPalette = bitsll(palette(:, 1), 11) ...
     + bitsll(palette(:, 2), 5) + palette(:, 3);
 
-% Convert the picture to an array
-converted = zeros(ceil(sheetWidth*sheetHeight/4)*4,1);
-for y = 1:sheetHeight
-    for x = 1:sheetWidth
-        % Check to see if the pixel is transparent
-        if (~A(y,x))
-            converted((y-1)*sheetWidth + x) = 0; % write 0 for transparent values
-            continue;
-        end
-        
-        for pnum = 1:pColors
-            % Find the color in the palette
-            if ( (R(y,x) == palette(pnum, 1)) && ...
-                 (G(y,x) == palette(pnum, 2)) && ...
-                 (B(y,x) == palette(pnum, 3)) )
+% Convert the picture into seperate frame arrays
+converted = zeros(ceil(width*frameHeight/4)*4, numFrames);
+for f = 1:numFrames
+    for y = 1:frameHeight
+        for x = 1:width
+            
+            % Check if pixel is transparent
+            if (~A(y + (f-1)*frameHeight, x))
+                converted((y-1)*width + x, f) = 0; % Write 0 for transparent values
+                continue;
+            end
+            
+            % Iterate through the palette to find the correct color index
+            for pnum = 1:pColors
+                % Check RGB values to find the color
+                if ((R(y + (f-1)*frameHeight,x) == palette(pnum, 1)) && ...
+                    (G(y + (f-1)*frameHeight,x) == palette(pnum, 2)) && ...
+                    (B(y + (f-1)*frameHeight,x) == palette(pnum, 3)) )
                 
-                converted((y-1)*sheetWidth + x) = pnum;
-                break;
+                    converted((y-1)*width + x, f) = pnum;
+                    break;
+                end
             end
         end
     end
@@ -91,14 +97,14 @@ fout = fopen(outputFile, 'w');
 
 % Write metadata
 % uint16: Width
-fwrite(fout, sheetWidth, 'uint16');
+fwrite(fout, width, 'uint16');
 
 % uint16: Height
-fwrite(fout, sheetHeight/numFrames, 'uint16');
+fwrite(fout, frameHeight, 'uint16');
 
 % uint16: number of colors in the palette
-fwrite(fout, bitand(numFrames, 255)*(2^8) ...
-    + bitand(0, 15)*(2^4) + bitand(pColors, 15), 'uint16');
+%fwrite(fout, bitand(numFrames, 255)*(2^8) ...
+%    + bitand(0, 15)*(2^4) + bitand(pColors, 15), 'uint16');
 
 % uint16: Reserved
 fwrite(fout, 0, 'uint16');
@@ -124,8 +130,8 @@ cout = fopen(coutName, 'w');
 
 % Print Headers
 fprintf(cout, 'const uint16_t fakeSpriteFile[] = {\n');
-fprintf(cout, '\t0x%04X,\t// Width = %d\n', sheetWidth, sheetWidth);
-fprintf(cout, '\t0x%04X,\t// Height = %d\n', sheetHeight/numFrames, sheetHeight/numFrames);
+fprintf(cout, '\t0x%04X,\t// Width = %d\n', width, width);
+fprintf(cout, '\t0x%04X,\t// Height = %d\n', frameHeight, frameHeight);
 fprintf(cout, '\t0x%02X%01X%01X,\t// numFrames = %d, 4 reserved bits, Colors = %d\n', numFrames, 0, pColors, numFrames, pColors);
 fprintf(cout, '\t0x%04X,\t// Reserved\n', 0);
 fprintf(cout, '\t0x%04X,\t// Reserved\n', 0);
@@ -138,8 +144,12 @@ for i = 1:15
 end
 
 % Print data as uint16 to mimic being in a file
-for i = 1:4:size(converted)
-    fprintf(cout, '\t0x%x%x%x%x,\t// Data[%d..%d]\n', converted(i+3), converted(i+2), converted(i+1), converted(i), i, i+3);
+for f = 1:size(converted, 2)
+    for i = 1:4:size(converted, 1)
+        fprintf(cout, '\t0x%x%x%x%x,\t// Frame[%d], Data[%d..%d]\n', ...
+            converted(i+3, f), converted(i+2, f), ...
+            converted(i+1, f), converted(i, f), f-1, i, i+3);
+    end
 end
 
 % Print footer
