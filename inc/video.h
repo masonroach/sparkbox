@@ -24,7 +24,7 @@
 #define LCD_DATA_ADDR 0x60080000UL
 
 // Default background color
-#define VIDEO_BG LCD_COLOR_BLACK
+#define VIDEO_BG COLOR_888_TO_565(0x00A591)
 
 // PSC 99 ARR 299
 #define TIM7PSC 99
