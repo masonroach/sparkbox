@@ -39,6 +39,7 @@ sprite test_getSprite(void) {
 	targetSprite->ypos = 0;
 	targetSprite->curFrame = 0;
 	targetSprite->flags = 0x00;
+	targetSprite->layer = -1;
 
 	/******************/
 	/* OPEN FILE HERE */
@@ -156,7 +157,7 @@ uint16_t test_fseek(int32_t offset, uint8_t whence) {
 #endif
 
 /*
- * srite functions
+ * sprite functions
  */
 // Initializes a sprite struct from a given filename
 sprite initSprite(uint8_t *filename) {
@@ -172,6 +173,10 @@ sprite copySprite(sprite  const inSprite) {
 
 // Frees memory allocated by a sprite
 void destroySprite(sprite inSprite) {
+
+	// Remove from spritesAllocated and spriteLayers lists
+	spritesAllocatedRemove(inSprite);
+	spriteLayersRemove(inSprite);
 
 	// Free memory
 	free(inSprite->palette);
@@ -220,6 +225,58 @@ uint32_t drawSprite(sprite inSprite) {
 
 	return i;
 
+}
+
+// Set the xpos value of the given sprite
+void spriteSetXpos(sprite inSprite, int16_t x) {
+	inSprite->xpos = x;
+}
+
+// Set the ypos value of the given sprite
+void spriteSetYpos(sprite inSprite, int16_t y) {
+	inSprite->ypos = y;
+}
+
+// Set the xpos and ypos value of the given sprite
+void spriteSetPos(sprite inSprite, int16_t x, int16_t y) {
+	inSprite->xpos = x;
+	inSprite->ypos = y;
+}
+
+// Set the flag bits of the given sprite
+// X0000000 Hide: if set to 1, will not draw the sprite on the LCD
+// 0X000000 Animated: if set to 1, the sprite will cycle through frames
+// 00X00000 Reserved
+// 000X0000 Reserved
+// 0000X000 Reserved
+// 00000X00 Reserved
+// 000000X0 Reserved
+// 0000000X Reserved
+void spriteSetFlags(sprite inSprite, uint8_t flagVals) {
+	inSprite->flags = flagVals;
+}
+
+// Set or clear the hide flag of the given sprite
+void spriteHide(sprite inSprite, uint8_t hideEnable) {
+	if (hideEnable) {
+		inSprite->flags |= HIDE;	// Set the hide flag
+	} else {
+		inSprite->flags &= ~HIDE;	// Clear the hide flag
+	}
+}
+
+// Set or clear the animate flag of the given sprite
+void spriteAnimate(sprite inSprite, uint8_t animationEnable) {
+	if (animationEnable) {
+		inSprite->flags |= ANIMATED;	// Set the animated flag
+	} else {
+		inSprite->flags &= ~ANIMATED;	// Clear the animated flag
+	}
+}
+
+// Set a palette color of a sprite to a new given color
+void spriteSetPaletteColor(sprite inSprite, uint8_t num, uint16_t color) {
+	inSprite->palette[num] = color;
 }
 
 /*
@@ -350,6 +407,9 @@ uint8_t spriteLayersRemove(sprite inSprite) {
 
 	// Decrement size
 	spriteLayers.size--;
+
+	// Set the layers flag in the sprite
+	inSprite->layer = -1;
 
 	return 0;
 }

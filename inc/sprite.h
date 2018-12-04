@@ -24,15 +24,15 @@ typedef struct sprite_struct{
 	FIL file;
 	uint16_t width;
 	uint16_t height;
-	uint16_t xpos;
-	uint16_t ypos;
+	int16_t xpos;
+	int16_t ypos;
 	uint16_t numColors;
 	uint16_t *palette;
 	uint8_t numFrames;
 	uint8_t curFrame;
 	uint8_t flags;
 	uint8_t tag;
-	uint8_t layer;
+	int8_t layer;
 } *sprite;
 
 typedef struct {
@@ -63,6 +63,15 @@ sprite initSprite(uint8_t *filename);
 sprite copySprite(sprite  const inSprite);
 uint32_t drawSprite(sprite inSprite);
 void destroySprite(sprite inSprite);
+void spriteSetXpos(sprite inSprite, int16_t x);
+void spriteSetYpos(sprite inSprite, int16_t y);
+void spriteSetPos(sprite inSprite, int16_t x, int16_t y);
+void spriteSetFlags(sprite inSprite, uint8_t flagVals);
+void spriteHide(sprite inSprite, uint8_t hideEnable);
+void spriteAnimate(sprite inSprite, uint8_t animationEnable);
+void spriteSetPaletteColor(sprite inSprite, uint8_t num, uint16_t color);
+
+// spriteLayers functions
 uint8_t spriteLayersInsert(sprite inSprite, uint8_t layer);
 uint8_t spriteLayersAdd(sprite inSprite);
 uint8_t spriteLayersRemove(sprite inSprite);

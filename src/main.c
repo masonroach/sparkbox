@@ -10,7 +10,6 @@ void buttonTest(void);
 FATFS SDFatFs;  /* File system object for SD card logical drive */
 char SDPath[4]; /* SD card logical drive path */
 FIL MyFile;     /* File object */
-extern spriteList spritesAllocated;
 
 int main(void) {
 	
@@ -74,85 +73,15 @@ void systemInit(void) {
 
 void lcdTest(void) {
 	uint8_t leds = 0x00;
-	uint8_t *testString = (uint8_t *)"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-	uint32_t pixel;
 	sprite testSprite;
 	uint8_t i;
 	uint32_t offset;
-
-	// Test lcd coordinates/orientation
-	LcdPutPixel(20, 20, LCD_COLOR_RED);
-	LcdDrawRectangle(0, 0, 10, 10, LCD_COLOR_RED);
-	LcdPutPixel(299, 20, LCD_COLOR_BLUE);
-	LcdDrawRectangle(310, 0, 10, 10, LCD_COLOR_BLUE);
-	LcdPutPixel(20, 219, LCD_COLOR_GREEN);
-	LcdDrawRectangle(0, 229, 10, 10, LCD_COLOR_GREEN);
-	ledOn(leds++);
-
-	while (!readButton());
-	delayms(50);
-	while (readButton());
-
-	// Basic screen drawing tests
-	LcdFillScreen(LCD_COLOR_BLACK);
-	LcdDrawRectangle((LCD_WIDTH-70)/2, (LCD_HEIGHT-70)/2, 70, 70, LCD_COLOR_WHITE);
-	LcdDrawRectangle(10, 200, 300, 1, LCD_COLOR_WHITE);
-	LcdDrawString(20, 10, testString, LCD_COLOR_WHITE, LCD_COLOR_BLACK);
-	LcdDrawString(140, 130, (uint8_t *)"SPARKBOX", LCD_COLOR_BLACK, LCD_COLOR_WHITE);
-	LcdDrawInt(20, 120, 256, LCD_COLOR_WHITE, LCD_COLOR_BLACK);
-	LcdDrawInt(20, 180, 10, LCD_COLOR_WHITE, LCD_COLOR_BLACK);
-	LcdDrawHex(20, 150, 0xDEAD, LCD_COLOR_WHITE, LCD_COLOR_BLACK);
-	ledOn(leds++);
-
-	while (!readButton());
-	delayms(50);
-	while (readButton());
-
-	// Test reading a pixel
-	LcdFillScreen(0xFEED);
-	LcdDrawString(10, 10, (uint8_t *)"888 FORMAT = ", LCD_COLOR_WHITE, LCD_COLOR_BLACK);
-	LcdDrawString(10, 30, (uint8_t *)"565 FORMAT = ", LCD_COLOR_WHITE, LCD_COLOR_BLACK);
-	pixel = LcdReadPixel(50, 50);
-	LcdDrawHex(100, 10, pixel, LCD_COLOR_WHITE, LCD_COLOR_BLACK);
-	LcdDrawHex(100, 30, COLOR_888_TO_565(pixel), LCD_COLOR_WHITE, LCD_COLOR_BLACK);
-	ledOn(leds++);
-
-	while (!readButton());
-	delayms(50);
-	while (readButton());
-
-	// Malloc testing
-	// Add testSprite
-	LcdDrawHex(120, 120, (uint32_t)spritesAllocated.sprites, LCD_COLOR_WHITE, 0x1234);
-	LcdDrawInt(50, 140, (uint32_t)spritesAllocated.size, LCD_COLOR_WHITE, 0x1234);
-	LcdFillScreen(0x1234);
 
 	testSprite = test_getSprite();
 	if (testSprite == NULL) {
 		// ERROR
 		ledError(LED_ERROR);
 	}
-
-	LcdDrawString(10, 10, (uint8_t *)"MALLOC TEST", LCD_COLOR_WHITE, 0x1234);
-	LcdDrawString(10, 30, (uint8_t *)"SPRITE", LCD_COLOR_WHITE, 0x1234);
-	LcdDrawString(10, 50, (uint8_t *)"PALETTE", LCD_COLOR_WHITE, 0x1234);
-	LcdDrawHex(70, 30, (uint32_t)testSprite, LCD_COLOR_WHITE, 0x1234);
-	LcdDrawHex(70, 50, (uint32_t)(testSprite->palette), LCD_COLOR_WHITE, 0x1234);
-
-	// Testing spritesAllocated struct
-	LcdDrawString(10, 100, (uint8_t *)"SPRITESALLOCATED", LCD_COLOR_WHITE, 0x1234);
-	LcdDrawString(10, 120, (uint8_t *)"SPRITES POINTER", LCD_COLOR_WHITE, 0x1234);
-	LcdDrawString(10, 140, (uint8_t *)"SIZE", LCD_COLOR_WHITE, 0x1234);
-	LcdDrawHex(120, 120, (uint32_t)spritesAllocated.sprites, LCD_COLOR_WHITE, 0x1234);
-	LcdDrawInt(50, 140, (uint32_t)spritesAllocated.size, LCD_COLOR_WHITE, 0x1234);
-
-	ledOn(leds++);
-
-	while (!readButton());
-	delayms(50);
-	while (readButton())
-	delayms(1000);
-
 	// Test sprites
 	drawSpriteDebug(testSprite);
 	ledOn(leds++);
