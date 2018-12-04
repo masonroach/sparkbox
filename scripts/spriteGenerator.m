@@ -10,10 +10,9 @@ outputFile = strrep(inputPng, '.png', '.sparksprite');
 %% Parse png data
 [RGB, map, alpha] = imread(inputPng);
 % Seperate into RGBA. When diving uint8 in MATLAB, automatically rounds.
-% Dividing on powers of two imitates right shifting with roundings.
-R = RGB(:,:,1)./8;
-G = RGB(:,:,2)./4;
-B = RGB(:,:,3)./8;
+R = RGB(:,:,1).*(31/255);
+G = RGB(:,:,2).*(63/255);
+B = RGB(:,:,3).*(31/255);
 A = bitsrl(alpha, 7);
 
 % Get dimensions
@@ -63,6 +62,10 @@ end
 % Build 565 palette
 finalPalette = bitsll(palette(:, 1), 11) ...
     + bitsll(palette(:, 2), 5) + palette(:, 3);
+
+if (size(finalPalette, 1) > 15)
+    error('Error: Too many colors in the palette (%d). Reduce the number of colors to 15 or less and try again.', size(finalPalette, 1))
+end
 
 % Convert the picture into seperate frame arrays
 converted = zeros(ceil(width*frameHeight/4)*4, numFrames);
