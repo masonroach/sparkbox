@@ -3,7 +3,7 @@
 volatile uint16_t *videoBuffer1;
 volatile uint16_t *videoBuffer2;
 
-volatile uint16_t *indexBuffer;
+// volatile uint16_t *indexBuffer;
 
 // 0 if currently playing buffer 2 (reading 1)
 // 1 if currently playing buffer 1 (reading 2)
@@ -31,12 +31,13 @@ int8_t initVideo(void)
 	videoBuffer1 = (uint16_t*)malloc(sizeof(uint8_t) * VID_BUF_BYTES);
 	videoBuffer2 = (uint16_t*)malloc(sizeof(uint8_t) * VID_BUF_BYTES);
 	// Buffer storing indexes of palette data is 1/4 size of video buffers
-	indexBuffer = (uint16_t*)malloc(sizeof(uint8_t) * VID_BUF_BYTES / 4);
+//	indexBuffer = (uint16_t*)malloc(sizeof(uint8_t) * VID_BUF_BYTES / 4);
 
 	// If memory allocation failed, stop here and return
-	if (videoBuffer1 == NULL || 
-		videoBuffer2 == NULL || 
-		indexBuffer == NULL) return -1;
+	if (videoBuffer1 == NULL
+		|| videoBuffer2 == NULL
+//		|| indexBuffer == NULL
+	) return -1;
 
 	// Initialize DMA for video
 	/* DMA controller clock enable */
@@ -102,7 +103,8 @@ FRESULT readToVideoBuffer(void)
 
 	if (color == LCD_COLOR_RED) color = LCD_COLOR_GREEN;
 	else if (color == LCD_COLOR_GREEN) color = LCD_COLOR_BLUE;
-	else if (color == LCD_COLOR_BLUE) color = LCD_COLOR_BLACK;
+	else if (color == LCD_COLOR_BLUE) color = LCD_COLOR_YELLOW;
+	else if (color == LCD_COLOR_YELLOW) color = LCD_COLOR_BLACK;
 	else color = LCD_COLOR_RED;
 
 	/* CODE ABOVE IS DEMO FOR TEST PURPOSES */
@@ -172,8 +174,9 @@ void DMA2_Stream5_IRQHandler(void)
 void TIM7_IRQHandler(void)
 {
 	HAL_TIM_IRQHandler(&htim7);
-	
 
+	toggleVideoBuffers();
+	
 	// Start the new transfer before reading
 	HAL_DMA_Start_IT(&hdma_memtomem_dma2_stream5,
 	(uint32_t)PLAY_BUFFER, (uint32_t)(fsmc_data),

@@ -11,11 +11,19 @@
 // Size of LCD in bytes, not pixels
 #define LCD_SIZE_BYTES (LCD_PIXELS * 2)
 
-// Video buffer size is 6.4kB
-#define VID_BUF_BYTES (6400)
+// Number of rows per transfer
+#define LCD_TRANSFER_ROWS 8
 
-// Number of buffer transfers to fill LCD (24)
-#define NUM_TRANSFERS 24
+// Number of buffer transfers to fill LCD
+#define NUM_TRANSFERS (LCD_HEIGHT / LCD_TRANSFER_ROWS)
+
+// Number of transfers is not 
+#if (LCD_SIZE_BYTES % NUM_TRANSFERS)
+#error "LCD_TRANSFER_ROWS must evenly divide LCD_HEIGHT."
+#endif
+
+// Video buffer size is 5.120kB
+#define VID_BUF_BYTES (LCD_SIZE_BYTES / NUM_TRANSFERS)
 
 // Timer 1 frequency
 #define TIM1FREQ 84000000UL
