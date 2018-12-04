@@ -1,8 +1,8 @@
 #include "sprite.h"
 
 // Static functions
-static uint8_t spritesAllocatedAdd(sprite *inSprite);
-static uint8_t spritesAllocatedRemove(sprite *inSprite);
+static uint8_t spritesAllocatedAdd(sprite inSprite);
+static uint8_t spritesAllocatedRemove(sprite inSprite);
 
 // Global list to keep track of all initialized sprites
 spriteList spritesAllocated = {NULL, 0};
@@ -17,12 +17,12 @@ extern const uint16_t fakeSpriteFile[];
 static uint32_t filePointer = 0;
 
 // Test assembling a sprite from a dummy file
-sprite *test_getSprite(void) {
+sprite test_getSprite(void) {
 	uint16_t temp, i;
-	sprite *targetSprite;
+	sprite targetSprite;
 
 	// Allocate space for sprite
-	targetSprite = (sprite *)malloc(sizeof(sprite));
+	targetSprite = (sprite )malloc(sizeof(sprite));
 	if (targetSprite == NULL) {
 		return NULL;
 	}
@@ -83,7 +83,7 @@ sprite *test_getSprite(void) {
 }
 
 // Display helpful debugging information for the given sprite
-void drawSpriteDebug(sprite *inSprite) {
+void drawSpriteDebug(sprite inSprite) {
 	uint16_t i;
 
 	LcdFillScreenCheckered();
@@ -159,19 +159,19 @@ uint16_t test_fseek(int32_t offset, uint8_t whence) {
  * srite functions
  */
 // Initializes a sprite struct from a given filename
-sprite *initSprite(uint8_t *filename) {
+sprite initSprite(uint8_t *filename) {
 	// TODO
 	return NULL;
 }
 
 // Copy one sprite to another
-sprite *copySprite(sprite * const inSprite) {
+sprite copySprite(sprite  const inSprite) {
 	// TODO
 	return NULL;
 }
 
 // Frees memory allocated by a sprite
-void destroySprite(sprite *inSprite) {
+void destroySprite(sprite inSprite) {
 
 	// Free memory
 	free(inSprite->palette);
@@ -184,7 +184,7 @@ void destroySprite(sprite *inSprite) {
 
 // Draw the full sprite on the screen. Note: this does not work the same way as
 // video, this is mostly for debugging purposes.
-uint32_t drawSprite(sprite *inSprite) {
+uint32_t drawSprite(sprite inSprite) {
 	uint16_t temp;
 	uint32_t i = 0, p;
 	uint32_t offset;
@@ -227,8 +227,8 @@ uint32_t drawSprite(sprite *inSprite) {
  */
 // Add a sprite pointer to the spritesAllocated list
 // Return 0 on success, !0 on failure
-static uint8_t spritesAllocatedAdd(sprite *inSprite) {
-	sprite **newPointer;
+static uint8_t spritesAllocatedAdd(sprite inSprite) {
+	sprite *newPointer;
 
 	// Check if too many sprites are already allocated
 	if (spritesAllocated.size >= MAX_SPRITES) {
@@ -236,7 +236,7 @@ static uint8_t spritesAllocatedAdd(sprite *inSprite) {
 	}
 	
 	// Reallocate memory for array of structs
-	newPointer = (sprite **)realloc(spritesAllocated.sprites, spritesAllocated.size+1 * sizeof(sprite));
+	newPointer = (sprite *)realloc(spritesAllocated.sprites, spritesAllocated.size+1 * sizeof(sprite));
 	if (newPointer == NULL) {
 		return NOT_ENOUGH_MEMORY;
 	}
@@ -256,7 +256,7 @@ static uint8_t spritesAllocatedAdd(sprite *inSprite) {
 
 // Add a sprite pointer to the spritesAllocated list
 // Return 0 on success, !0 on failure
-static uint8_t spritesAllocatedRemove(sprite *inSprite) {
+static uint8_t spritesAllocatedRemove(sprite inSprite) {
 	uint8_t i;
 	
 	// Remove the element and move the rest of the elements back
@@ -276,9 +276,9 @@ static uint8_t spritesAllocatedRemove(sprite *inSprite) {
  */
 // Add a sprite pointer to the spriteLayer list at the given position
 // Return 0 on success, !0 on failure
-uint8_t spriteLayersInsert(sprite *inSprite, uint8_t layer) {
+uint8_t spriteLayersInsert(sprite inSprite, uint8_t layer) {
 	uint8_t i;
-	sprite **newPointer;
+	sprite *newPointer;
 
 	// Check if too many sprites are already allocated
 	if (spriteLayers.size >= MAX_LAYERS) {
@@ -286,7 +286,7 @@ uint8_t spriteLayersInsert(sprite *inSprite, uint8_t layer) {
 	}
 	
 	// Reallocate memory for array of structs
-	newPointer = (sprite **)realloc(spriteLayers.sprites, spriteLayers.size+1 * sizeof(sprite));
+	newPointer = (sprite *)realloc(spriteLayers.sprites, spriteLayers.size+1 * sizeof(sprite));
 	if (newPointer == NULL) {
 		return NOT_ENOUGH_MEMORY;
 	}
@@ -311,8 +311,8 @@ uint8_t spriteLayersInsert(sprite *inSprite, uint8_t layer) {
 
 // Append a sprite pointer to the spriteLayer list
 // Return 0 on success, !0 on failure
-uint8_t spriteLayersAdd(sprite *inSprite) {
-	sprite **newPointer;
+uint8_t spriteLayersAdd(sprite inSprite) {
+	sprite *newPointer;
 
 	// Check if too many sprites are already allocated
 	if (spriteLayers.size >= MAX_LAYERS) {
@@ -320,7 +320,7 @@ uint8_t spriteLayersAdd(sprite *inSprite) {
 	}
 	
 	// Reallocate memory for array of structs
-	newPointer = (sprite **)realloc(spriteLayers.sprites, spriteLayers.size+1 * sizeof(sprite));
+	newPointer = (sprite *)realloc(spriteLayers.sprites, spriteLayers.size+1 * sizeof(sprite));
 	if (newPointer == NULL) {
 		return NOT_ENOUGH_MEMORY;
 	}
@@ -340,7 +340,7 @@ uint8_t spriteLayersAdd(sprite *inSprite) {
 
 // Remove the given sprite from the spriteLayers list
 // Return 0 on success, !0 on failure
-uint8_t spriteLayersRemove(sprite *inSprite) {
+uint8_t spriteLayersRemove(sprite inSprite) {
 	uint8_t i;
 	
 	// Remove the element and move the rest of the elements back

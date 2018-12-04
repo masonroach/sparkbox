@@ -20,7 +20,7 @@
  * ColorMap[x]: 4-bits each
  */
 
-typedef struct {
+typedef struct sprite_struct{
 	FIL file;
 	uint16_t width;
 	uint16_t height;
@@ -33,10 +33,10 @@ typedef struct {
 	uint8_t flags;
 	uint8_t tag;
 	uint8_t layer;
-} sprite;
+} *sprite;
 
 typedef struct {
-	sprite **sprites;
+	sprite *sprites;
 	uint8_t size;
 } spriteList;
 
@@ -59,20 +59,20 @@ typedef enum {
 } SPRITE_ERROR;
 
 // sprite functions
-sprite *initSprite(uint8_t *filename);
-sprite *copySprite(sprite * const inSprite);
-uint32_t drawSprite(sprite *inSprite);
-void destroySprite(sprite *inSprite);
-uint8_t spriteLayersInsert(sprite *inSprite, uint8_t layer);
-uint8_t spriteLayersAdd(sprite *inSprite);
-uint8_t spriteLayersRemove(sprite *inSprite);
+sprite initSprite(uint8_t *filename);
+sprite copySprite(sprite  const inSprite);
+uint32_t drawSprite(sprite inSprite);
+void destroySprite(sprite inSprite);
+uint8_t spriteLayersInsert(sprite inSprite, uint8_t layer);
+uint8_t spriteLayersAdd(sprite inSprite);
+uint8_t spriteLayersRemove(sprite inSprite);
 
 #define SAMPLE_SPRITE 5
 #if SAMPLE_SPRITE>0
 #include "lcd.h"
 #include "button.h"
-void drawSpriteDebug(sprite *inSprite);
-sprite *test_getSprite(void);
+void drawSpriteDebug(sprite inSprite);
+sprite test_getSprite(void);
 uint16_t test_get16(void);
 uint16_t test_fseek(int32_t offset, uint8_t whence);
 

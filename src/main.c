@@ -76,7 +76,7 @@ void lcdTest(void) {
 	uint8_t leds = 0x00;
 	uint8_t *testString = (uint8_t *)"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 	uint32_t pixel;
-	sprite *testSprite;
+	sprite testSprite;
 	uint8_t i;
 	uint32_t offset;
 
