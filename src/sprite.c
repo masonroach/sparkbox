@@ -413,3 +413,19 @@ uint8_t spriteLayersRemove(sprite inSprite) {
 
 	return 0;
 }
+
+// For every sprite in the layers, move their file pointers to beginning of
+// their current frame
+uint8_t seekStartOfFrames(void) {
+	uint32_t offset;
+	uint8_t layer;
+
+	for (layer = 0; layer < spriteLayers.size; layer++){
+
+		// Move file pointer to beginning of sprite frame
+		offset = ((spriteLayers.sprites[layer]->width * spriteLayers.sprites[layer]->height) + 3) / 4;
+		test_fseek(22 + spriteLayers.sprites[layer]->curFrame * offset, TEST_SEEK_SET);
+	}
+
+	return 0;
+}

@@ -75,8 +75,9 @@ void spriteSetPaletteColor(sprite inSprite, uint8_t num, uint16_t color);
 uint8_t spriteLayersInsert(sprite inSprite, uint8_t layer);
 uint8_t spriteLayersAdd(sprite inSprite);
 uint8_t spriteLayersRemove(sprite inSprite);
+uint8_t seekStartOfFrames(void);
 
-#define SAMPLE_SPRITE 5
+#define SAMPLE_SPRITE 6
 #if SAMPLE_SPRITE>0
 #include "lcd.h"
 #include "button.h"

@@ -75,7 +75,6 @@ void lcdTest(void) {
 	uint8_t leds = 0x00;
 	sprite testSprite;
 	uint8_t i;
-	uint32_t offset;
 
 	testSprite = test_getSprite();
 	if (testSprite == NULL) {
@@ -102,9 +101,7 @@ void lcdTest(void) {
 	while (!readButton()) {
 		testSprite->curFrame++;
 		if (testSprite->curFrame == testSprite->numFrames) testSprite->curFrame = 0;
-		// Move file pointer to beginning of sprite frame
-		offset = ((testSprite->width * testSprite->height) + 3) / 4;
-		test_fseek(22 + testSprite->curFrame * offset, TEST_SEEK_SET);
+		seekStartOfFrames();
 		for (i = 0; i < LCD_HEIGHT; i++) testGetRow(i);
 		delayms(49);
 	}
@@ -112,11 +109,15 @@ void lcdTest(void) {
 	delayms(50);
 	while (readButton());
 	ledOn(leds++);
+	
+	LcdFillScreen(LCD_COLOR_BLACK);
 
 	// Test frame updating with DMA
 	while (!readButton()) {
+		testSprite->curFrame++;
+		if (testSprite->curFrame == testSprite->numFrames) testSprite->curFrame = 0;
 		updateFrame();
-		delayms(49);
+		delayms(1000);
 	}
 	delayms(50);
 	while (readButton());

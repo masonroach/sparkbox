@@ -519,9 +519,7 @@ static void initFSMC(void) {
 	return;
 }
 
-/******************************************************************************/
-/* FROM PROVIDED EXAMPLE CODE, DO NOT CHANGE YET   ****************************/
-/******************************************************************************/
+// Initialize the ILI9341 LCD controller
 static void initILI9341(void) {
 	// Hardware reset
 	LCD_RESET_HIGH;
