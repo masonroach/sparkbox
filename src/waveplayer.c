@@ -1,8 +1,9 @@
 #include "waveplayer.h"
+#include "led.h"
 
 static void WavePlayer_ReadAndParse(WAV_Format* WAVE_Format);
 static void ToggleBufferSign(uint32_t* pBuffer, uint32_t BufferSize);
-uint32_t ReadUnit(uint8_t *buffer, uint8_t idx, uint8_t NbrOfBytes, Endianness BytesFormat);
+static uint32_t ReadUnit(uint8_t *buffer, uint8_t idx, uint8_t NbrOfBytes, Endianness BytesFormat);
 
 // Buffers for playing from SD card
 uint16_t *audioBuffer1;
@@ -133,23 +134,26 @@ uint8_t WAV_Import(const char* FileName, WAV_Format* W)
 	*/
 void DMA1_Stream5_IRQHandler(void)
 {
+	// When this function is called, it is assumed READ_BUFFER
+	// is correctly filled. Therefore, playingWav->DataPos will be "ahead"
+	// of the transfer that just completed by AUD_BUF_BYTES
+
 	// PLay entire buffer unless changed later
 	uint32_t bufferSize = AUD_BUF_BYTES / 2;
 	
-	// This IT handler is responsible for setting the next read position
-	// playingWav->DataPos is location of next sample to read from file
-	
 	HAL_DMA_IRQHandler(&hdma_dac1);
 
-	// Has a WAV file just completed?
-	if (playingWav->DataPos - AUD_BUF_BYTES < 0) {
-		// Determine to stop playing WAV file
+	// Determine if a WAV file has completed
+	// If it has, the next sample we read will be at positon
+	// less than the size of the audio buffer
+	if (playingWav->DataPos < AUD_BUF_BYTES) {
+		// Determine if playing the file should end
     	if (numberPlays == 1) {
 			// Done, stop timer but set up transfer in case user
 			// wishes to restart WAV file
     	    HAL_TIM_Base_Stop(&htim6);
 			numberPlays = 0;
-			// Reset next data read
+			// Reset next data read to position 0 if done
 			playingWav->DataPos = 0;
     	} else if (numberPlays <= REPEAT_ALWAYS) {
     	    numberPlays = REPEAT_ALWAYS;
@@ -159,43 +163,27 @@ void DMA1_Stream5_IRQHandler(void)
 
 		// For a WAV restart, other buffer is ready so play it
 		// Timer is stopped for non repeating WAV files
-	
-		playingWav->DataPos -= playingWav->DataSize;
-
-	} else {
-		// Not done playing, start playing other buffer
-		if (numberPlays == 1 &&
-		(playingWav->DataPos + AUD_BUF_BYTES > playingWav->DataSize)) {
-			// Not repeating another time and audio buffer is larger than
-			// remaining number of samples to be played
-			// Only play remaining samples, even though buffer is filled
-			// as if the file is repeating
-			bufferSize = playingWav->DataSize - playingWav->DataPos;
-			playingWav->DataPos = playingWav->DataSize;
-		} else if (playingWav->DataPos + AUD_BUF_BYTES > playingWav->DataSize) {
-			// Remaining samples less than buffer size, but a repeat is coming
-			// So start playing the beginning of the new file
-			playingWav->DataPos -= (playingWav->DataSize - AUD_BUF_BYTES);
-		} else {
-			playingWav->DataPos += AUD_BUF_BYTES;
-		}
-	}
-
-	// Make sure the new data position is in valid range
-	// Reset data position to zero if a WAV file is done playing
-	if (playingWav->DataPos < 0 || \
-	playingWav->DataPos >= playingWav->DataSize || \
-	numberPlays == 0) {
-		playingWav->DataPos = 0;
 	}
 	
-	// Swap which buffer is playing before playing the new buffer
+	// Adjust the buffer size to less than full buffer if there is 
+	// only 1 play remaining and remaining samples won't fill the buffer
+	if (numberPlays == 1 && (playingWav->DataPos < AUD_BUF_BYTES)) {
+		// Not repeating another time and audio buffer is larger than
+		// remaining number of samples to be played
+		// Only play remaining samples, even though buffer is filled
+		// as if the file is repeating
+		bufferSize = (AUD_BUF_BYTES - playingWav->DataPos) / 2;
+	}
+
+	// Swap which buffer is playing before playing the newly filled buffer
 	toggleBuffers();
 
+	// Always begin a new transfer, timer will be off if playing is over
 	HAL_DAC_Start_DMA(&hdac, DAC_CHANNEL_1, (uint32_t*)PLAY_BUFFER,
 	bufferSize, DAC_ALIGN_12B_L);
 	
-	// Set flag so the other buffer can be filled now
+	// Set read ready flag so the other buffer can be filled
+	// while the current transfer completes
 	readyToRead = 1;
 }
 
@@ -213,9 +201,22 @@ FRESULT WAV_Update(void)
 {
 	FRESULT res;
 	UINT BytesRead;
+
+	uint32_t i;
 	
 	// If WAV data does not need to be read, return
 	if (!readyToRead) return 0;
+
+	/* Code below for testing without SD */
+	
+	for (i = 0; i < (AUD_BUF_BYTES / 2); i++) {
+		if (i%2) { *(READ_BUFFER + i) = 0xFFFF;}
+		else {*(READ_BUFFER + i) = 0x0000;}
+	}
+	readyToRead = 0;
+	return 0;
+
+	/* Code above for testing without SD */
 
 	/* Open wave data file */
     res = f_open(&F, playingWav->Filename, FA_READ);
@@ -227,23 +228,39 @@ FRESULT WAV_Update(void)
 
 	// Read WAV data
 	if (playingWav->DataPos + AUD_BUF_BYTES > playingWav->DataSize) {
-		// This will reach the end of the file
-        res = f_read(&F, READ_BUFFER, playingWav->DataSize, &BytesRead);
+		// If this case executes, there must be two reads to fill 
+		// the audio buffer completely
+
+		// This first read will reach the end of the file
+        res = f_read(&F, READ_BUFFER, 
+		playingWav->DataSize - playingWav->DataPos, &BytesRead);
 		if (res != FR_OK) return res;
-        playingWav->DataPos = AUD_BUF_BYTES - playingWav->DataSize;
-        // Set file pointer to correct position again
-        res = f_lseek(&F, playingWav->SpeechDataOffset + playingWav->DataPos);
+
+        // Set file pointer to beginning of data again
+        res = f_lseek(&F, playingWav->SpeechDataOffset);
 		if (res != FR_OK) return res;
-        // Read remaining data
+
+        // This second read will fill the remainder of the buffer
         res = f_read(&F, (uint16_t*)((uint8_t*)READ_BUFFER + playingWav->DataSize),
-        AUD_BUF_BYTES - playingWav->DataSize, &BytesRead);
+        playingWav->DataPos + AUD_BUF_BYTES - playingWav->DataSize, &BytesRead);
 		if (res != FR_OK) return res;
+
+		// Update position for next read
+		playingWav->DataPos += AUD_BUF_BYTES - playingWav->DataSize;
+
 	} else {
-		// Remaining sample data is of grater size than buffer
-		// so read in samples to fill buffer
+		// There must only be one read to fill audio buffer completely
         res = f_read(&F, READ_BUFFER, AUD_BUF_BYTES, &BytesRead);
 		if (res != FR_OK) return res;
-        playingWav->DataPos = AUD_BUF_BYTES;
+
+		// Update position for next read
+        playingWav->DataPos += AUD_BUF_BYTES;
+
+		// Handle the case where number of remaining file samples equals
+		// number of audio buffer samples
+		if (playingWav->DataPos == playingWav->DataSize) {
+			playingWav->DataPos = 0;
+		}
 	}
 
     /* Close file */
@@ -293,7 +310,7 @@ void WAV_Play(WAV_Format* W, int numPlays)
 	
 	/* Deinitialize everything */
 	HAL_TIM_Base_Stop(&htim6);
-    HAL_DAC_Stop(&hdac,DAC_CHANNEL_1);
+    HAL_DAC_Stop(&hdac, DAC_CHANNEL_1);
     HAL_DAC_Stop_DMA(&hdac, DAC_CHANNEL_1);
 
 	// Set period based on sample rate
@@ -304,7 +321,7 @@ void WAV_Play(WAV_Format* W, int numPlays)
 	// Start TIM6
 	HAL_TIM_Base_Start(&htim6);
 	// Start DAC
-	HAL_DAC_Start(&hdac,DAC_CHANNEL_1);
+	HAL_DAC_Start(&hdac, DAC_CHANNEL_1);
 
 	// If the buffer size is greater than the WAV file
 	// and no repeats, only play WAV file contents
@@ -423,13 +440,14 @@ void WavePlayer_ReadAndParse(WAV_Format* WAVE_Format)
 	/* Read the Sample Rate ----------------------------------------------------*/
 	WAVE_Format->SampleRate = ReadUnit((uint8_t*)TempBuffer, 24, 4, LittleEndian);
 	/* Update the OCA value according to the .WAV file Sample Rate */
-	if (WAVE_Format->SampleRate < 6000 || WAVE_Format->SampleRate > 100000) {
+	// Only allow up to 50 ksps rate to ensure buffer has enough time to update
+	if (WAVE_Format->SampleRate < 6000 || WAVE_Format->SampleRate > 50000) {
 			f_close(&F);
 			WAVE_Format->Error = Unsupporetd_Sample_Rate;
 			return;
 	}
 	
-	/* Fs = Ftimer / (ARR+1); ARR = Ftimer / (Fs - 1) */
+	/* Fs = Ftimer / (ARR+1); ARR = Ftimer / Fs - 1 */
 	WAVE_Format->TIM6ARRValue = (uint32_t)((float)(TIM6FREQ) / WAVE_Format->SampleRate - 1);
 	
 	/* Read the Byte Rate ------------------------------------------------------*/
@@ -516,7 +534,7 @@ static void ToggleBufferSign(uint32_t* pBuffer, uint32_t BufferSize)
 	*             - BigEndian
 	* @retval Bytes read from the SPI Flash.
 	*/
-uint32_t ReadUnit(uint8_t *buffer, uint8_t idx, uint8_t NbrOfBytes, Endianness BytesFormat)
+static uint32_t ReadUnit(uint8_t *buffer, uint8_t idx, uint8_t NbrOfBytes, Endianness BytesFormat)
 {
 	uint32_t index = 0;
 	uint32_t temp = 0;
@@ -530,5 +548,3 @@ uint32_t ReadUnit(uint8_t *buffer, uint8_t idx, uint8_t NbrOfBytes, Endianness B
 	}
 	return temp;
 }
-	
-/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
