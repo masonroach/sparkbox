@@ -108,6 +108,7 @@ void updateFrame(void)
 	bufferTransfers = 0;
 	
 	// Reset file pointers of sprites
+	updateSprites();
 	seekStartOfFrames();
 
 	// read new frame into one videoBuffer

@@ -26,6 +26,8 @@ typedef struct sprite_struct{
 	uint16_t height;
 	int16_t xpos;
 	int16_t ypos;
+	int16_t xvelocity;
+	int16_t yvelocity;
 	uint16_t numColors;
 	uint16_t *palette;
 	uint8_t numFrames;
@@ -63,6 +65,7 @@ sprite initSprite(uint8_t *filename);
 sprite copySprite(sprite  const inSprite);
 uint32_t drawSprite(sprite inSprite);
 void destroySprite(sprite inSprite);
+void updateSprites(void);
 void spriteSetXpos(sprite inSprite, int16_t x);
 void spriteSetYpos(sprite inSprite, int16_t y);
 void spriteSetPos(sprite inSprite, int16_t x, int16_t y);

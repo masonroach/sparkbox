@@ -37,6 +37,8 @@ sprite test_getSprite(void) {
 	// Initialize data that is not in file
 	targetSprite->xpos = 0;
 	targetSprite->ypos = 0;
+	targetSprite->xvelocity = 0;
+	targetSprite->yvelocity = 0;
 	targetSprite->curFrame = 0;
 	targetSprite->flags = 0x00;
 	targetSprite->layer = -1;
@@ -224,6 +226,26 @@ uint32_t drawSprite(sprite inSprite) {
 	}
 
 	return i;
+
+}
+
+// Update sprite positions and frames
+void updateSprites(void) {
+	uint8_t layer;
+	
+	for (layer = 0; layer < spriteLayers.size; layer++) {
+
+		// Update frames
+		spriteLayers.sprites[layer]->curFrame++;
+		if (spriteLayers.sprites[layer]->curFrame == spriteLayers.sprites[layer]->numFrames) {
+			spriteLayers.sprites[layer]->curFrame = 0;
+		}
+
+		// Update positions
+		spriteLayers.sprites[layer]->xpos += spriteLayers.sprites[layer]->xvelocity;
+		spriteLayers.sprites[layer]->ypos += spriteLayers.sprites[layer]->yvelocity;
+
+	}
 
 }
 

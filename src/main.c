@@ -110,12 +110,10 @@ void lcdTest(void) {
 	while (readButton());
 	ledOn(leds++);
 	
-	LcdFillScreen(LCD_COLOR_BLACK);
+	testSprite->xvelocity = 1;
 
 	// Test frame updating with DMA
 	while (!readButton()) {
-		testSprite->curFrame++;
-		if (testSprite->curFrame == testSprite->numFrames) testSprite->curFrame = 0;
 		updateFrame();
 		delayms(50);
 	}
