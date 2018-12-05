@@ -90,23 +90,6 @@ FRESULT readToVideoBuffer(void)
 	// Write actual colors to READ_BUFFER
 
 	for (set = 0; set < LCD_TRANSFER_ROWS/4; set++) getNext4Rows(set);
-/*
-	// CODE BELOW IS DEMO FOR TEST PURPOSES //
-	uint16_t i;
-	static uint16_t color = LCD_COLOR_RED;
-
-
-	// Fill buffer with color
-	for (i=0; i<(VID_BUF_BYTES / 2); i++) {
-		*(READ_BUFFER + i) = color; 
-	}
-
-	if (color == LCD_COLOR_RED) color = LCD_COLOR_GREEN;
-	else if (color == LCD_COLOR_GREEN) color = LCD_COLOR_BLUE;
-	else if (color == LCD_COLOR_BLUE) color = LCD_COLOR_YELLOW;
-	else if (color == LCD_COLOR_YELLOW) color = LCD_COLOR_BLACK;
-	else color = LCD_COLOR_RED;
-*/
 
 	return FR_OK;
 }
@@ -148,10 +131,8 @@ void updateFrame(void)
 	// Increment number of transfers that have started
     bufferTransfers++;
 
-	
 	readToVideoBuffer();
 
-	
 }
 
 /*

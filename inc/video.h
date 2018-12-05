@@ -13,7 +13,7 @@
 
 // Number of rows per transfer
 // NOTE: Use a multiple of 4
-#define LCD_TRANSFER_ROWS 8
+#define LCD_TRANSFER_ROWS 12
 
 // Number of pixels in 4 rows
 #define FOUR_ROW_OFFSET LCD_WIDTH*4

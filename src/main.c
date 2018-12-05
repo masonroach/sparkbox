@@ -117,7 +117,7 @@ void lcdTest(void) {
 		testSprite->curFrame++;
 		if (testSprite->curFrame == testSprite->numFrames) testSprite->curFrame = 0;
 		updateFrame();
-		delayms(1000);
+		delayms(50);
 	}
 	delayms(50);
 	while (readButton());
