@@ -96,8 +96,8 @@ void WAV_Init(void)
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
 	HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-	// Set to output low to turn on amplifier
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_RESET);
+	// Set to output high to turn off amplifier
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_SET);
 }
 
 
@@ -114,6 +114,7 @@ uint8_t WAV_Import(const char* FileName, WAV_Format* W)
 	// Copy Filename up to 64 characters to WAV_Format struct
 	while (FileName[i] != '\0' && i < 64) {
 		W->Filename[i] = FileName[i];
+		i++;
 	}
  
 	/* Read the Speech wave file status */
@@ -128,7 +129,7 @@ uint8_t WAV_Import(const char* FileName, WAV_Format* W)
 }  
 	
 /**
-	* @brief  DMA transfer complete
+	* @brief  DMA transfer complete, begin next transfer
 	* @param  None
 	* @retval None
 	*/
@@ -149,11 +150,11 @@ void DMA1_Stream5_IRQHandler(void)
 	if (playingWav->DataPos < AUD_BUF_BYTES) {
 		// Determine if playing the file should end
     	if (numberPlays == 1) {
-			// Done, stop timer but set up transfer in case user
-			// wishes to restart WAV file
-    	    HAL_TIM_Base_Stop(&htim6);
+			// Done, stop timer and amplifier but set up 
+			// next transfer from start of file
+    	    WAV_Pause();
 			numberPlays = 0;
-			// Reset next data read to position 0 if done
+			// Reset next data read to position 0
 			playingWav->DataPos = 0;
     	} else if (numberPlays <= REPEAT_ALWAYS) {
     	    numberPlays = REPEAT_ALWAYS;
@@ -309,7 +310,7 @@ void WAV_Play(WAV_Format* W, int numPlays)
 	WAV_Update();
 	
 	/* Deinitialize everything */
-	HAL_TIM_Base_Stop(&htim6);
+	WAV_Pause();
     HAL_DAC_Stop(&hdac, DAC_CHANNEL_1);
     HAL_DAC_Stop_DMA(&hdac, DAC_CHANNEL_1);
 
@@ -318,8 +319,9 @@ void WAV_Play(WAV_Format* W, int numPlays)
 	htim6.Init.Period = W->TIM6ARRValue; // set ARR value
 	HAL_TIM_Base_Init(&htim6); // init
 	
-	// Start TIM6
-	HAL_TIM_Base_Start(&htim6);
+	// Start TIM6 and turn on amplifier
+	WAV_Resume();
+
 	// Start DAC
 	HAL_DAC_Start(&hdac, DAC_CHANNEL_1);
 
@@ -349,6 +351,8 @@ void WAV_Pause(void)
 {
 	/* Disable TIM6 */
 	HAL_TIM_Base_Stop(&htim6);
+	/* Set to output high to turn off amplifier */
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_SET);
 }
 
 /*
@@ -359,6 +363,8 @@ void WAV_Resume(void)
 {
 	/* Enable TIM6 */
 	HAL_TIM_Base_Start(&htim6);
+	/* Set to output low to turn on amplifier */
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_RESET);
 }
 
 
