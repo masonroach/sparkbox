@@ -105,9 +105,8 @@ fwrite(fout, width, 'uint16');
 % uint16: Height
 fwrite(fout, frameHeight, 'uint16');
 
-% uint16: number of colors in the palette
-%fwrite(fout, bitand(numFrames, 255)*(2^8) ...
-%    + bitand(0, 15)*(2^4) + bitand(pColors, 15), 'uint16');
+% uint16: frames, palette
+fwrite(fout, and(bitsrl(uint16(numFrames), 8), pColors), 'uint16');
 
 % uint16: Reserved
 fwrite(fout, 0, 'uint16');
