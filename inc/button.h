@@ -1,12 +1,11 @@
 #ifndef SPARK_BUTTON
 #define SPARK_BUTTON
-#include <stdlib.h>
-#include <stdbool.h>
 #include "stm32f4xx.h"
 
 extern volatile uint8_t buttons;
 
-#define ALL_BUTTONS (buttons)
+#define WAIT_UNTIL_PUSH(__BUTTON_) 	while(__BUTTON__ == RELEASED)
+#define WAIT_UNTIL_RELEASE(__BUTTON__) while(__BUTTON__ == PUSHED)
 
 #define BUTTON_A        ((buttons >> 0) & 0x01)
 #define BUTTON_B        ((buttons >> 1) & 0x01)
@@ -19,6 +18,7 @@ extern volatile uint8_t buttons;
 
 #define PUSHED 0x01
 #define RELEASED 0x00
+
 
 void initButtons(void);
 uint8_t readButton(void);

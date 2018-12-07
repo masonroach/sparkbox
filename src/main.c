@@ -15,14 +15,14 @@ int main(void) {
 	
 	systemInit();
 	
-	lcdTest();
+ 	lcdTest();
 
-/*	if (!sdTest()) {
-		ledError(2);
+	if (!sdTest()) {
+		ledError(1);
 		WAV_test();
-	}*/
+	}
 
-	buttonTest();
+	//buttonTest();
 	
 	while(1);
 	return 1;
@@ -48,6 +48,9 @@ void systemInit(void) {
 	WAV_Init();
 	initLcd();
 	initVideo();
+
+	FATFS_LinkDriver(&SD_Driver, SDPath);
+    f_mount(&SDFatFs, (TCHAR const*)SDPath, 0);
 //	initSdSpi();
 	// RCC->AHB1ENR    |=   RCC_AHB1ENR_GPIODEN;
 	// RCC->AHB1ENR    |=   RCC_AHB1ENR_GPIOCEN;
@@ -160,8 +163,6 @@ uint8_t sdTest(void) {
  	TCHAR fileName[] = "sparkbox.txt"; 				  /* File name */
 	uint8_t rtext[100];
 
-	if (FATFS_LinkDriver(&SD_Driver, SDPath) != 0) {goto end;}
-	if (f_mount(&SDFatFs, (TCHAR const*)SDPath, 0) != FR_OK) {goto end;}
 	if (f_open(&MyFile, fileName, FA_CREATE_ALWAYS | FA_WRITE) != FR_OK) {goto end;}
 	if (f_write(&MyFile, wtext, sizeof(wtext), (void *)&byteswritten) != FR_OK) {
 		f_close(&MyFile); 
@@ -189,7 +190,7 @@ end:
 
 void WAV_test(void)
 {
-	char testFile[20] = "sinewave.wav"; 
+	char testFile[] = "sinewave.wav"; 
 	WAV_Format* WAV;
 
 	WAV = (WAV_Format*)malloc(sizeof(WAV_Format));
@@ -200,7 +201,7 @@ void WAV_test(void)
 
 	WAV_Import(testFile, WAV);
 	if (WAV->Error != 0) {
-		ledOn(2);
+		ledOn(1);
 		return;
 	}
 
@@ -210,6 +211,13 @@ void WAV_test(void)
 		return;
 	}
 	
+
+	ledOn(7);
+	while (!readButton()) {
+		WAV_Update();
+		delayms(50);
+	}
+	WAV_Pause();
 
 	// Don't want to free memory the DMA is transferring
 	// WAV_Destroy(WAV);
