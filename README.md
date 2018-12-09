@@ -69,6 +69,7 @@ DMA2_Stream3
 DMA2_Stream6
 
 sparkbox push buttons:
+EXTI0_IRQn
 EXTI1_IRQn
 EXTI2_IRQn
 EXTI3_IRQn
@@ -80,3 +81,10 @@ DAC1
 TIM6
 DMA1_Stream5
 DMA1_Stream5_IRQn
+
+Video:
+FSMC
+TIM7
+TIM7_IRQn
+DMA2_Stream5
+DMA2_Stream5_IRQn

@@ -61,6 +61,7 @@ Finally, the data chunk contains the sample data:
 /* Includes ------------------------------------------------------------------*/
 //#include "stm32f4xx.h"
 #include "stm32f4xx_hal.h"
+#include <string.h>
 #include "clock.h"
 #include "ff.h"
 
@@ -132,7 +133,6 @@ typedef enum
   Unvalid_DataChunk_ID,
   Unsupporetd_ExtraFormatBytes,
   Unvalid_FactChunk_ID,
-  BufferAllocationFailed,
   FileReadFailed
 } ErrorCode;
 
@@ -166,9 +166,6 @@ typedef enum
 #define  WAVE_DUMMY_BYTE                     0xA5   
     
 #define MAX_FILES          4  
-
-#define BUFFER_SIZE_BYTE   _MAX_SS /* Size of audio buffers (two buffers) in byte */
-#define BUFFER_SIZE_WORD   _MAX_SS/4
 
 /* 12-bit Left alignment (dual channels) used in case of stereo and 16-bit data */
 #define DAC_DHR12LD_ADDRESS     ((uint32_t)(DAC_BASE + 0x000000024))

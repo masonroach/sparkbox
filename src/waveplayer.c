@@ -1,5 +1,5 @@
 #include "waveplayer.h"
-#include "led.h"
+#include "lcd.h"
 
 static void WavePlayer_ReadAndParse(WAV_Format* WAVE_Format);
 static void ToggleBufferSign(uint32_t* pBuffer, uint32_t BufferSize);
@@ -109,13 +109,8 @@ void WAV_Init(void)
 	*/
 uint8_t WAV_Import(const char* FileName, WAV_Format* W)
 {
-	uint8_t i = 0;
-
-	// Copy Filename up to 64 characters to WAV_Format struct
-	while (FileName[i] != '\0' && i < 64) {
-		W->Filename[i] = FileName[i];
-		i++;
-	}
+	// Copy Filename to WAV_Format struct
+	strcpy(W->Filename, FileName);
  
 	/* Read the Speech wave file status */
 	WavePlayer_ReadAndParse(W);
@@ -202,22 +197,11 @@ FRESULT WAV_Update(void)
 {
 	FRESULT res;
 	UINT BytesRead;
-
-	uint32_t i;
 	
 	// If WAV data does not need to be read, return
 	if (!readyToRead) return 0;
 
-	/* Code below for testing without SD */
-	
-	for (i = 0; i < (AUD_BUF_BYTES / 2); i++) {
-		if (i%2) { *(READ_BUFFER + i) = 0xFFFF;}
-		else {*(READ_BUFFER + i) = 0x0000;}
-	}
-	readyToRead = 0;
-	return 0;
-
-	/* Code above for testing without SD */
+	LCD_FPS_HIGH;
 
 	/* Open wave data file */
     res = f_open(&F, playingWav->Filename, FA_READ);
@@ -247,7 +231,7 @@ FRESULT WAV_Update(void)
 		if (res != FR_OK) return res;
 
 		// Update position for next read
-		playingWav->DataPos += AUD_BUF_BYTES - playingWav->DataSize;
+		playingWav->DataPos = (playingWav->DataPos + AUD_BUF_BYTES)- playingWav->DataSize;
 
 	} else {
 		// There must only be one read to fill audio buffer completely
@@ -272,6 +256,8 @@ FRESULT WAV_Update(void)
 
 	/* Finished reading into the read buffer, no longer ready to read */
 	readyToRead = 0;
+	
+	LCD_FPS_LOW;
 	
 	return res;
 }
@@ -387,7 +373,11 @@ void WavePlayer_ReadAndParse(WAV_Format* WAVE_Format)
 	uint16_t TempBuffer[_MAX_SS];
 	uint8_t res;
 	
-	f_open(&F, WAVE_Format->Filename, FA_READ);
+	res = f_open(&F, WAVE_Format->Filename, FA_READ);
+	if (res) {
+		WAVE_Format->Error = FileReadFailed;
+		return;
+	}
 
 	res = f_read(&F, TempBuffer, _MAX_SS, &BytesRead);
 	if (res) {
@@ -454,7 +444,7 @@ void WavePlayer_ReadAndParse(WAV_Format* WAVE_Format)
 	}
 	
 	/* Fs = Ftimer / (ARR+1); ARR = Ftimer / Fs - 1 */
-	WAVE_Format->TIM6ARRValue = (uint32_t)((float)(TIM6FREQ) / WAVE_Format->SampleRate - 1);
+	WAVE_Format->TIM6ARRValue = (uint32_t)((float)(TIM6FREQ) / (float)(WAVE_Format->SampleRate) - 1.0);
 	
 	/* Read the Byte Rate ------------------------------------------------------*/
 	WAVE_Format->ByteRate = ReadUnit((uint8_t*)TempBuffer, 28, 4, LittleEndian);
