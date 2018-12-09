@@ -101,8 +101,8 @@ void drawSpriteDebug(sprite inSprite) {
 
 	LcdDrawInt(278, 2, inSprite->width, LCD_COLOR_WHITE, LCD_COLOR_BLACK);
 	LcdDrawInt(278, 14, inSprite->height, LCD_COLOR_WHITE, LCD_COLOR_BLACK);
-	LcdDrawInt(278, 26, inSprite->curFrame, LCD_COLOR_WHITE, LCD_COLOR_BLACK);
-/*
+	LcdDrawInt(278, 26, inSprite->numFrames, LCD_COLOR_WHITE, LCD_COLOR_BLACK);
+
 	// Display palette colors
 	for (i = 0; i < inSprite->numColors; i++) {
 		LcdDrawRectangle(245, 62 + 12*i, 10, 10, inSprite->palette[i]);
@@ -112,7 +112,7 @@ void drawSpriteDebug(sprite inSprite) {
 	// Set sprite position to middle of screen
 	inSprite->xpos = 120 - inSprite->width/2;
 	inSprite->ypos = 120 - inSprite->height/2;
-
+/*
 	// Draw the sprite
 	while (!readButton()) {
 		// Update frame number
@@ -163,17 +163,15 @@ uint16_t test_fseek(int32_t offset, uint8_t whence) {
  * sprite functions
  */
 // Create a sprite struct from the given filename
-sprite initSprite(const char *filename) {
-	FIL *file = NULL;
-	FRESULT res;
+sprite initSprite(TCHAR *filename) {
+	FIL file;
 	uint8_t buffer[32];
 	uint16_t i;
 	sprite targetSprite;
 
 	ledOn(1);
 	// Open the sprite file
-	res = f_open(file, filename, FA_READ);
-	if (res != FR_OK) {
+	if (f_open(&file, filename, FA_READ) != FR_OK) {
 		// If file open failed,
 		return NULL;
 	}
@@ -182,15 +180,17 @@ sprite initSprite(const char *filename) {
 	ledOn(2);
 	targetSprite = (sprite)malloc(sizeof(sprite));
 	if (targetSprite == NULL) {
-		f_close(file);
+		f_close(&file);
 		return NULL;
 	}
 
+	targetSprite->file = &file;
+
 	// Get the tag for the sprite
-		ledOn(3);
+	ledOn(3);
 	if (spritesAllocatedAdd(targetSprite)) {
 		// If failed, free memory and break
-		f_close(file);
+		f_close(&file);
 		free(targetSprite);
 		return NULL;
 	}
@@ -205,19 +205,21 @@ sprite initSprite(const char *filename) {
 	targetSprite->layer = -1;
 
 	// Get header data
-	f_read(file, buffer, 14, NULL);	// Fetch 16 bytes of data
-	targetSprite->width = (buffer[0] << 8) | buffer[1];	// 16 bits : width
-	targetSprite->height = (buffer[2] << 8) | buffer[3];	// 16 bits : height
-	targetSprite->numFrames = buffer[5];	// 8 bits : numFrames
-	// targetSprite->________ = (buffer[6] & 0x00F0) >> 4);	// Reserved
-	targetSprite->numColors = buffer[6] & 0x000F;	// 4 bits : numColors
+	f_read(&file, buffer, 14, NULL);	// Fetch 16 bytes of data
+	for (i = 0; i < 14; i++)
+		LcdDrawInt(10, 10+i*10, buffer[i], LCD_COLOR_WHITE, LCD_COLOR_BLACK);
+	targetSprite->width = (buffer[1] << 8) | buffer[0];	// 16 bits : width
+	targetSprite->height = (buffer[3] << 8) | buffer[2];	// 16 bits : height
+	targetSprite->numFrames = buffer[4];	// 8 bits : numFrames
+	targetSprite->numColors = (buffer[5] & 0x00F0) >> 4;	// 4 bits : nColors
+	// targetSprite->________ = buffer[5] & 0x000F;	// Reserved
 
 	// Allocate palette array
 	targetSprite->palette = (uint16_t *)malloc(
 		(targetSprite->numColors) * sizeof(uint16_t));
 	if (targetSprite->palette == NULL) {
 		spritesAllocatedRemove(targetSprite);
-		f_close(file);
+		f_close(&file);
 		free(targetSprite);
 		return NULL;
 	}
@@ -225,11 +227,11 @@ sprite initSprite(const char *filename) {
 	// Bytes 7-14 : reserved
 
 	// Fetch 32 bytes of data
-	f_read(file, buffer, 32, NULL);
+	f_read(&file, buffer, 32, NULL);
 
 	// Save the palette from the file to the array and display them
 	for (i = 0; i < targetSprite->numColors; i++)
-		targetSprite->palette[i] = (buffer[i*2] << 8) | buffer[i*2 + 1];
+		targetSprite->palette[i] = (buffer[i*2 + 1] << 8) | buffer[i*2];
 
 	return targetSprite;
 

@@ -79,18 +79,23 @@ void lcdTest(void) {
 	sprite testSprite;
 	uint8_t i;
 
-	testSprite = initSprite("judgement.spr");
+	testSprite = initSprite((TCHAR *)"judgement.spr");
 	if (testSprite == NULL) {
 		// ERROR
 		ledError(LED_ERROR);
 	}
-//	drawSpriteDebug(testSprite);
+
 	ledOn(leds++);
 
-	while (!readButton()) {
-		updateFrame();
-		delayms(50);
-	}
+	while (!readButton());
+	delayms(50);
+	while (readButton());
+
+	drawSpriteDebug(testSprite);
+
+	while (!readButton());
+	delayms(50);
+	while (readButton());
 /*
 	testSprite = test_getSprite();
 	if (testSprite == NULL) {

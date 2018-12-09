@@ -61,8 +61,8 @@ typedef enum {
 } SPRITE_ERROR;
 
 // sprite functions
-sprite initSprite(const char *filename);
-sprite copySprite(sprite  const inSprite);
+sprite initSprite(TCHAR *filename);
+sprite copySprite(sprite const inSprite);
 uint32_t drawSprite(sprite inSprite);
 void destroySprite(sprite inSprite);
 void updateSprites(void);
