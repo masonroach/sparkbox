@@ -79,7 +79,7 @@ void lcdTest(void) {
 	sprite testSprite;
 	uint8_t i;
 
-	testSprite = initSprite((TCHAR *)"judgement.spr");
+	testSprite = initSprite((TCHAR *)"wolf.spr");
 	if (testSprite == NULL) {
 		// ERROR
 		ledError(LED_ERROR);
@@ -91,52 +91,26 @@ void lcdTest(void) {
 	while (!readButton());
 	delayms(50);
 	while (readButton());
-/*
-	testSprite = test_getSprite();
-	if (testSprite == NULL) {
-		// ERROR
-		ledError(LED_ERROR);
-	}
-	// Test sprites
-	drawSpriteDebug(testSprite);
-	ledOn(leds++);
-
-	while (!readButton());
-	delayms(50);
-	while (readButton())
 
 	// Test getting a row for video
-	LcdFillScreen(COLOR_888_TO_565(0x00A591));
+	LcdFillScreen(COLOR_888_TO_565(VIDEO_BG));
 	testSprite->xpos = 0;
 	testSprite->ypos = 0;
 	drawSprite(testSprite);
 	spriteLayersAdd(testSprite);
 	delayms(1000);
 
-	ledOn(leds++);
-	while (!readButton()) {
-		testSprite->curFrame++;
-		if (testSprite->curFrame == testSprite->numFrames) testSprite->curFrame = 0;
-		seekStartOfFrames();
-		for (i = 0; i < LCD_HEIGHT; i++) testGetRow(i);
-		delayms(49);
-	}
-
-	delayms(50);
-	while (readButton());
-	ledOn(leds++);
-	
 	testSprite->xvelocity = 0;
 
 	// Test frame updating with DMA
 	while (!readButton()) {
 		updateFrame();
-		delayms(50);
+		delayms(1000);
 	}
 	delayms(50);
 	while (readButton());
 	ledAllOff();
-*/
+
 	return;
 }
 

@@ -12,8 +12,8 @@
 #define LCD_SIZE_BYTES (LCD_PIXELS * 2)
 
 // Number of rows per transfer
-// NOTE: Use a multiple of 4
-#define LCD_TRANSFER_ROWS 12
+// NOTE: Use a multiple of 2
+#define LCD_TRANSFER_ROWS 2
 
 // Number of pixels in 4 rows
 #define FOUR_ROW_OFFSET LCD_WIDTH*4
@@ -48,6 +48,7 @@ extern spriteList spriteLayers;
 int8_t initVideo(void);
 void updateFrame(void);
 uint8_t testGetRow(const uint8_t row);
-uint8_t getNext4Rows(uint8_t set);
+uint8_t test_getNext4Rows(uint8_t set);
+uint8_t getNext2Rows(uint8_t set);
 
 #endif

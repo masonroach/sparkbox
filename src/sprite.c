@@ -280,13 +280,11 @@ uint32_t drawSprite(sprite inSprite) {
 	LcdWriteCmd(MEMORY_WRITE);
 
 	// Write the rest of the pixels
-	ledOn(5);
 	for (i = 0 ; i < (inSprite->width * inSprite->height) - 2; i+=2) {
 		f_read(inSprite->file, &temp, 1, NULL);	// Get 2 pixels of data
 		LcdWriteData(inSprite->palette[(temp & 0x0F)-1]);	// Draw a pixel
 		LcdWriteData(inSprite->palette[((temp & 0xF0)>>4)-1]);	// Draw a pixel
 	}
-	ledOn(6);
 	// Get tail set of pixels
 
 	return i;
@@ -509,8 +507,8 @@ uint8_t seekStartOfFrames(void) {
 	for (layer = 0; layer < spriteLayers.size; layer++){
 
 		// Move file pointer to beginning of sprite frame
-		offset = ((spriteLayers.sprites[layer]->width * spriteLayers.sprites[layer]->height) + 3) / 4;
-		test_fseek(22 + spriteLayers.sprites[layer]->curFrame * offset, TEST_SEEK_SET);
+		offset = ((spriteLayers.sprites[layer]->width * spriteLayers.sprites[layer]->height) + 1) / 2;
+		f_lseek(spriteLayers.sprites[layer]->file, 44 + spriteLayers.sprites[layer]->curFrame * offset);
 	}
 
 	return 0;

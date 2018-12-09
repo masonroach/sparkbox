@@ -89,7 +89,7 @@ FRESULT readToVideoBuffer(void)
 
 	// Write actual colors to READ_BUFFER
 
-	for (set = 0; set < LCD_TRANSFER_ROWS/4; set++) getNext4Rows(set);
+	for (set = 0; set < LCD_TRANSFER_ROWS/2; set++) getNext2Rows(set);
 
 	return FR_OK;
 }
@@ -255,7 +255,7 @@ pixelFound:
 }
 
 // For testing purposes of the videoGetRow function
-uint8_t getNext4Rows(uint8_t set) {
+uint8_t test_getNext4Rows(uint8_t set) {
 	uint8_t row;
 	uint8_t layer;
 	uint16_t pixel;
@@ -298,6 +298,72 @@ uint8_t getNext4Rows(uint8_t set) {
 						// For testing purposes, just place the pixel
 //						LcdPutPixel(pixel, row, spriteLayers.sprites[layer]->palette
 //							[((fetched[layer] & (0xF000 >> (index[layer] * 4))) >> ((3-index[layer]) * 4))-1]);
+						
+						// When a pixel is found, stop the nail, ignore other layers
+						goto pixelFound;
+					}
+
+					// If the pixel is transparent, move to the next layer
+				
+				}
+			
+			}
+
+			// If a non-transparent pixel was not found on all layers,
+			// use the default background color
+			// TODO: Put the pixel into the video buffer
+			READ_BUFFER[LCD_WIDTH*row + pixel + set*FOUR_ROW_OFFSET] = VIDEO_BG;
+			
+			// For testing purposes, just place the pixel
+			//LcdPutPixel(pixel, row, VIDEO_BG);	
+	pixelFound:
+			pixel = pixel;		// nop();
+		}
+
+	}
+
+	return 0;
+
+}
+
+// For testing purposes of the videoGetRow function
+uint8_t getNext2Rows(uint8_t set) {
+	uint8_t row;
+	uint8_t layer;
+	uint16_t pixel;
+	uint8_t fetched[MAX_LAYERS];
+	uint8_t index[MAX_LAYERS] = {0};
+
+	// TODO: index values and temp values will have to be stored for each sprite
+
+	// Do 4 rows at a time
+	for (row = 0; row < 2; row++) {
+	
+		// Iterate through finding the value fo each pixel in the row
+		for (pixel = 0; pixel < LCD_WIDTH; pixel++) {
+
+			// Check each layer for a valid pixel
+			for (layer = 0; layer < spriteLayers.size; layer++) {
+
+				// Check bounds of the sprite
+				if ((row >= spriteLayers.sprites[layer]->ypos) &&
+				 (row < spriteLayers.sprites[layer]->ypos + spriteLayers.sprites[layer]->height) &&
+				 (pixel >= spriteLayers.sprites[layer]->xpos) &&
+				 (pixel < spriteLayers.sprites[layer]->xpos + spriteLayers.sprites[layer]->width)) {
+
+					// Valid bounds, fetch the pixel of the sprite
+					if (index[layer] == 0) {
+						f_read(spriteLayers.sprites[layer]->file, &fetched[layer], 1, NULL);	// Fetch 2 pixels of data
+						index[layer] = 1;	// Reset the index value
+					} else {
+						// Shift the index before checking the pixel
+						index[layer]--;
+					}
+
+					// Check the alpha value of the pixel
+					if (fetched[layer] & (0x0F << (index[layer] * 4))) {
+
+						READ_BUFFER[LCD_WIDTH*row + pixel + set*FOUR_ROW_OFFSET] = spriteLayers.sprites[layer]->palette[((fetched[layer] & (0x0F << (index[layer] * 4))) >> (index[layer] * 4))-1];
 						
 						// When a pixel is found, stop the nail, ignore other layers
 						goto pixelFound;
