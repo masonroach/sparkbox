@@ -21,7 +21,7 @@
  */
 
 typedef struct sprite_struct{
-	FIL file;
+	FIL *file;
 	uint16_t width;
 	uint16_t height;
 	int16_t xpos;
@@ -57,11 +57,11 @@ typedef enum {
 	NOT_ENOUGH_MEMORY = 1,
 	NO_FILE_ACCESS = 2,
 	TOO_MANY_SPRITES = 3,
-
+	FILE_ERROR = 4,
 } SPRITE_ERROR;
 
 // sprite functions
-sprite initSprite(uint8_t *filename);
+sprite initSprite(const char *filename);
 sprite copySprite(sprite  const inSprite);
 uint32_t drawSprite(sprite inSprite);
 void destroySprite(sprite inSprite);
@@ -83,7 +83,7 @@ uint8_t seekStartOfFrames(void);
 #define SAMPLE_SPRITE 6
 #if SAMPLE_SPRITE>0
 #include "lcd.h"
-#include "button.h"
+#include "led.h"
 void drawSpriteDebug(sprite inSprite);
 sprite test_getSprite(void);
 uint16_t test_get16(void);

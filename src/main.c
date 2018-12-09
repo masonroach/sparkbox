@@ -76,6 +76,19 @@ void lcdTest(void) {
 	sprite testSprite;
 	uint8_t i;
 
+	testSprite = initSprite("judgement.spr");
+	if (testSprite == NULL) {
+		// ERROR
+		ledError(LED_ERROR);
+	}
+//	drawSpriteDebug(testSprite);
+	ledOn(leds++);
+
+	while (!readButton()) {
+		updateFrame();
+		delayms(50);
+	}
+/*
 	testSprite = test_getSprite();
 	if (testSprite == NULL) {
 		// ERROR
@@ -110,7 +123,7 @@ void lcdTest(void) {
 	while (readButton());
 	ledOn(leds++);
 	
-	testSprite->xvelocity = 1;
+	testSprite->xvelocity = 0;
 
 	// Test frame updating with DMA
 	while (!readButton()) {
@@ -120,7 +133,7 @@ void lcdTest(void) {
 	delayms(50);
 	while (readButton());
 	ledAllOff();
-
+*/
 	return;
 }
 
