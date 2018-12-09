@@ -81,9 +81,10 @@ uint8_t spriteLayersRemove(sprite inSprite);
 uint8_t seekStartOfFrames(void);
 
 #define SAMPLE_SPRITE 6
-#if SAMPLE_SPRITE>0
+#ifdef SAMPLE_SPRITE
 #include "lcd.h"
 #include "led.h"
+#include "button.h"
 void drawSpriteDebug(sprite inSprite);
 sprite test_getSprite(void);
 uint16_t test_get16(void);

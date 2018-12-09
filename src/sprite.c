@@ -11,7 +11,7 @@ spriteList spritesAllocated = {NULL, 0};
 spriteList spriteLayers = {NULL, 0};
 
 
-#if SAMPLE_SPRITE>0
+#ifdef SAMPLE_SPRITE
 extern const uint16_t fakeSpriteFile[];
 
 // Global file pointer for test sprite file
@@ -23,7 +23,7 @@ sprite test_getSprite(void) {
 	sprite targetSprite;
 
 	// Allocate space for sprite
-	targetSprite = (sprite )malloc(sizeof(sprite));
+	targetSprite = (sprite)malloc(sizeof(sprite));
 	if (targetSprite == NULL) {
 		return NULL;
 	}
@@ -112,7 +112,7 @@ void drawSpriteDebug(sprite inSprite) {
 	// Set sprite position to middle of screen
 	inSprite->xpos = 120 - inSprite->width/2;
 	inSprite->ypos = 120 - inSprite->height/2;
-/*
+
 	// Draw the sprite
 	while (!readButton()) {
 		// Update frame number
@@ -128,7 +128,7 @@ void drawSpriteDebug(sprite inSprite) {
 		inSprite->curFrame++;
 		if (inSprite->curFrame == inSprite->numFrames) inSprite->curFrame = 0;
 	}
-*/	
+	
 }
 
 // Get the next value in the test array
@@ -169,7 +169,6 @@ sprite initSprite(TCHAR *filename) {
 	uint16_t i;
 	sprite targetSprite;
 
-	ledOn(1);
 	// Open the sprite file
 	if (f_open(&file, filename, FA_READ) != FR_OK) {
 		// If file open failed,
@@ -177,7 +176,6 @@ sprite initSprite(TCHAR *filename) {
 	}
 
 	// Allocate space for sprite
-	ledOn(2);
 	targetSprite = (sprite)malloc(sizeof(sprite));
 	if (targetSprite == NULL) {
 		f_close(&file);
@@ -187,7 +185,6 @@ sprite initSprite(TCHAR *filename) {
 	targetSprite->file = &file;
 
 	// Get the tag for the sprite
-	ledOn(3);
 	if (spritesAllocatedAdd(targetSprite)) {
 		// If failed, free memory and break
 		f_close(&file);
@@ -206,13 +203,11 @@ sprite initSprite(TCHAR *filename) {
 
 	// Get header data
 	f_read(&file, buffer, 14, NULL);	// Fetch 16 bytes of data
-	for (i = 0; i < 14; i++)
-		LcdDrawInt(10, 10+i*10, buffer[i], LCD_COLOR_WHITE, LCD_COLOR_BLACK);
-	targetSprite->width = (buffer[1] << 8) | buffer[0];	// 16 bits : width
-	targetSprite->height = (buffer[3] << 8) | buffer[2];	// 16 bits : height
-	targetSprite->numFrames = buffer[4];	// 8 bits : numFrames
+	targetSprite->width = (buffer[1] << 8) | buffer[0];	// 2 bytes : width
+	targetSprite->height = (buffer[3] << 8) | buffer[2];	// 2 bytes : height
+	targetSprite->numFrames = buffer[4];	// 1 byte : numFrames
 	targetSprite->numColors = (buffer[5] & 0x00F0) >> 4;	// 4 bits : nColors
-	// targetSprite->________ = buffer[5] & 0x000F;	// Reserved
+	// targetSprite->________ = buffer[5] & 0x000F;	// 4 bits : Reserved
 
 	// Allocate palette array
 	targetSprite->palette = (uint16_t *)malloc(
@@ -262,38 +257,37 @@ void destroySprite(sprite inSprite) {
 // Draw the full sprite on the screen. Note: this does not work the same way as
 // video, this is mostly for debugging purposes.
 uint32_t drawSprite(sprite inSprite) {
-	uint16_t temp;
-	uint32_t i = 0, p;
+	uint8_t temp;
+	uint32_t i, p;
 	uint32_t offset;
 
 	// Find the offset of each frame for the file pointer
-	// If width*height is not a multiple of 4, rounds up before dividing
-	offset = ((inSprite->width * inSprite->height) + 3) / 4;
+	// If width*height is not a multiple of 2, rounds up before dividing
+	offset = ((inSprite->width * inSprite->height) + 1) / 2;
 
 	// Move file pointer to beginning of sprite frame
-	test_fseek(22 + inSprite->curFrame*offset, TEST_SEEK_SET);
+	// Number of bytes to skip:
+	// 2 bytes  : width
+	// 2 bytes  : height
+	// 1 byte   : numFrames
+	// 1 byte   : numColors
+	// 8 bytes  : reserved
+	// 30 bytes : palette
+	f_lseek(inSprite->file, 44 + inSprite->curFrame*offset);
 
 	// Set drawing window on the LCD
 	LcdSetPos(inSprite->xpos, inSprite->ypos, inSprite->xpos + inSprite->width-1, inSprite->ypos + inSprite->height-1);
 	LcdWriteCmd(MEMORY_WRITE);
 
 	// Write the rest of the pixels
-	for ( ; i < (inSprite->width * inSprite->height) - 4; i+=4) {
-		temp = test_get16();	// Get 4 pixels worth of data
-		LcdWriteData(inSprite->palette[(temp & 0x000F)-1]);	// Draw a pixel
-		LcdWriteData(inSprite->palette[((temp & 0x00F0)>>4)-1]);	// Draw a pixel
-		LcdWriteData(inSprite->palette[((temp & 0x0F00)>>8)-1]);	// Draw a pixel
-		LcdWriteData(inSprite->palette[((temp & 0xF000)>>12)-1]);	// Draw a pixel
+	ledOn(5);
+	for (i = 0 ; i < (inSprite->width * inSprite->height) - 2; i+=2) {
+		f_read(inSprite->file, &temp, 1, NULL);	// Get 2 pixels of data
+		LcdWriteData(inSprite->palette[(temp & 0x0F)-1]);	// Draw a pixel
+		LcdWriteData(inSprite->palette[((temp & 0xF0)>>4)-1]);	// Draw a pixel
 	}
-
+	ledOn(6);
 	// Get tail set of pixels
-	temp = test_get16();	// Get 4 pixels worth of data
-	p = 0;
-	while (i < (inSprite->width * inSprite->height)) {
-		LcdWriteData(inSprite->palette[((temp & (0x000F << (p*4)))>>(p*4))-1]);
-		p++;
-		i++;
-	}
 
 	return i;
 

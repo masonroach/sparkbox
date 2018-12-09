@@ -85,13 +85,8 @@ void lcdTest(void) {
 		ledError(LED_ERROR);
 	}
 
-	ledOn(leds++);
-
-	while (!readButton());
-	delayms(50);
-	while (readButton());
-
 	drawSpriteDebug(testSprite);
+	ledOn(leds++);
 
 	while (!readButton());
 	delayms(50);
