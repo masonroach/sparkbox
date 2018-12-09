@@ -5,7 +5,7 @@ clear figures
 %% Input parameters
 inputPng = input('Input .png file to convert: ', 's');
 numFrames = input('Input the number of frames in the sprite sheet: ');
-outputFile = strrep(inputPng, '.png', '.sparksprite');
+outputFile = strrep(inputPng, '.png', '.spr');
 
 %% Parse png data
 [RGB, map, alpha] = imread(inputPng);
@@ -68,7 +68,7 @@ if (size(finalPalette, 1) > 15)
 end
 
 % Convert the picture into seperate frame arrays
-converted = zeros(ceil(width*frameHeight/4)*4, numFrames);
+converted = zeros(ceil(width*frameHeight/2)*2, numFrames);
 for f = 1:numFrames
     for y = 1:frameHeight
         for x = 1:width
@@ -105,8 +105,14 @@ fwrite(fout, width, 'uint16');
 % uint16: Height
 fwrite(fout, frameHeight, 'uint16');
 
-% uint16: frames, palette
-fwrite(fout, and(bitsrl(uint16(numFrames), 8), pColors), 'uint16');
+% uint8: frames, palette
+fwrite(fout, numFrames, 'uint8');
+
+% ubit4: reserved
+fwrite(fout, 0, 'ubit4');
+
+% ubit4: numColors
+fwrite(fout, pColors, 'ubit4');
 
 % uint16: Reserved
 fwrite(fout, 0, 'uint16');
