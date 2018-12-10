@@ -77,7 +77,6 @@ void systemInit(void) {
 void lcdTest(void) {
 	uint8_t leds = 0x00;
 	sprite testSprite;
-	uint8_t i;
 
 	testSprite = initSprite((TCHAR *)"wolf.spr");
 	if (testSprite == NULL) {
@@ -86,7 +85,6 @@ void lcdTest(void) {
 	}
 
 	drawSpriteDebug(testSprite);
-	ledOn(leds++);
 
 	while (!readButton());
 	delayms(50);
@@ -96,15 +94,17 @@ void lcdTest(void) {
 	LcdFillScreen(COLOR_888_TO_565(VIDEO_BG));
 	testSprite->xpos = 0;
 	testSprite->ypos = 0;
-	drawSprite(testSprite);
 	spriteLayersAdd(testSprite);
 	delayms(1000);
 
 	testSprite->xvelocity = 0;
+	testSprite->curFrame = 0;
 
 	// Test frame updating with DMA
 	while (!readButton()) {
 		updateFrame();
+		delayms(1000);
+		drawSprite(spriteLayers.sprites[0]);
 		delayms(1000);
 	}
 	delayms(50);

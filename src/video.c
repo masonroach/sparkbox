@@ -191,142 +191,6 @@ void TIM7_IRQHandler(void)
 }
 
 // For testing purposes of the videoGetRow function
-uint8_t testGetRow(const uint8_t row) {
-	uint8_t layer;
-	uint16_t pixel;
-	static uint16_t temp;
-	static uint8_t index = 0;
-
-	// TODO: index values and temp values will have to be stored for each sprite
-	
-	// Iterate through finding the value fo each pixel in the row
-	for (pixel = 0; pixel < LCD_WIDTH; pixel++) {
-
-		// Check each layer for a valid pixel
-		for (layer = 0; layer < spriteLayers.size; layer++) {
-
-			// Check bounds of the sprite
-			if ((row >= spriteLayers.sprites[layer]->ypos) &&
-			 (row < spriteLayers.sprites[layer]->ypos + spriteLayers.sprites[layer]->height) &&
-			 (pixel >= spriteLayers.sprites[layer]->xpos) &&
-			 (pixel < spriteLayers.sprites[layer]->xpos + spriteLayers.sprites[layer]->width)) {
-
-				// Valid bounds, fetch the pixel of the sprite
-				if (index == 0) {
-					temp = test_get16();	// Fetch 4 pixels of data
-					index = 3;	// Reset the index value
-				} else {
-					// Shift the index before checking the pixel
-					index--;
-				}
-
-				// TODO: this value should be stored if it does not equal 0.
-				//       Should inline assembly be used here?
-				// Check the alpha value of the pixel
-				if (temp & (0xF000 >> (index * 4))) {
-
-					// TODO: Put the pixel into the video buffer
-					
-					// For testing purposes, just place the pixel
-					LcdPutPixel(pixel, row, spriteLayers.sprites[layer]->palette
-						[((temp & (0xF000 >> (index * 4))) >> ((3-index) * 4))-1]);
-					
-					// When a pixel is found, stop the nail, ignore other layers
-					goto pixelFound;
-				}
-
-				// If the pixel is transparent, move to the next layer
-			
-			}
-		
-		}
-
-		// If a non-transparent pixel was not found on all layers,
-		// use the default background color
-		// TODO: Put the pixel into the video buffer
-		
-		// For testing purposes, just place the pixel
-		LcdPutPixel(pixel, row, VIDEO_BG);	
-pixelFound:
-		pixel = pixel;		// nop();
-	}
-
-	return 0;
-}
-
-// For testing purposes of the videoGetRow function
-uint8_t test_getNext4Rows(uint8_t set) {
-	uint8_t row;
-	uint8_t layer;
-	uint16_t pixel;
-	uint16_t fetched[MAX_LAYERS];
-	uint8_t index[MAX_LAYERS] = {0};
-
-	// TODO: index values and temp values will have to be stored for each sprite
-
-	// Do 4 rows at a time
-	for (row = 0; row < 4; row++) {
-	
-		// Iterate through finding the value fo each pixel in the row
-		for (pixel = 0; pixel < LCD_WIDTH; pixel++) {
-
-			// Check each layer for a valid pixel
-			for (layer = 0; layer < spriteLayers.size; layer++) {
-
-				// Check bounds of the sprite
-				if ((row >= spriteLayers.sprites[layer]->ypos) &&
-				 (row < spriteLayers.sprites[layer]->ypos + spriteLayers.sprites[layer]->height) &&
-				 (pixel >= spriteLayers.sprites[layer]->xpos) &&
-				 (pixel < spriteLayers.sprites[layer]->xpos + spriteLayers.sprites[layer]->width)) {
-
-					// Valid bounds, fetch the pixel of the sprite
-					if (index[layer] == 0) {
-						fetched[layer] = test_get16();	// Fetch 4 pixels of data
-						index[layer] = 3;	// Reset the index value
-					} else {
-						// Shift the index before checking the pixel
-						index[layer]--;
-					}
-
-					// TODO: this value should be stored if it does not equal 0.
-					//       Should inline assembly be used here?
-					// Check the alpha value of the pixel
-					if (fetched[layer] & (0xF000 >> (index[layer] * 4))) {
-
-						// TODO: Put the pixel into the video buffer
-						READ_BUFFER[LCD_WIDTH*row + pixel + set*FOUR_ROW_OFFSET] = spriteLayers.sprites[layer]->palette[((fetched[layer] & (0xF000 >> (index[layer] * 4))) >> ((3-index[layer]) * 4))-1];
-						// For testing purposes, just place the pixel
-//						LcdPutPixel(pixel, row, spriteLayers.sprites[layer]->palette
-//							[((fetched[layer] & (0xF000 >> (index[layer] * 4))) >> ((3-index[layer]) * 4))-1]);
-						
-						// When a pixel is found, stop the nail, ignore other layers
-						goto pixelFound;
-					}
-
-					// If the pixel is transparent, move to the next layer
-				
-				}
-			
-			}
-
-			// If a non-transparent pixel was not found on all layers,
-			// use the default background color
-			// TODO: Put the pixel into the video buffer
-			READ_BUFFER[LCD_WIDTH*row + pixel + set*FOUR_ROW_OFFSET] = VIDEO_BG;
-			
-			// For testing purposes, just place the pixel
-			//LcdPutPixel(pixel, row, VIDEO_BG);	
-	pixelFound:
-			pixel = pixel;		// nop();
-		}
-
-	}
-
-	return 0;
-
-}
-
-// For testing purposes of the videoGetRow function
 uint8_t getNext2Rows(uint8_t set) {
 	uint8_t row;
 	uint8_t layer;
@@ -334,9 +198,7 @@ uint8_t getNext2Rows(uint8_t set) {
 	uint8_t fetched[MAX_LAYERS];
 	uint8_t index[MAX_LAYERS] = {0};
 
-	// TODO: index values and temp values will have to be stored for each sprite
-
-	// Do 4 rows at a time
+	// Do 2 rows at a time
 	for (row = 0; row < 2; row++) {
 	
 		// Iterate through finding the value fo each pixel in the row
@@ -351,6 +213,9 @@ uint8_t getNext2Rows(uint8_t set) {
 				 (pixel >= spriteLayers.sprites[layer]->xpos) &&
 				 (pixel < spriteLayers.sprites[layer]->xpos + spriteLayers.sprites[layer]->width)) {
 
+					READ_BUFFER[LCD_WIDTH*row + pixel + set*TWO_ROW_OFFSET] = LCD_COLOR_BLACK;
+					goto pixelFound;
+/*
 					// Valid bounds, fetch the pixel of the sprite
 					if (index[layer] == 0) {
 						f_read(spriteLayers.sprites[layer]->file, &fetched[layer], 1, NULL);	// Fetch 2 pixels of data
@@ -361,14 +226,17 @@ uint8_t getNext2Rows(uint8_t set) {
 					}
 
 					// Check the alpha value of the pixel
-					if (fetched[layer] & (0x0F << (index[layer] * 4))) {
+					if ((fetched[layer] >> (index[layer]*4)) & 0x0F) {
 
-						READ_BUFFER[LCD_WIDTH*row + pixel + set*FOUR_ROW_OFFSET] = spriteLayers.sprites[layer]->palette[((fetched[layer] & (0x0F << (index[layer] * 4))) >> (index[layer] * 4))-1];
-						
-						// When a pixel is found, stop the nail, ignore other layers
+						// If the pixel is valid, find the color
+						READ_BUFFER[pixel + LCD_WIDTH*row + set*TWO_ROW_OFFSET] = spriteLayers.sprites[layer]->palette[((fetched[layer] >> (index[layer]*4)) & 0x0F) - 1];
+
+						// Stop the nail, ignore lower layers
 						goto pixelFound;
+
 					}
 
+*/
 					// If the pixel is transparent, move to the next layer
 				
 				}
@@ -377,13 +245,10 @@ uint8_t getNext2Rows(uint8_t set) {
 
 			// If a non-transparent pixel was not found on all layers,
 			// use the default background color
-			// TODO: Put the pixel into the video buffer
-			READ_BUFFER[LCD_WIDTH*row + pixel + set*FOUR_ROW_OFFSET] = VIDEO_BG;
+			READ_BUFFER[LCD_WIDTH*row + pixel + set*TWO_ROW_OFFSET] = VIDEO_BG;
 			
-			// For testing purposes, just place the pixel
-			//LcdPutPixel(pixel, row, VIDEO_BG);	
 	pixelFound:
-			pixel = pixel;		// nop();
+			continue;		// nop();
 		}
 
 	}

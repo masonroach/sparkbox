@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include "ff.h"
+#include "lcd.h"
+#include "button.h"
 
 #define MAX_LAYERS 8
 #define MAX_SPRITES 32
@@ -80,21 +82,7 @@ uint8_t spriteLayersAdd(sprite inSprite);
 uint8_t spriteLayersRemove(sprite inSprite);
 uint8_t seekStartOfFrames(void);
 
-#define SAMPLE_SPRITE 6
-#ifdef SAMPLE_SPRITE
-#include "lcd.h"
-#include "led.h"
-#include "button.h"
+// test functions
 void drawSpriteDebug(sprite inSprite);
-sprite test_getSprite(void);
-uint16_t test_get16(void);
-uint16_t test_fseek(int32_t offset, uint8_t whence);
-
-typedef enum {
-	TEST_SEEK_SET = 0,
-	TEST_SEEK_CUR = 1,
-	TEST_SEEK_END = 2
-} FSEEK_WHENCE;
-#endif
 
 #endif

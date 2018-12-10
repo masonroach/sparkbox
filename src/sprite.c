@@ -10,82 +10,6 @@ spriteList spritesAllocated = {NULL, 0};
 // Global list to keep track of sprite layers being shown
 spriteList spriteLayers = {NULL, 0};
 
-
-#ifdef SAMPLE_SPRITE
-extern const uint16_t fakeSpriteFile[];
-
-// Global file pointer for test sprite file
-static uint32_t filePointer = 0;
-
-// Test assembling a sprite from a dummy file
-sprite test_getSprite(void) {
-	uint16_t temp, i;
-	sprite targetSprite;
-
-	// Allocate space for sprite
-	targetSprite = (sprite)malloc(sizeof(sprite));
-	if (targetSprite == NULL) {
-		return NULL;
-	}
-
-	// Get the tag for the sprite
-	if (spritesAllocatedAdd(targetSprite)) {
-		// If failed, free memory and break
-		free(targetSprite);
-		return NULL;
-	}
-
-	// Initialize data that is not in file
-	targetSprite->xpos = 0;
-	targetSprite->ypos = 0;
-	targetSprite->xvelocity = 0;
-	targetSprite->yvelocity = 0;
-	targetSprite->curFrame = 0;
-	targetSprite->flags = 0x00;
-	targetSprite->layer = -1;
-
-	/******************/
-	/* OPEN FILE HERE */
-	/******************/
-
-	// Move pointer to beginning of file
-	filePointer = 0;
-
-	// Get header data
-	temp = test_get16();
-	targetSprite->width = temp;	// half-word1 : width
-	temp = test_get16();
-	targetSprite->height = temp;	// half-word2 : height
-	temp = test_get16();	// half-word3 : numFrames, 4 reserved, numColors
-	targetSprite->numFrames = (temp & 0xFF00) >> 8;	// numFrames
-	// targetSprite->________ = (temp & 0x00F0) >> 4);	// Reserved
-	targetSprite->numColors = temp & 0x000F;	// numColors
-
-	// Allocate palette array
-	targetSprite->palette = (uint16_t *)malloc(
-		(targetSprite->numColors) * sizeof(uint16_t));
-	if (targetSprite->palette == NULL) {
-		spritesAllocatedRemove(targetSprite);
-		free(targetSprite);
-		return NULL;
-	}
-
-	test_get16();	// half-word4 : Reserved
-	test_get16();	// half-word5 : Reserved
-	test_get16();	// half-word6 : Reserved
-	test_get16();	// half-word7 : Reserved
-
-	// Save the palette from the file to the array and display them
-	for (i = 0; i < targetSprite->numColors; i++)
-		targetSprite->palette[i] = test_get16();
-
-	// Throw away the rest of the palette
-	for ( ; i < 15; i++) test_get16();
-
-	return targetSprite;
-
-}
-
 // Display helpful debugging information for the given sprite
 void drawSpriteDebug(sprite inSprite) {
 	uint16_t i;
@@ -130,34 +54,6 @@ void drawSpriteDebug(sprite inSprite) {
 	}
 	
 }
-
-// Get the next value in the test array
-uint16_t test_get16(void) {
-	uint16_t r = fakeSpriteFile[filePointer];
-	filePointer++;
-	return r;
-}
-
-// Change the file pointer to a location
-uint16_t test_fseek(int32_t offset, uint8_t whence) {
-	switch (whence) {
-		case TEST_SEEK_SET:
-			filePointer = offset;
-			break;
-		case TEST_SEEK_CUR:
-			filePointer += offset;
-			break;
-		case TEST_SEEK_END:
-			// Not implemented. Can't find EOF with just an array and I don't need it
-			break;
-		default:
-			break;
-	}
-
-	return filePointer;
-
-}
-#endif
 
 /*
  * sprite functions
@@ -258,7 +154,7 @@ void destroySprite(sprite inSprite) {
 // video, this is mostly for debugging purposes.
 uint32_t drawSprite(sprite inSprite) {
 	uint8_t temp;
-	uint32_t i, p;
+	uint32_t i;
 	uint32_t offset;
 
 	// Find the offset of each frame for the file pointer
