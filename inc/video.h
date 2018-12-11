@@ -15,10 +15,6 @@
 // NOTE: Use a multiple of 2
 #define LCD_TRANSFER_ROWS 2
 
-// Number of pixels in 4 rows
-#define TWO_ROW_OFFSET LCD_WIDTH*2
-#define FOUR_ROW_OFFSET LCD_WIDTH*4
-
 // Number of buffer transfers to fill LCD
 #define NUM_TRANSFERS (LCD_HEIGHT / LCD_TRANSFER_ROWS)
 

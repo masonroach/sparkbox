@@ -81,7 +81,6 @@ int8_t initVideo(void)
 FRESULT readToVideoBuffer(void)
 {
 	uint8_t set;
-
 	// Based on number of transfers left, read correct data into READ_BUFFER
 	// bufferTransfers stores number of unfinished transfers to LCD with DMA
 
@@ -192,11 +191,14 @@ void TIM7_IRQHandler(void)
 
 // For testing purposes of the videoGetRow function
 uint8_t getNext2Rows(uint8_t set) {
-	uint8_t row;
+	uint16_t row;
 	uint8_t layer;
 	uint16_t pixel;
+	uint8_t lcdRow;
+	uint8_t paletteIndex;
 	uint8_t fetched[MAX_LAYERS];
 	uint8_t index[MAX_LAYERS] = {0};
+	FRESULT res;
 
 	// Do 2 rows at a time
 	for (row = 0; row < 2; row++) {
@@ -206,37 +208,64 @@ uint8_t getNext2Rows(uint8_t set) {
 
 			// Check each layer for a valid pixel
 			for (layer = 0; layer < spriteLayers.size; layer++) {
+	
+				lcdRow = bufferTransfers*2 + set*2 + row;
 
 				// Check bounds of the sprite
-				if ((row >= spriteLayers.sprites[layer]->ypos) &&
-				 (row < spriteLayers.sprites[layer]->ypos + spriteLayers.sprites[layer]->height) &&
+				if ((lcdRow >= spriteLayers.sprites[layer]->ypos) &&
+				 (lcdRow < spriteLayers.sprites[layer]->ypos + spriteLayers.sprites[layer]->height) &&
 				 (pixel >= spriteLayers.sprites[layer]->xpos) &&
 				 (pixel < spriteLayers.sprites[layer]->xpos + spriteLayers.sprites[layer]->width)) {
 
-					READ_BUFFER[LCD_WIDTH*row + pixel + set*TWO_ROW_OFFSET] = LCD_COLOR_BLACK;
-					goto pixelFound;
-/*
 					// Valid bounds, fetch the pixel of the sprite
 					if (index[layer] == 0) {
-						f_read(spriteLayers.sprites[layer]->file, &fetched[layer], 1, NULL);	// Fetch 2 pixels of data
+						res = f_read(&spriteLayers.sprites[layer]->file, &fetched[layer], 1, NULL);	// Fetch 2 pixels of data
+						if (res) {
+							ledError(LED_ERROR);
+							ledAllOff();
+							switch (res) {
+								case (FR_OK):
+									ledOn(0);
+									break;
+								case (FR_DISK_ERR):
+									ledOn(1);
+									break;
+								case (FR_INT_ERR):
+									ledOn(2);
+									break;
+								case (FR_DENIED):
+									ledOn(3);
+									break;
+								case (FR_INVALID_OBJECT):
+									ledOn(4);
+									break;
+								case (FR_TIMEOUT):
+									ledOn(5);
+									break;
+							}
+							while(1);
+						}
 						index[layer] = 1;	// Reset the index value
 					} else {
 						// Shift the index before checking the pixel
 						index[layer]--;
 					}
 
-					// Check the alpha value of the pixel
-					if ((fetched[layer] >> (index[layer]*4)) & 0x0F) {
+//					READ_BUFFER[LCD_WIDTH*(2*set + row) + pixel] = LCD_COLOR_BLACK;
+//					goto pixelFound;
 
-						// If the pixel is valid, find the color
-						READ_BUFFER[pixel + LCD_WIDTH*row + set*TWO_ROW_OFFSET] = spriteLayers.sprites[layer]->palette[((fetched[layer] >> (index[layer]*4)) & 0x0F) - 1];
+					paletteIndex = (fetched[layer] >> ((1-index[layer])*4)) & 0x0F;
+
+					// Check the alpha value of the pixel
+					if (paletteIndex) {
+
+						// Pixel is valid, find the color
+						READ_BUFFER[pixel + LCD_WIDTH*(2*set + row)] = spriteLayers.sprites[layer]->palette[paletteIndex - 1];
 
 						// Stop the nail, ignore lower layers
 						goto pixelFound;
-
 					}
 
-*/
 					// If the pixel is transparent, move to the next layer
 				
 				}
@@ -245,7 +274,7 @@ uint8_t getNext2Rows(uint8_t set) {
 
 			// If a non-transparent pixel was not found on all layers,
 			// use the default background color
-			READ_BUFFER[LCD_WIDTH*row + pixel + set*TWO_ROW_OFFSET] = VIDEO_BG;
+			READ_BUFFER[pixel + LCD_WIDTH*(2*set + row)] = VIDEO_BG;
 			
 	pixelFound:
 			continue;		// nop();

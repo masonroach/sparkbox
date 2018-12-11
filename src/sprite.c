@@ -1,8 +1,8 @@
 #include "sprite.h"
 
 // Static functions
-static uint8_t spritesAllocatedAdd(sprite inSprite);
-static uint8_t spritesAllocatedRemove(sprite inSprite);
+static uint8_t spritesAllocatedAdd(sprite *inSprite);
+static uint8_t spritesAllocatedRemove(sprite *inSprite);
 
 // Global list to keep track of all initialized sprites
 spriteList spritesAllocated = {NULL, 0};
@@ -11,7 +11,7 @@ spriteList spritesAllocated = {NULL, 0};
 spriteList spriteLayers = {NULL, 0};
 
 // Display helpful debugging information for the given sprite
-void drawSpriteDebug(sprite inSprite) {
+void drawSpriteDebug(sprite *inSprite) {
 	uint16_t i;
 
 	LcdFillScreenCheckered();
@@ -59,33 +59,21 @@ void drawSpriteDebug(sprite inSprite) {
  * sprite functions
  */
 // Create a sprite struct from the given filename
-sprite initSprite(TCHAR *filename) {
-	FIL file;
+int8_t initSprite(sprite *targetSprite, TCHAR *filename) {
 	uint8_t buffer[32];
 	uint16_t i;
-	sprite targetSprite;
 
 	// Open the sprite file
-	if (f_open(&file, filename, FA_READ) != FR_OK) {
+	if (f_open(&targetSprite->file, filename, FA_READ) != FR_OK) {
 		// If file open failed,
-		return NULL;
+		return NO_FILE_ACCESS;
 	}
-
-	// Allocate space for sprite
-	targetSprite = (sprite)malloc(sizeof(sprite));
-	if (targetSprite == NULL) {
-		f_close(&file);
-		return NULL;
-	}
-
-	targetSprite->file = &file;
 
 	// Get the tag for the sprite
 	if (spritesAllocatedAdd(targetSprite)) {
 		// If failed, free memory and break
-		f_close(&file);
-		free(targetSprite);
-		return NULL;
+		f_close(&targetSprite->file);
+		return TOO_MANY_SPRITES;
 	}
 
 	// Initialize data that is not in file
@@ -98,7 +86,7 @@ sprite initSprite(TCHAR *filename) {
 	targetSprite->layer = -1;
 
 	// Get header data
-	f_read(&file, buffer, 14, NULL);	// Fetch 16 bytes of data
+	f_read(&targetSprite->file, buffer, 14, NULL);	// Fetch 16 bytes of data
 	targetSprite->width = (buffer[1] << 8) | buffer[0];	// 2 bytes : width
 	targetSprite->height = (buffer[3] << 8) | buffer[2];	// 2 bytes : height
 	targetSprite->numFrames = buffer[4];	// 1 byte : numFrames
@@ -110,49 +98,47 @@ sprite initSprite(TCHAR *filename) {
 		(targetSprite->numColors) * sizeof(uint16_t));
 	if (targetSprite->palette == NULL) {
 		spritesAllocatedRemove(targetSprite);
-		f_close(&file);
-		free(targetSprite);
+		f_close(&targetSprite->file);
 		return NULL;
 	}
 
 	// Bytes 7-14 : reserved
 
 	// Fetch 32 bytes of data
-	f_read(&file, buffer, 32, NULL);
+	f_read(&targetSprite->file, buffer, 32, NULL);
 
 	// Save the palette from the file to the array and display them
 	for (i = 0; i < targetSprite->numColors; i++)
 		targetSprite->palette[i] = (buffer[i*2 + 1] << 8) | buffer[i*2];
 
-	return targetSprite;
+	return 0;
 
 }
 
 // Copy one sprite to another
-sprite copySprite(sprite const inSprite) {
+int8_t copySprite(sprite *inSprite, sprite *targetSprite) {
 	// TODO
-	return NULL;
+	return 0;
 }
 
 // Frees memory allocated by a sprite
-void destroySprite(sprite inSprite) {
+void destroySprite(sprite *inSprite) {
 
 	// Remove from spritesAllocated and spriteLayers lists
 	spritesAllocatedRemove(inSprite);
 	spriteLayersRemove(inSprite);
 
 	// Close file
-	f_close(inSprite->file);
+	f_close(&inSprite->file);
 
 	// Free memory
 	free(inSprite->palette);
-	free(inSprite);
 	
 }
 
 // Draw the full sprite on the screen. Note: this does not work the same way as
 // video, this is mostly for debugging purposes.
-uint32_t drawSprite(sprite inSprite) {
+uint32_t drawSprite(sprite *inSprite) {
 	uint8_t temp;
 	uint32_t i;
 	uint32_t offset;
@@ -169,7 +155,7 @@ uint32_t drawSprite(sprite inSprite) {
 	// 1 byte   : numColors
 	// 8 bytes  : reserved
 	// 30 bytes : palette
-	f_lseek(inSprite->file, 44 + inSprite->curFrame*offset);
+	f_lseek(&inSprite->file, 44 + inSprite->curFrame*offset);
 
 	// Set drawing window on the LCD
 	LcdSetPos(inSprite->xpos, inSprite->ypos, inSprite->xpos + inSprite->width-1, inSprite->ypos + inSprite->height-1);
@@ -177,7 +163,7 @@ uint32_t drawSprite(sprite inSprite) {
 
 	// Write the rest of the pixels
 	for (i = 0 ; i < (inSprite->width * inSprite->height) - 2; i+=2) {
-		f_read(inSprite->file, &temp, 1, NULL);	// Get 2 pixels of data
+		f_read(&inSprite->file, &temp, 1, NULL);	// Get 2 pixels of data
 		LcdWriteData(inSprite->palette[(temp & 0x0F)-1]);	// Draw a pixel
 		LcdWriteData(inSprite->palette[((temp & 0xF0)>>4)-1]);	// Draw a pixel
 	}
@@ -208,17 +194,17 @@ void updateSprites(void) {
 }
 
 // Set the xpos value of the given sprite
-void spriteSetXpos(sprite inSprite, int16_t x) {
+void spriteSetXpos(sprite *inSprite, int16_t x) {
 	inSprite->xpos = x;
 }
 
 // Set the ypos value of the given sprite
-void spriteSetYpos(sprite inSprite, int16_t y) {
+void spriteSetYpos(sprite *inSprite, int16_t y) {
 	inSprite->ypos = y;
 }
 
 // Set the xpos and ypos value of the given sprite
-void spriteSetPos(sprite inSprite, int16_t x, int16_t y) {
+void spriteSetPos(sprite *inSprite, int16_t x, int16_t y) {
 	inSprite->xpos = x;
 	inSprite->ypos = y;
 }
@@ -232,12 +218,12 @@ void spriteSetPos(sprite inSprite, int16_t x, int16_t y) {
 // 00000X00 Reserved
 // 000000X0 Reserved
 // 0000000X Reserved
-void spriteSetFlags(sprite inSprite, uint8_t flagVals) {
+void spriteSetFlags(sprite *inSprite, uint8_t flagVals) {
 	inSprite->flags = flagVals;
 }
 
 // Set or clear the hide flag of the given sprite
-void spriteHide(sprite inSprite, uint8_t hideEnable) {
+void spriteHide(sprite *inSprite, uint8_t hideEnable) {
 	if (hideEnable) {
 		inSprite->flags |= HIDE;	// Set the hide flag
 	} else {
@@ -246,7 +232,7 @@ void spriteHide(sprite inSprite, uint8_t hideEnable) {
 }
 
 // Set or clear the animate flag of the given sprite
-void spriteAnimate(sprite inSprite, uint8_t animationEnable) {
+void spriteAnimate(sprite *inSprite, uint8_t animationEnable) {
 	if (animationEnable) {
 		inSprite->flags |= ANIMATED;	// Set the animated flag
 	} else {
@@ -255,7 +241,7 @@ void spriteAnimate(sprite inSprite, uint8_t animationEnable) {
 }
 
 // Set a palette color of a sprite to a new given color
-void spriteSetPaletteColor(sprite inSprite, uint8_t num, uint16_t color) {
+void spriteSetPaletteColor(sprite *inSprite, uint8_t num, uint16_t color) {
 	inSprite->palette[num] = color;
 }
 
@@ -264,8 +250,8 @@ void spriteSetPaletteColor(sprite inSprite, uint8_t num, uint16_t color) {
  */
 // Add a sprite pointer to the spritesAllocated list
 // Return 0 on success, !0 on failure
-static uint8_t spritesAllocatedAdd(sprite inSprite) {
-	sprite *newPointer;
+static uint8_t spritesAllocatedAdd(sprite *inSprite) {
+	sprite **newPointer;
 
 	// Check if too many sprites are already allocated
 	if (spritesAllocated.size >= MAX_SPRITES) {
@@ -273,7 +259,7 @@ static uint8_t spritesAllocatedAdd(sprite inSprite) {
 	}
 	
 	// Reallocate memory for array of structs
-	newPointer = (sprite *)realloc(spritesAllocated.sprites, spritesAllocated.size+1 * sizeof(sprite));
+	newPointer = (sprite **)realloc(spritesAllocated.sprites, spritesAllocated.size+1 * sizeof(sprite *));
 	if (newPointer == NULL) {
 		return NOT_ENOUGH_MEMORY;
 	}
@@ -293,7 +279,7 @@ static uint8_t spritesAllocatedAdd(sprite inSprite) {
 
 // Add a sprite pointer to the spritesAllocated list
 // Return 0 on success, !0 on failure
-static uint8_t spritesAllocatedRemove(sprite inSprite) {
+static uint8_t spritesAllocatedRemove(sprite *inSprite) {
 	uint8_t i;
 	
 	// Remove the element and move the rest of the elements back
@@ -313,9 +299,9 @@ static uint8_t spritesAllocatedRemove(sprite inSprite) {
  */
 // Add a sprite pointer to the spriteLayer list at the given position
 // Return 0 on success, !0 on failure
-uint8_t spriteLayersInsert(sprite inSprite, uint8_t layer) {
+uint8_t spriteLayersInsert(sprite *inSprite, uint8_t layer) {
 	uint8_t i;
-	sprite *newPointer;
+	sprite **newPointer;
 
 	// Check if too many sprites are already allocated
 	if (spriteLayers.size >= MAX_LAYERS) {
@@ -323,7 +309,7 @@ uint8_t spriteLayersInsert(sprite inSprite, uint8_t layer) {
 	}
 	
 	// Reallocate memory for array of structs
-	newPointer = (sprite *)realloc(spriteLayers.sprites, spriteLayers.size+1 * sizeof(sprite));
+	newPointer = (sprite **)realloc(spriteLayers.sprites, spriteLayers.size+1 * sizeof(sprite *));
 	if (newPointer == NULL) {
 		return NOT_ENOUGH_MEMORY;
 	}
@@ -348,8 +334,8 @@ uint8_t spriteLayersInsert(sprite inSprite, uint8_t layer) {
 
 // Append a sprite pointer to the spriteLayer list
 // Return 0 on success, !0 on failure
-uint8_t spriteLayersAdd(sprite inSprite) {
-	sprite *newPointer;
+uint8_t spriteLayersAdd(sprite *inSprite) {
+	sprite **newPointer;
 
 	// Check if too many sprites are already allocated
 	if (spriteLayers.size >= MAX_LAYERS) {
@@ -357,7 +343,7 @@ uint8_t spriteLayersAdd(sprite inSprite) {
 	}
 	
 	// Reallocate memory for array of structs
-	newPointer = (sprite *)realloc(spriteLayers.sprites, spriteLayers.size+1 * sizeof(sprite));
+	newPointer = (sprite **)realloc(spriteLayers.sprites, spriteLayers.size+1 * sizeof(sprite *));
 	if (newPointer == NULL) {
 		return NOT_ENOUGH_MEMORY;
 	}
@@ -377,7 +363,7 @@ uint8_t spriteLayersAdd(sprite inSprite) {
 
 // Remove the given sprite from the spriteLayers list
 // Return 0 on success, !0 on failure
-uint8_t spriteLayersRemove(sprite inSprite) {
+uint8_t spriteLayersRemove(sprite *inSprite) {
 	uint8_t i;
 	
 	// Remove the element and move the rest of the elements back
@@ -404,7 +390,7 @@ uint8_t seekStartOfFrames(void) {
 
 		// Move file pointer to beginning of sprite frame
 		offset = ((spriteLayers.sprites[layer]->width * spriteLayers.sprites[layer]->height) + 1) / 2;
-		f_lseek(spriteLayers.sprites[layer]->file, 44 + spriteLayers.sprites[layer]->curFrame * offset);
+		f_lseek(&spriteLayers.sprites[layer]->file, 44 + spriteLayers.sprites[layer]->curFrame * offset);
 	}
 
 	return 0;

@@ -6,6 +6,7 @@
 #include "ff.h"
 #include "lcd.h"
 #include "button.h"
+#include "led.h"
 
 #define MAX_LAYERS 8
 #define MAX_SPRITES 32
@@ -23,7 +24,7 @@
  */
 
 typedef struct sprite_struct{
-	FIL *file;
+	FIL file;
 	uint16_t width;
 	uint16_t height;
 	int16_t xpos;
@@ -37,10 +38,10 @@ typedef struct sprite_struct{
 	uint8_t flags;
 	uint8_t tag;
 	int8_t layer;
-} *sprite;
+} sprite;
 
 typedef struct {
-	sprite *sprites;
+	sprite **sprites;
 	uint8_t size;
 } spriteList;
 
@@ -63,26 +64,26 @@ typedef enum {
 } SPRITE_ERROR;
 
 // sprite functions
-sprite initSprite(TCHAR *filename);
-sprite copySprite(sprite const inSprite);
-uint32_t drawSprite(sprite inSprite);
-void destroySprite(sprite inSprite);
+int8_t initSprite(sprite *targetSprite, TCHAR *filename);
+int8_t copySprite(sprite *inSprite, sprite *targetSprite);
+uint32_t drawSprite(sprite *inSprite);
+void destroySprite(sprite *inSprite);
 void updateSprites(void);
-void spriteSetXpos(sprite inSprite, int16_t x);
-void spriteSetYpos(sprite inSprite, int16_t y);
-void spriteSetPos(sprite inSprite, int16_t x, int16_t y);
-void spriteSetFlags(sprite inSprite, uint8_t flagVals);
-void spriteHide(sprite inSprite, uint8_t hideEnable);
-void spriteAnimate(sprite inSprite, uint8_t animationEnable);
-void spriteSetPaletteColor(sprite inSprite, uint8_t num, uint16_t color);
+void spriteSetXpos(sprite *inSprite, int16_t x);
+void spriteSetYpos(sprite *inSprite, int16_t y);
+void spriteSetPos(sprite *inSprite, int16_t x, int16_t y);
+void spriteSetFlags(sprite *inSprite, uint8_t flagVals);
+void spriteHide(sprite *inSprite, uint8_t hideEnable);
+void spriteAnimate(sprite *inSprite, uint8_t animationEnable);
+void spriteSetPaletteColor(sprite *inSprite, uint8_t num, uint16_t color);
 
 // spriteLayers functions
-uint8_t spriteLayersInsert(sprite inSprite, uint8_t layer);
-uint8_t spriteLayersAdd(sprite inSprite);
-uint8_t spriteLayersRemove(sprite inSprite);
+uint8_t spriteLayersInsert(sprite *inSprite, uint8_t layer);
+uint8_t spriteLayersAdd(sprite *inSprite);
+uint8_t spriteLayersRemove(sprite *inSprite);
 uint8_t seekStartOfFrames(void);
 
 // test functions
-void drawSpriteDebug(sprite inSprite);
+void drawSpriteDebug(sprite *inSprite);
 
 #endif
