@@ -135,7 +135,7 @@ void DMA1_Stream5_IRQHandler(void)
 	// of the transfer that just completed by AUD_BUF_BYTES
 
 	// PLay entire buffer unless changed later
-	uint32_t bufferSize = AUD_BUF_BYTES / 2;
+	uint32_t bufferSize = (uint32_t)(AUD_BUF_BYTES / 2);
 	
 	HAL_DMA_IRQHandler(&hdma_dac1);
 
@@ -198,6 +198,8 @@ FRESULT WAV_Update(void)
 	FRESULT res;
 	UINT BytesRead;
 	
+	if (playingWav->Error) return playingWav->Error;
+	
 	// If WAV data does not need to be read, return
 	if (!readyToRead) return 0;
 
@@ -236,7 +238,10 @@ FRESULT WAV_Update(void)
 	} else {
 		// There must only be one read to fill audio buffer completely
         res = f_read(&F, READ_BUFFER, AUD_BUF_BYTES, &BytesRead);
-		if (res != FR_OK) return res;
+		if (res != FR_OK || BytesRead != AUD_BUF_BYTES) {
+			playingWav->Error = FileReadFailed;
+			return res;
+		}
 
 		// Update position for next read
         playingWav->DataPos += AUD_BUF_BYTES;
@@ -252,7 +257,7 @@ FRESULT WAV_Update(void)
     f_close(&F);
 
 	/* Convert 16 Bit Signed to 16 Bit Unsigned */
-	ToggleBufferSign((uint32_t*)READ_BUFFER, AUD_BUF_BYTES / 4);
+	ToggleBufferSign((uint32_t*)(READ_BUFFER), (uint32_t)(AUD_BUF_BYTES / 4));
 
 	/* Finished reading into the read buffer, no longer ready to read */
 	readyToRead = 0;
@@ -272,6 +277,9 @@ FRESULT WAV_Update(void)
 void WAV_Play(WAV_Format* W, int numPlays)
 {
 	uint32_t bufferSize;
+	
+	// Pause old WAV file
+	WAV_Pause();
 	
 	// Do not play if number of plays is 0
 	if (numPlays == 0) return;
@@ -296,7 +304,6 @@ void WAV_Play(WAV_Format* W, int numPlays)
 	WAV_Update();
 	
 	/* Deinitialize everything */
-	WAV_Pause();
     HAL_DAC_Stop(&hdac, DAC_CHANNEL_1);
     HAL_DAC_Stop_DMA(&hdac, DAC_CHANNEL_1);
 
@@ -444,7 +451,7 @@ void WavePlayer_ReadAndParse(WAV_Format* WAVE_Format)
 	}
 	
 	/* Fs = Ftimer / (ARR+1); ARR = Ftimer / Fs - 1 */
-	WAVE_Format->TIM6ARRValue = (uint32_t)((float)(TIM6FREQ) / (float)(WAVE_Format->SampleRate) - 1.0);
+	WAVE_Format->TIM6ARRValue = (uint32_t)(TIM6FREQ / WAVE_Format->SampleRate - 1);
 	
 	/* Read the Byte Rate ------------------------------------------------------*/
 	WAVE_Format->ByteRate = ReadUnit((uint8_t*)TempBuffer, 28, 4, LittleEndian);
@@ -508,7 +515,7 @@ void WavePlayer_ReadAndParse(WAV_Format* WAVE_Format)
 	*/
 static void ToggleBufferSign(uint32_t* pBuffer, uint32_t BufferSize)
 {
-	uint32_t readdata = (uint32_t)pBuffer;
+	volatile uint32_t readdata = (uint32_t)pBuffer;
 	uint32_t loopcnt = 0;
 	
 	/* Invert sign bit: PCM format is 16-bit signed and DAC is 12-bit unsigned */

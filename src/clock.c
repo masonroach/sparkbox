@@ -7,7 +7,11 @@ uint8_t initSystemClock(void) {
 	
 	if (SystemClock_Config()) return 1;
 
-	//if (SysTick_Config(CLOCK_FREQ/1000)) return 2;
+	SysTick_Config(CLOCK_FREQ/1000);
+
+	HAL_SYSTICK_CLKSourceConfig(SYSTICK_CLKSOURCE_HCLK);
+	
+	HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);
 
 	return 0;
 }
@@ -40,11 +44,11 @@ uint8_t SystemClock_Config(void) {
 
 	/* Enable HSE Oscillator and activate PLL with HSI as source */
 	/* fVCO = fPLLin * (PLLN / PLLM); fPLLout = fVCO / PLLP; fSDIO = fPLLout / PLLQ */
-	RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
-	RCC_OscInitStruct.HSIState = RCC_HSI_ON;
+	RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+	RCC_OscInitStruct.HSEState = RCC_HSE_ON;
 	RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-	RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
-	RCC_OscInitStruct.PLL.PLLM = 10; // Clock division (2<=PLLM<=63)
+	RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
+	RCC_OscInitStruct.PLL.PLLM = 5; // Clock division (2<=PLLM<=63)
 	RCC_OscInitStruct.PLL.PLLN = 210; // Clock multiplication (50<=PLLN<=432)
 	RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2; // PLLP = 2, 4, 6, or 8
 	RCC_OscInitStruct.PLL.PLLQ = 7; // 2<=PLLQ<=15 SDIO and RNG clock divider (SDIO=48MHz when PLLQ = 7)
