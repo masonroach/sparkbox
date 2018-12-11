@@ -41,7 +41,7 @@ typedef struct sprite_struct{
 } sprite;
 
 typedef struct {
-	sprite **sprites;
+	sprite **spr;
 	uint8_t size;
 } spriteList;
 

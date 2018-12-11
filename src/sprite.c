@@ -8,7 +8,7 @@ static uint8_t spritesAllocatedRemove(sprite *inSprite);
 spriteList spritesAllocated = {NULL, 0};
 
 // Global list to keep track of sprite layers being shown
-spriteList spriteLayers = {NULL, 0};
+spriteList layers = {NULL, 0};
 
 // Display helpful debugging information for the given sprite
 void drawSpriteDebug(sprite *inSprite) {
@@ -56,7 +56,7 @@ void drawSpriteDebug(sprite *inSprite) {
 }
 
 /*
- * sprite functions
+ te functions
  */
 // Create a sprite struct from the given filename
 int8_t initSprite(sprite *targetSprite, TCHAR *filename) {
@@ -177,17 +177,17 @@ uint32_t drawSprite(sprite *inSprite) {
 void updateSprites(void) {
 	uint8_t layer;
 	
-	for (layer = 0; layer < spriteLayers.size; layer++) {
+	for (layer = 0; layer < layers.size; layer++) {
 
 		// Update frames
-		spriteLayers.sprites[layer]->curFrame++;
-		if (spriteLayers.sprites[layer]->curFrame == spriteLayers.sprites[layer]->numFrames) {
-			spriteLayers.sprites[layer]->curFrame = 0;
+		layers.spr[layer]->curFrame++;
+		if (layers.spr[layer]->curFrame == layers.spr[layer]->numFrames) {
+			layers.spr[layer]->curFrame = 0;
 		}
 
 		// Update positions
-		spriteLayers.sprites[layer]->xpos += spriteLayers.sprites[layer]->xvelocity;
-		spriteLayers.sprites[layer]->ypos += spriteLayers.sprites[layer]->yvelocity;
+		layers.spr[layer]->xpos += layers.spr[layer]->xvelocity;
+		layers.spr[layer]->ypos += layers.spr[layer]->yvelocity;
 
 	}
 
@@ -259,14 +259,14 @@ static uint8_t spritesAllocatedAdd(sprite *inSprite) {
 	}
 	
 	// Reallocate memory for array of structs
-	newPointer = (sprite **)realloc(spritesAllocated.sprites, spritesAllocated.size+1 * sizeof(sprite *));
+	newPointer = (sprite **)realloc(spritesAllocated.spr, spritesAllocated.size+1 * sizeof(sprite *));
 	if (newPointer == NULL) {
 		return NOT_ENOUGH_MEMORY;
 	}
-	spritesAllocated.sprites = newPointer;
+	spritesAllocated.spr = newPointer;
 	
 	// Put the sprite at the end of the array
-	spritesAllocated.sprites[spritesAllocated.size] = inSprite;
+	spritesAllocated.spr[spritesAllocated.size] = inSprite;
 
 	// Keep track of tag in inSprite
 	inSprite->tag = spritesAllocated.size;
@@ -284,7 +284,7 @@ static uint8_t spritesAllocatedRemove(sprite *inSprite) {
 	
 	// Remove the element and move the rest of the elements back
 	for (i = inSprite->tag; i < spritesAllocated.size - 1; i++) {
-		spritesAllocated.sprites[i] = spritesAllocated.sprites[i + 1];
+		spritesAllocated.spr[i] = spritesAllocated.spr[i + 1];
 	}
 
 	// Decrement size
@@ -304,30 +304,30 @@ uint8_t spriteLayersInsert(sprite *inSprite, uint8_t layer) {
 	sprite **newPointer;
 
 	// Check if too many sprites are already allocated
-	if (spriteLayers.size >= MAX_LAYERS) {
+	if (layers.size >= MAX_LAYERS) {
 		return TOO_MANY_SPRITES;
 	}
 	
 	// Reallocate memory for array of structs
-	newPointer = (sprite **)realloc(spriteLayers.sprites, spriteLayers.size+1 * sizeof(sprite *));
+	newPointer = (sprite **)realloc(layers.spr, layers.size+1 * sizeof(sprite *));
 	if (newPointer == NULL) {
 		return NOT_ENOUGH_MEMORY;
 	}
-	spriteLayers.sprites = newPointer;
+	layers.spr = newPointer;
 	
 	// Move the layers after the given index down
 	for (i = spritesAllocated.size; i > layer + 1; i--) {
-		spriteLayers.sprites[i] = spriteLayers.sprites[i-1];
+		layers.spr[i] = layers.spr[i-1];
 	}
 
 	// Insert the sprite at the given index
-	spriteLayers.sprites[layer] = inSprite;
+	layers.spr[layer] = inSprite;
 
 	// Keep track of tag in inSprite
 	inSprite->layer = layer;
 
 	// Increment size to reflect new size	
-	spriteLayers.size++;
+	layers.size++;
 
 	return 0;
 }
@@ -338,25 +338,25 @@ uint8_t spriteLayersAdd(sprite *inSprite) {
 	sprite **newPointer;
 
 	// Check if too many sprites are already allocated
-	if (spriteLayers.size >= MAX_LAYERS) {
+	if (layers.size >= MAX_LAYERS) {
 		return TOO_MANY_SPRITES;
 	}
 	
 	// Reallocate memory for array of structs
-	newPointer = (sprite **)realloc(spriteLayers.sprites, spriteLayers.size+1 * sizeof(sprite *));
+	newPointer = (sprite **)realloc(layers.spr, layers.size+1 * sizeof(sprite *));
 	if (newPointer == NULL) {
 		return NOT_ENOUGH_MEMORY;
 	}
-	spriteLayers.sprites = newPointer;
+	layers.spr = newPointer;
 	
 	// Insert the sprite at the given index
-	spriteLayers.sprites[spriteLayers.size] = inSprite;
+	layers.spr[layers.size] = inSprite;
 
 	// Keep track of tag in inSprite
-	inSprite->layer = spriteLayers.size;
+	inSprite->layer = layers.size;
 
 	// Increment size to reflect new size	
-	spriteLayers.size++;
+	layers.size++;
 
 	return 0;
 }
@@ -367,12 +367,12 @@ uint8_t spriteLayersRemove(sprite *inSprite) {
 	uint8_t i;
 	
 	// Remove the element and move the rest of the elements back
-	for (i = inSprite->layer; i < spriteLayers.size - 1; i++) {
-		spriteLayers.sprites[i] = spriteLayers.sprites[i + 1];
+	for (i = inSprite->layer; i < layers.size - 1; i++) {
+		layers.spr[i] = layers.spr[i + 1];
 	}
 
 	// Decrement size
-	spriteLayers.size--;
+	layers.size--;
 
 	// Set the layers flag in the sprite
 	inSprite->layer = -1;
@@ -386,11 +386,11 @@ uint8_t seekStartOfFrames(void) {
 	uint32_t offset;
 	uint8_t layer;
 
-	for (layer = 0; layer < spriteLayers.size; layer++){
+	for (layer = 0; layer < layers.size; layer++){
 
 		// Move file pointer to beginning of sprite frame
-		offset = ((spriteLayers.sprites[layer]->width * spriteLayers.sprites[layer]->height) + 1) / 2;
-		f_lseek(&spriteLayers.sprites[layer]->file, 44 + spriteLayers.sprites[layer]->curFrame * offset);
+		offset = ((layers.spr[layer]->width * layers.spr[layer]->height) + 1) / 2;
+		f_lseek(&layers.spr[layer]->file, 44 + layers.spr[layer]->curFrame * offset);
 	}
 
 	return 0;

@@ -40,10 +40,10 @@
 #define TIM7ARR 299
 
 extern volatile uint16_t * const fsmc_data;
-extern spriteList spriteLayers;
+extern spriteList layers;
 
 int8_t initVideo(void);
 void updateFrame(void);
-uint8_t getNext2Rows(uint8_t set);
+uint8_t getNextRows(void);
 
 #endif
