@@ -35,9 +35,9 @@
 // Default background color
 #define VIDEO_BG COLOR_888_TO_565(0x00A591)
 
-// PSC 99 ARR 299
+// PSC 99 ARR dependent on number of rows to transfer
 #define TIM7PSC 99
-#define TIM7ARR 299
+#define TIM7ARR (75 * LCD_TRANSFER_ROWS - 1)
 
 extern volatile uint16_t * const fsmc_data;
 extern spriteList layers;

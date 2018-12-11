@@ -13,6 +13,9 @@ volatile uint8_t bufferTransfers = 0;
 #define READ_BUFFER (videoBuffer ? videoBuffer2 : videoBuffer1)
 #define PLAY_BUFFER (videoBuffer ? videoBuffer1 : videoBuffer2)
 
+uint8_t transferComplete = 0;
+uint8_t frameComplete = 0;
+
 DMA_HandleTypeDef hdma_memtomem_dma2_stream5;
 TIM_HandleTypeDef htim7;
 FIL BUF;
@@ -70,6 +73,9 @@ int8_t initVideo(void)
 	sMasterConfig.MasterOutputTrigger = TIM_TRGO_ENABLE;
 	sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
 	HAL_TIMEx_MasterConfigSynchronization(&htim7, &sMasterConfig);
+
+	transferComplete = 1;
+	frameComplete = 1;
 	
 	return 0;
 }
@@ -99,6 +105,12 @@ FRESULT readToVideoBuffer(void)
  */
 void updateFrame(void)
 {
+	// Do not update new frame until old is completely written
+	if (!frameComplete) return;
+
+	// Frame update is beginning, set FPS pin high
+	LCD_FPS_HIGH;
+
 	// Stop old DMA transfers
 	HAL_DMA_Abort_IT(&hdma_memtomem_dma2_stream5);
 
@@ -113,10 +125,7 @@ void updateFrame(void)
 	readToVideoBuffer();
 	toggleVideoBuffers();
 	
-	// Frame update is beginning, set FPS pin high
-	LCD_FPS_HIGH;
-
-	// Enable timer 7 after DMA start
+	// Enable timer 7
 	HAL_TIM_Base_Start_IT(&htim7);
 	// Initialize LCD to be ready for continuous data
 	LcdSetPos(0, 0, LCD_WIDTH, LCD_HEIGHT);
@@ -126,6 +135,9 @@ void updateFrame(void)
 	HAL_DMA_Start_IT(&hdma_memtomem_dma2_stream5, 
 	(uint32_t)PLAY_BUFFER, (uint32_t)(fsmc_data),
 	(uint32_t)(VID_BUF_BYTES / 2));
+
+	// Indicate current transfer is not complete
+	transferComplete = 0;
 
 	// Increment number of transfers that have started
     bufferTransfers++;
@@ -149,7 +161,11 @@ void toggleVideoBuffers(void)
 	*/
 void DMA2_Stream5_IRQHandler(void)
 {
+	// Use HAL library to handle lower level interrupt
 	HAL_DMA_IRQHandler(&hdma_memtomem_dma2_stream5);
+
+	// Signal that the transfer is complete
+	transferComplete = 1;
 }
 
 // Time for another DMA transfer
@@ -157,6 +173,13 @@ void TIM7_IRQHandler(void)
 {
 	HAL_TIM_IRQHandler(&htim7);
 
+	// If the previous transfer is not done, do not do anything
+	if (!transferComplete) return;
+
+	// Reset transferComplete flag
+	transferComplete = 0;
+
+	// Toggle read and play buffers
 	toggleVideoBuffers();
 	
 	// Start the new transfer before reading
@@ -178,6 +201,9 @@ void TIM7_IRQHandler(void)
 
 		// Stop timer to not trigger this interrupt again
 		HAL_TIM_Base_Stop_IT(&htim7);
+
+		// Indicate frame is complete
+		frameComplete = 1;
 
         // Done updating frame, set FPS pin low
         LCD_FPS_LOW;
