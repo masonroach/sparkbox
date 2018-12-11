@@ -1,4 +1,5 @@
 #include "waveplayer.h"
+#include "led.h"
 #include "lcd.h"
 
 static void WavePlayer_ReadAndParse(WAV_Format* WAVE_Format);
@@ -139,6 +140,17 @@ void DMA1_Stream5_IRQHandler(void)
 	
 	HAL_DMA_IRQHandler(&hdma_dac1);
 
+	// Did not fill audio buffer in time, stop
+	if (readyToRead) {
+		WAV_Pause();
+		numberPlays = 0;
+		// Reset next data read to position 0
+		playingWav->DataPos = 0;
+		// Light up error LED
+		ledError(2);
+		return;
+	} 
+
 	// Determine if a WAV file has completed
 	// If it has, the next sample we read will be at positon
 	// less than the size of the audio buffer
@@ -197,7 +209,8 @@ FRESULT WAV_Update(void)
 {
 	FRESULT res;
 	UINT BytesRead;
-	
+
+	// Do not update if there is an error	
 	if (playingWav->Error) return playingWav->Error;
 	
 	// If WAV data does not need to be read, return
@@ -220,7 +233,7 @@ FRESULT WAV_Update(void)
 
 		// This first read will reach the end of the file
         res = f_read(&F, READ_BUFFER, 
-		playingWav->DataSize - playingWav->DataPos, &BytesRead);
+			playingWav->DataSize - playingWav->DataPos, &BytesRead);
 		if (res != FR_OK) return res;
 
         // Set file pointer to beginning of data again
@@ -229,7 +242,7 @@ FRESULT WAV_Update(void)
 
         // This second read will fill the remainder of the buffer
         res = f_read(&F, (uint16_t*)((uint8_t*)READ_BUFFER + playingWav->DataSize),
-        playingWav->DataPos + AUD_BUF_BYTES - playingWav->DataSize, &BytesRead);
+        	playingWav->DataPos + AUD_BUF_BYTES - playingWav->DataSize, &BytesRead);
 		if (res != FR_OK) return res;
 
 		// Update position for next read
@@ -336,7 +349,6 @@ void WAV_Play(WAV_Format* W, int numPlays)
 
 	// Set flag so the other buffer can be filled now
 	readyToRead = 1;
-	
 
 }
 

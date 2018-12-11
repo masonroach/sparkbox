@@ -15,6 +15,7 @@ volatile uint8_t bufferTransfers = 0;
 
 uint8_t transferComplete = 0;
 uint8_t frameComplete = 0;
+uint8_t readComplete = 0;
 
 DMA_HandleTypeDef hdma_memtomem_dma2_stream5;
 TIM_HandleTypeDef htim7;
@@ -76,6 +77,7 @@ int8_t initVideo(void)
 
 	transferComplete = 1;
 	frameComplete = 1;
+	readComplete = 1;
 	
 	return 0;
 }
@@ -92,8 +94,12 @@ FRESULT readToVideoBuffer(void)
 	// Read indexes into indexBuffer from SD
 
 	// Write actual colors to READ_BUFFER
+	
+	readComplete = 0;
 
 	getNextRows();
+	
+	readComplete = 1;
 
 	return FR_OK;
 }
@@ -174,7 +180,7 @@ void TIM7_IRQHandler(void)
 	HAL_TIM_IRQHandler(&htim7);
 
 	// If the previous transfer is not done, do not do anything
-	if (!transferComplete) return;
+	if (!transferComplete || !readComplete) return;
 
 	// Reset transferComplete flag
 	transferComplete = 0;

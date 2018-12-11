@@ -114,7 +114,6 @@ typedef struct
   uint32_t  DataSize;
   uint32_t  TIM6ARRValue;
   uint32_t  SpeechDataOffset;
-  uint32_t *DataBuffer;
   uint32_t  DataPos;
   char      Filename[64];
   uint16_t  Error;
