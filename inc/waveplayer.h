@@ -89,8 +89,9 @@ Finally, the data chunk contains the sample data:
   * @}
   */
 
-// Each audio Buffer size = 6400 Bytes, total = 12800 Bytes 
-#define AUD_BUF_BYTES 6400
+// Allocate enough space for a 2 Hz signal at max sample rate
+#define AUD_BUF_BYTES 30000
+#define AUD_BUF_SAMPLES (AUD_BUF_BYTES / 2)
 
 /** @defgroup WAVEPLAYER_Exported_Types
   * @{
@@ -132,6 +133,7 @@ typedef enum
   Unvalid_DataChunk_ID,
   Unsupporetd_ExtraFormatBytes,
   Unvalid_FactChunk_ID,
+  Unvalid_DataSize,
   FileReadFailed
 } ErrorCode;
 

@@ -22,7 +22,7 @@ int main(void) {
 		WAV_test();
 	}
 
-	//buttonTest();
+//	buttonTest();
 	
 	while(1);
 	return 1;
@@ -204,12 +204,9 @@ void WAV_test(void)
 		return;
 	}
 	
-
-	ledOn(7);
-	while (!readButton()) {
-		WAV_Update();
-		delayms(50);
-	}
+	// Wait for button to be pressed
+	while (readButton());
+	while (!readButton());
 	WAV_Pause();
 
 	// Don't want to free memory the DMA is transferring
