@@ -5,16 +5,16 @@
 Fs = 44.1e3;
 
 % To meet spec, frequencies must be between .1-3 kHz
-f1 = 110;
-f2 = 220;
-f3 = 440;
-f4 = 880;
+f1 = 494;
+f2 = 622;
+f3 = 740;
+f4 = 784;
 
-% Round frequency to nearest 1 Hz for gcd calculation
-f1 = round(f1);
-f2 = round(f2);
-f3 = round(f3);
-f4 = round(f4);
+% Round frequency to nearest 2 Hz for gcd calculation
+f1 = round(f1 / 5) * 5;
+f2 = round(f2 / 5) * 5;
+f3 = round(f3 / 5) * 5;
+f4 = round(f4 / 5) * 5;
 
 % Frequency of the combined waveform
 f = gcd(gcd(gcd(f1,f2), f3), f4);
@@ -36,11 +36,6 @@ while (diff > 0)
   numSamples = numSamples - 1;
   y = y(1:numSamples);
   diff = y(numSamples-1) - y(1);
-end
-
-% Pad array to be greater than half the audio buffer size
-while (length(y) <= 3200)
-	y = [y, y];
 end
 
 % Plot simulated DAC output
