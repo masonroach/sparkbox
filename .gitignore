@@ -7,5 +7,6 @@ main
 *.png
 *.sparksprite
 *.spr
+*.bak
 scripts/*.c
 scripts/*.wav
