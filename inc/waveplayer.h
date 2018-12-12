@@ -188,7 +188,6 @@ typedef enum
 void WAV_Init(void);
 uint8_t WAV_Import(const char* FileName, WAV_Format* W);
 void WAV_Play(WAV_Format* W, int numPlays);
-FRESULT WAV_Update(void);
 void WAV_Pause(void);
 void WAV_Resume(void);
 #ifdef __cplusplus
