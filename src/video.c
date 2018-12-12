@@ -213,9 +213,6 @@ void TIM7_IRQHandler(void)
 
         // Done updating frame, set FPS pin low
         LCD_FPS_LOW;
-		
-    	// Done with video, need to update audio
-    	WAV_Update();
     }
 
 }
