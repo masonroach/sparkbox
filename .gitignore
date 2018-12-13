@@ -10,4 +10,5 @@ main
 *.bak
 scripts/*.c
 scripts/*.wav
-doxout/*
+doxfiles/html/*
+doxfiles/latex/*
