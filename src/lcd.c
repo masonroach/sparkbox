@@ -1,34 +1,17 @@
-#include "lcd.h"
-/*
- * +-------------+
- * | Connections |
- * +------+------+
- * | Name | Pin  |
- * +------+------+
- * | FRAME| PA7  | <-- Trigger on new frame
- * | RESET| PA6  |
- * | NOE  | PD4  | <-- Read
- * | NWE  | PD5  | <-- Write
- * | NE1  | PD7  | <-- Chip Select
- * | A18  | PD13 | <-- Register Select (C/D)
- * | DB0  | PD14 |
- * | DB1  | PD15 |
- * | DB2  | PD0  |
- * | DB3  | PD1  |
- * | DB4  | PE7  |
- * | DB5  | PE8  |
- * | DB6  | PE9  |
- * | DB7  | PE10 |
- * | DB8  | PE11 |
- * | DB9  | PE12 |
- * | DB10 | PE13 |
- * | DB11 | PE14 |
- * | DB12 | PE15 |
- * | DB13 | PD8  |
- * | DB14 | PD9  |
- * | DB15 | PD10 |
- * +------+------+
+/*!
+ * @file lcd.c
+ * @author Mason Roach
+ * @author Patrick Roy
+ * @date Dec 12 2018
+ *
+ * @brief Functions the control the LCD on the Sparkbox
+ *
+ * These functions are the basic functions that should be used to interface with
+ * the ILI9341 LCD controller. Many of these functions were designed for testing
+ * and debugging purposes, and are no longer used.
  */
+
+#include "lcd.h"
 
 // Pointer to start address of FSMC
 volatile uint16_t * const fsmc_cmd = (uint16_t *)(0x60000000);
@@ -48,7 +31,11 @@ void initLcd(void) {
 	return;
 }
 
-// Write a command to the LCD controller over FSMC
+/*!
+ * @brief Write a command to the LCD controller over FSMC
+ *
+ * @param cmd 16-bits to transfer as a command
+ */
 void LcdWriteCmd(uint16_t cmd) {
 
 	// Set parallel data
@@ -56,7 +43,11 @@ void LcdWriteCmd(uint16_t cmd) {
 	
 }
 
-// Write data to the LCD controller over FSMC
+/*!
+ * @brief Write data to the LCD controller over FSMC
+ *
+ * @param data 16-bits to transfer as a command parameter or data
+ */
 void LcdWriteData(uint16_t data) {
 
 	// Set parallel data
@@ -64,7 +55,9 @@ void LcdWriteData(uint16_t data) {
 	
 }
 
-// Read data from the LCD controller over FSMC
+/*!
+ * @brief Read data from the LCD controller over FSMC
+ */
 uint16_t LcdReadData(void) {
 
 	// Read parallel data
@@ -72,6 +65,9 @@ uint16_t LcdReadData(void) {
 
 }
 
+/*!
+ * @brief Puts the LCD in sleep mode
+ */
 void LcdEnterSleep(void) {
 	LcdWriteCmd(DISPLAY_OFF);	// Display off
 	LcdWriteCmd(ENTER_SLEEP_MODE);	// Enter sleep mode
@@ -79,6 +75,9 @@ void LcdEnterSleep(void) {
 	return;
 }
 
+/*!
+ * @brief Removes the LCD from sleep mode
+ */
 void LcdExitSleep(void) {
 	LcdWriteCmd(SLEEP_OUT);	// Sleep out
 	delayms(120);
@@ -87,7 +86,22 @@ void LcdExitSleep(void) {
 	return;
 }
 
-// Sets the drawing window for following write commands
+/*!
+ * @brief Sets the drawing window for following write commands
+ *
+ * The ILI9341 controller draws and reads pixels on the LCD through a window
+ * method. This function sets the window, but must be followed up with either
+ * a MEMORY_WRITE command to draw pixels, or a MEMORY_READ command to read 
+ * pixels.
+ *
+ * @note Be careful of the orientation of axes on the LCD. (0, 0) is in the top
+ * left corner
+ *
+ * @param x0 Start x position
+ * @param y0 Start y position
+ * @param x1 End x position
+ * @param y2 End y position
+ */
 void LcdSetPos(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1) {
  	LcdWriteCmd(COLUMN_ADDRESS_SET);
 	LcdWriteData(x0 >> 8);
@@ -101,14 +115,30 @@ void LcdSetPos(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1) {
 	LcdWriteData(y1 & 0xFF);
 }
 
-// Draws a single pixel at (x, y)
+/*!
+ * @brief Draws a single pixel at (x, y)
+ *
+ * @param x x position of the pixel
+ * @param y y position of the pixel
+ * @param color Color of the pixel to draw, RGB565 format
+ */
 void LcdPutPixel(uint16_t x, uint16_t y, uint16_t color) {
 	LcdSetPos(x, y, x, y);
 	LcdWriteCmd(MEMORY_WRITE);
 	LcdWriteData(color);
 }
 
-// Read a single pixel at (x, y)
+/*!
+ * @brief Read a single pixel at (x, y)
+ *
+ * @note Regardless of the data format of pixels written to the LCD, reading a
+ * pixel returns data in the RGB888 format.
+ *
+ * @param x x position of the pixel
+ * @param y y position of the pixel
+ * 
+ * @return The color of the pixel in RGB888 format
+ */
 uint32_t LcdReadPixel(uint16_t x, uint16_t y) {
 	uint32_t temp = 0x00000000;
 	LcdSetPos(x, y, x, y);
@@ -119,7 +149,11 @@ uint32_t LcdReadPixel(uint16_t x, uint16_t y) {
 	return temp;
 }
 
-// Fills the whole LCD screen with a single color
+/*!
+ * @brief Fills the whole LCD screen with a single color
+ *
+ * @param color RGB565 formatted color
+ */
 void LcdFillScreen(uint16_t color) {
 	uint32_t index = LCD_PIXELS;
 
@@ -135,7 +169,9 @@ void LcdFillScreen(uint16_t color) {
 	LCD_FPS_LOW;
 }
 
-// Fills the screen with a checkerboard pattern
+/*!
+ * @brief Fills the screen with a checkerboard pattern
+ */
 void LcdFillScreenCheckered(void) {
 	uint32_t index = LCD_PIXELS;
 	
@@ -152,7 +188,24 @@ void LcdFillScreenCheckered(void) {
 	}
 }
 
-// Draws a rectangle of width*height at (x, y)
+/*!
+ * @brief Inverts all colors on the display
+ *
+ * @param invert Enable (1) or disable (0) the inversion
+ */
+void LcdInvertDisplay(uint8_t invert) {
+	LcdWriteCmd(invert ? INVERSION_ON : INVERSION_OFF);
+}
+
+/*!
+ * @brief Draws a rectangle of width*height at (x, y)'
+ *
+ * @param x Starting x position (left side)
+ * @param y Starting y position (top side)
+ * @param width Width of the rectangle in pixels
+ * @param height Height of the rectangle in pixels
+ * @param color RGB565 formatted color to fill the rectangle with
+ */
 void LcdDrawRectangle(uint16_t x, uint16_t y, uint16_t width,
 	uint16_t height, uint16_t color) {
 	uint32_t index = width*height;
@@ -165,15 +218,8 @@ void LcdDrawRectangle(uint16_t x, uint16_t y, uint16_t width,
 	}
 }
 
-// Inverts all colors on the display
-void LcdInvertDisplay(uint8_t invert) {
-	LcdWriteCmd(invert ? INVERSION_ON : INVERSION_OFF);
-}
-
-// Optional text functions
-#if LCD_TEXT==1
 // Decoding array for chars
-const uint64_t charDecode[] = {
+static const uint64_t charDecode[] = {
 	0x0000000000000000,	// 32	Space
 	0x0208208208000208,	// 33	!
 	0x0,	// 34	"
@@ -235,7 +281,15 @@ const uint64_t charDecode[] = {
 	0x0FC104210842083F	// 90	Z
 };
 
-// Draw a single character at given (x, y)
+/*!
+ * @brief Draw a single character at given (x, y)
+ *
+ * @param x x position of the top left corner of the character
+ * @param y y position of the top left corner of the character
+ * @param c Character to draw
+ * @param fontColor Color to draw the character as (RGB565 format)
+ * @param bgColor Background color of the character (RGB565 format)
+ */
 void LcdDrawChar(uint16_t x, uint16_t y, uint8_t c,
 	uint16_t fontColor, uint16_t bgColor) {
 
@@ -251,6 +305,15 @@ void LcdDrawChar(uint16_t x, uint16_t y, uint8_t c,
 	}
 }
 
+/*!
+ * @brief Draw a string on the LCD
+ *
+ * @param x x position of the top left corner of the string
+ * @param y y position of the top left corner of the string
+ * @param c Pointer to null terminated string of characters
+ * @param fontColor Color to draw the string as (RGB565 format)
+ * @param bgColor Background color of the string (RGB565 format)
+ */
 void LcdDrawString(uint16_t x, uint16_t y, uint8_t *c,
 	uint16_t fontColor, uint16_t bgColor) {
 
@@ -261,6 +324,15 @@ void LcdDrawString(uint16_t x, uint16_t y, uint8_t *c,
 	}
 }
 
+/*!
+ * @brief Draw a string on the LCD
+ *
+ * @param x x position of the top left corner of the string
+ * @param y y position of the top left corner of the string
+ * @param num Integer to print
+ * @param fontColor Color to draw the string as (RGB565 format)
+ * @param bgColor Background color of the string (RGB565 format)
+ */
 void LcdDrawInt(uint16_t x, uint16_t y, uint32_t num,
 	uint16_t fontColor, uint16_t bgColor) {
 	uint32_t i = 1;
@@ -280,6 +352,15 @@ void LcdDrawInt(uint16_t x, uint16_t y, uint32_t num,
 	}
 }
 
+/*!
+ * @brief Draw a string on the LCD
+ *
+ * @param x x position of the top left corner of the string
+ * @param y y position of the top left corner of the string
+ * @param hex Hexadecimal number to print
+ * @param fontColor Color to draw the string as (RGB565 format)
+ * @param bgColor Background color of the string (RGB565 format)
+ */
 void LcdDrawHex(uint16_t x, uint16_t y, uint32_t hex,
 	uint16_t fontColor, uint16_t bgColor) {
 	uint32_t i = 1;
@@ -305,9 +386,10 @@ void LcdDrawHex(uint16_t x, uint16_t y, uint32_t hex,
 		i /= 16;
 	}
 }
-#endif
 
-// Configure the FSMC port for LCD
+/*!
+ * @brief Configure the GPIOs and FSMC port for LCD
+ */
 static void initFSMC(void) {
 
 	/*
@@ -519,7 +601,9 @@ static void initFSMC(void) {
 	return;
 }
 
-// Initialize the ILI9341 LCD controller
+/*!
+ * @brief Initialize the ILI9341 LCD controller
+ */
 static void initILI9341(void) {
 	// Hardware reset
 	LCD_RESET_HIGH;

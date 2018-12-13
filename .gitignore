@@ -10,3 +10,4 @@ main
 *.bak
 scripts/*.c
 scripts/*.wav
+doxout/*
