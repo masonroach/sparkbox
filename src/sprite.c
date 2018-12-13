@@ -1,16 +1,40 @@
+/*!
+ * @file sprite.c
+ * @author Mason Roach
+ * @author Patrick Roy
+ * @date Dec 13 2018
+ *
+ * @brief Functions to interact with sprites
+ *
+ * These functions are the basic functions that should be used to interact with
+ * sprites.
+ */
 #include "sprite.h"
 
-// Static functions
+// Static function prototypes
 static uint8_t spritesAllocatedAdd(sprite *inSprite);
 static uint8_t spritesAllocatedRemove(sprite *inSprite);
 
-// Global list to keep track of all initialized sprites
+/*!
+ * @brief Global list to keep track of all initialized sprites
+ */
 spriteList spritesAllocated = {NULL, 0};
 
-// Global list to keep track of sprite layers being shown
+/*!
+ * @brief Global list to keep track of sprite layers being shown
+ */
 spriteList layers = {NULL, 0};
 
-// Display helpful debugging information for the given sprite
+/*!
+ * @brief Display helpful debugging information for the given sprite
+ *
+ * This function displays a debugging screen for a given sprite with information
+ * such as width, height, frames, palette, and cycles through each frame of the
+ * sprite. Not perfect yet, still does not handle alpha values of the sprite,
+ * but still useful for debugging.
+ *
+ * @param inSprite pointer to the sprite to display
+ */
 void drawSpriteDebug(sprite *inSprite) {
 	uint16_t i;
 
@@ -55,11 +79,35 @@ void drawSpriteDebug(sprite *inSprite) {
 	
 }
 
-/*
- te functions
+/*!
+ * @brief Populates a sprite struct
+ *
+ * Populates the given sprite struct with information from a .spr file from the
+ * Sparkbox's SD card.
+ *
+ * @note This function does not allocate memory for the sprite struct itself. It
+ * is up to the user to allocate the memory.
+ *
+ * @param targetSprite Pointer to a sprite struct with allocated memory
+ * @param filename Name of the .spr file on the SD card
+ *
+ * Example of how to initialize a sprite:
+ *
+ * @code{.c}
+ * . . .
+ *
+ * sprite testSprite;
+ *
+ * if (initSprite(&testSprite, "sprite_file.spr")){
+ * 	// ERROR
+ * 	. . .
+ * }
+ *
+ * . . .
+ *
+ * @endcode
  */
-// Create a sprite struct from the given filename
-int8_t initSprite(sprite *targetSprite, TCHAR *filename) {
+int8_t initSprite(sprite *targetSprite, char *filename) {
 	uint8_t buffer[32];
 	uint16_t i;
 
@@ -99,7 +147,7 @@ int8_t initSprite(sprite *targetSprite, TCHAR *filename) {
 	if (targetSprite->palette == NULL) {
 		spritesAllocatedRemove(targetSprite);
 		f_close(&targetSprite->file);
-		return NULL;
+		return NOT_ENOUGH_MEMORY;
 	}
 
 	// Bytes 7-14 : reserved
@@ -115,13 +163,28 @@ int8_t initSprite(sprite *targetSprite, TCHAR *filename) {
 
 }
 
-// Copy one sprite to another
+/*!
+ * @brief Copy one sprite to another
+ *
+ * @param inSprite Sprite to copy data from
+ * @param targetSprite Sprite to copy data to
+ *
+ * @warning This function has not been written yet
+ */
 int8_t copySprite(sprite *inSprite, sprite *targetSprite) {
 	// TODO
 	return 0;
 }
 
-// Frees memory allocated by a sprite
+/*!
+ * @brief Frees memory allocated by a sprite
+ * 
+ * Destroys the sprite by freeing memory of the palette and closing the file on
+ * the SD card. The sprite is also removed from both spritesAllocated and
+ * spriteLayers list.
+ * 
+ * @param inSprite Sprite struct to destroy
+ */
 void destroySprite(sprite *inSprite) {
 
 	// Remove from spritesAllocated and spriteLayers lists
@@ -136,8 +199,14 @@ void destroySprite(sprite *inSprite) {
 	
 }
 
-// Draw the full sprite on the screen. Note: this does not work the same way as
-// video, this is mostly for debugging purposes.
+/*!
+ * @brief Draw the full sprite on the screen
+ * @note This does not work the same way as video, this should only be used for
+ * debugging purposes.
+ * 
+ * @param inSprite Sprite to draw
+ * @return Number of pixels drawn
+ */
 uint32_t drawSprite(sprite *inSprite) {
 	uint8_t temp;
 	uint32_t i;
@@ -173,7 +242,18 @@ uint32_t drawSprite(sprite *inSprite) {
 
 }
 
-// Update sprite positions and frames
+/*!
+ * @brief Update sprite positions and frames
+ *
+ * Updates each sprite in the spriteLayers list. The frame of each sprite will
+ * increment and shift back to the first sprite once the last frame has been
+ * reached. For positions, the x position will move at the speed of the sprite's
+ * xvelocity, and the y position will move at the speed of the sprite's
+ * yvelocity.
+ *
+ * @note Only sprites that are at an assigned layer will be updated with this
+ * function
+ */
 void updateSprites(void) {
 	uint8_t layer;
 	
@@ -193,36 +273,56 @@ void updateSprites(void) {
 
 }
 
-// Set the xpos value of the given sprite
+/*!
+ * @brief Set the xpos value of the given sprite
+ *
+ * @param inSprite Pointer to the sprite struct to change
+ * @param x New x value
+ */
 void spriteSetXpos(sprite *inSprite, int16_t x) {
 	inSprite->xpos = x;
 }
 
-// Set the ypos value of the given sprite
+/*!
+ * @brief Set the ypos value of the given sprite
+ *
+ * @param inSprite Pointer to the sprite struct to change
+ * @param y New y value
+ */
 void spriteSetYpos(sprite *inSprite, int16_t y) {
 	inSprite->ypos = y;
 }
 
-// Set the xpos and ypos value of the given sprite
+/*!
+ * @brief Set the xpos and ypos value of the given sprite
+ *
+ * @param inSprite Pointer to the sprite struct to change
+ * @param x New x value
+ * @param y New y value
+ */
 void spriteSetPos(sprite *inSprite, int16_t x, int16_t y) {
 	inSprite->xpos = x;
 	inSprite->ypos = y;
 }
 
-// Set the flag bits of the given sprite
-// X0000000 Hide: if set to 1, will not draw the sprite on the LCD
-// 0X000000 Animated: if set to 1, the sprite will cycle through frames
-// 00X00000 Reserved
-// 000X0000 Reserved
-// 0000X000 Reserved
-// 00000X00 Reserved
-// 000000X0 Reserved
-// 0000000X Reserved
+/*!
+ * @brief Set the flag bits of the given sprite
+ *
+ * @param inSprite Pointer to the sprite struct to change
+ * @param flagVals New flag values
+ *
+ * @see SPRITE_FLAG
+ */
 void spriteSetFlags(sprite *inSprite, uint8_t flagVals) {
 	inSprite->flags = flagVals;
 }
 
-// Set or clear the hide flag of the given sprite
+/*!
+ * @brief Set or clear the hide flag of the given sprite
+ * 
+ * @param inSprite Pointer to the sprite struct to change
+ * @param hideEnable single bit to either set or clear the HIDE flag
+ */
 void spriteHide(sprite *inSprite, uint8_t hideEnable) {
 	if (hideEnable) {
 		inSprite->flags |= HIDE;	// Set the hide flag
@@ -231,7 +331,12 @@ void spriteHide(sprite *inSprite, uint8_t hideEnable) {
 	}
 }
 
-// Set or clear the animate flag of the given sprite
+/*!
+ * @brief Set or clear the animate flag of the given sprite
+ *
+ * @param inSprite Pointer to the sprite struct to change
+ * @param animationEnable single bit to either set or clear the ANIMATED flag
+ */
 void spriteAnimate(sprite *inSprite, uint8_t animationEnable) {
 	if (animationEnable) {
 		inSprite->flags |= ANIMATED;	// Set the animated flag
@@ -240,16 +345,27 @@ void spriteAnimate(sprite *inSprite, uint8_t animationEnable) {
 	}
 }
 
-// Set a palette color of a sprite to a new given color
-void spriteSetPaletteColor(sprite *inSprite, uint8_t num, uint16_t color) {
-	inSprite->palette[num] = color;
+/*!
+ * @brief Set a palette color of a sprite to a new given color
+ *
+ * @param inSprite Pointer to the sprite struct to change
+ * @param index Index of the palette color to change, 0 <= index <= 14 
+ * @param color New color to place in the palette (RGB565 format)
+ */
+void spriteSetPaletteColor(sprite *inSprite, uint8_t index, uint16_t color) {
+	inSprite->palette[index] = color;
 }
 
 /*
  * spritesAllocated functions
  */
-// Add a sprite pointer to the spritesAllocated list
-// Return 0 on success, !0 on failure
+/*!
+ * @brief Add a sprite pointer to the spritesAllocated list
+ *
+ * @param inSprite Pointer of sprite to add to the list
+ *
+ * @return 0 on success, !0 on failure
+ */
 static uint8_t spritesAllocatedAdd(sprite *inSprite) {
 	sprite **newPointer;
 
@@ -277,8 +393,13 @@ static uint8_t spritesAllocatedAdd(sprite *inSprite) {
 	return 0;
 }
 
-// Add a sprite pointer to the spritesAllocated list
-// Return 0 on success, !0 on failure
+/*!
+ * @brief Remove a sprite pointer to the spritesAllocated list
+ * 
+ * @param inSprite Pointer to the sprite to remove from the list
+ *
+ * @return 0 on success, !0 on failure
+ */
 static uint8_t spritesAllocatedRemove(sprite *inSprite) {
 	uint8_t i;
 	
@@ -297,8 +418,14 @@ static uint8_t spritesAllocatedRemove(sprite *inSprite) {
 /*
  * spriteLayer functions
  */
-// Add a sprite pointer to the spriteLayer list at the given position
-// Return 0 on success, !0 on failure
+/*!
+ * @brief Add a sprite pointer to the spriteLayer list at the given position
+ *
+ * @param inSprite Pointer to the sprite to add to the list
+ * @param layer Layer number to add the sprite to
+ *
+ * @return 0 on success, !0 on failure
+ */
 uint8_t spriteLayersInsert(sprite *inSprite, uint8_t layer) {
 	uint8_t i;
 	sprite **newPointer;
@@ -332,8 +459,15 @@ uint8_t spriteLayersInsert(sprite *inSprite, uint8_t layer) {
 	return 0;
 }
 
-// Append a sprite pointer to the spriteLayer list
-// Return 0 on success, !0 on failure
+/*!
+ * @brief Append a sprite pointer to the spriteLayer list
+ *
+ * Adds the sprite to the end of the list, which will be the top-most layer
+ * 
+ * @param inSprite Pointer to the sprite to add
+ *
+ * @return 0 on success, !0 on failure
+ */
 uint8_t spriteLayersAdd(sprite *inSprite) {
 	sprite **newPointer;
 
@@ -361,8 +495,13 @@ uint8_t spriteLayersAdd(sprite *inSprite) {
 	return 0;
 }
 
-// Remove the given sprite from the spriteLayers list
-// Return 0 on success, !0 on failure
+/*!
+ * @brief Remove the given sprite from the spriteLayers list
+ *
+ * @param inSprite Pointer to sprite to remove from the list
+ *
+ * @return 0 on success, !0 on failure
+ */
 uint8_t spriteLayersRemove(sprite *inSprite) {
 	uint8_t i;
 	
@@ -380,8 +519,12 @@ uint8_t spriteLayersRemove(sprite *inSprite) {
 	return 0;
 }
 
-// For every sprite in the layers, move their file pointers to beginning of
-// their current frame
+/*!
+ * @brief For every sprite in the spriteLayers, move their file pointers to
+ * beginning of their current frame
+ *
+ * @return 0 on success, !0 on failure
+ */
 uint8_t seekStartOfFrames(void) {
 	uint32_t offset;
 	uint8_t layer;
