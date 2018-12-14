@@ -78,12 +78,12 @@ void lcdTest(void) {
 	uint8_t leds = 0x00;
 	sprite testSprite, topSprite;
 
-	if (initSprite(&topSprite, (TCHAR *)"wolf.spr")){
+	if (initSprite(&topSprite, "wolf.spr")){
 		// ERROR
 		ledError(LED_ERROR);
 	}
 
-	if (initSprite(&testSprite, (TCHAR *)"dog.spr")){
+	if (initSprite(&testSprite, "doggo.spr")){
 		// ERROR
 		ledError(LED_ERROR);
 	}
@@ -111,7 +111,7 @@ void lcdTest(void) {
 		testSprite.yvelocity = (BUTTON_DOWN - BUTTON_UP)*5;
 		updateFrame();
 		ledMap(leds++);
-		delayms(50);
+		delayms(5);
 	}
 	delayms(50);
 	while (readButton());
