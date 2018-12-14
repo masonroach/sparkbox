@@ -39,8 +39,9 @@
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4xx_hal.h"
 extern DMA_HandleTypeDef hdma_dac1;
-
+extern uint8_t transferSize;
 extern DMA_HandleTypeDef hdma_tim1_up;
+
 /* USER CODE BEGIN 0 */
 
 /* USER CODE END 0 */
@@ -106,8 +107,17 @@ void HAL_DAC_MspInit(DAC_HandleTypeDef* hdac)
     hdma_dac1.Init.Direction = DMA_MEMORY_TO_PERIPH;
     hdma_dac1.Init.PeriphInc = DMA_PINC_DISABLE;
     hdma_dac1.Init.MemInc = DMA_MINC_ENABLE;
-    hdma_dac1.Init.PeriphDataAlignment = DMA_PDATAALIGN_HALFWORD;
-    hdma_dac1.Init.MemDataAlignment = DMA_MDATAALIGN_HALFWORD;
+
+	if (transferSize == 16) {
+		/* 16 bits per sample, transfer half words */
+    	hdma_dac1.Init.PeriphDataAlignment = DMA_PDATAALIGN_HALFWORD;
+    	hdma_dac1.Init.MemDataAlignment = DMA_MDATAALIGN_HALFWORD;
+	} else {
+		/* 8 bits per sample, transfer bytes */
+		transferSize = 8;
+    	hdma_dac1.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
+    	hdma_dac1.Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;
+	}
     hdma_dac1.Init.Mode = DMA_CIRCULAR;
     hdma_dac1.Init.Priority = DMA_PRIORITY_HIGH;
     hdma_dac1.Init.FIFOMode = DMA_FIFOMODE_DISABLE;

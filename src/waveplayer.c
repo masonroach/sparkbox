@@ -1,11 +1,11 @@
 #include "waveplayer.h"
-#include "led.h"
-#include "lcd.h"
 
 static void WavePlayer_ReadAndParse(WAV_Format* WAVE_Format);
 static void ToggleBufferSign(uint32_t* pBuffer, uint32_t BufferSize);
 static uint32_t ReadUnit(uint8_t *buffer, uint8_t idx, uint8_t NbrOfBytes, Endianness BytesFormat);
 
+// Number of bits per DMA transfer
+uint8_t transferSize = 16;
 // Buffers for playing from SD card
 uint16_t *audioBuffer;
 
@@ -87,6 +87,9 @@ uint8_t WAV_Import(const char* FileName, WAV_Format* W)
 	UINT BytesRead;
 	FRESULT res;
 	
+	// 
+	if (FileName == NULL || W == NULL) return -1;
+	
 	// Copy Filename to WAV_Format struct
 	strcpy(W->Filename, FileName);
  
@@ -99,7 +102,7 @@ uint8_t WAV_Import(const char* FileName, WAV_Format* W)
 	// Open file and error check
 	res = f_open(&F, W->Filename, FA_READ);
 	if (res != FR_OK) {
-		W->Error = FileReadFailed;
+		W->Error = Bad_FileRead;
 		return W->Error;
 	}
 
@@ -109,7 +112,7 @@ uint8_t WAV_Import(const char* FileName, WAV_Format* W)
 	// Read WAV data and error check
 	res = f_read(&F, audioBuffer, (uint32_t)(W->DataSize), &BytesRead);
 	if (res != FR_OK) {
-		W->Error = FileReadFailed;
+		W->Error = Bad_FileRead;
 		return W->Error;
 	}
 	
@@ -158,8 +161,8 @@ void WAV_Play(WAV_Format* W, int numPlays)
 	// Pause old WAV file
 	WAV_Pause();
 	
-	// Do not play if number of plays is 0
-	if (numPlays == 0 || W->Error != Valid_WAVE_File) return;
+	// Do not play if number of plays is 0 or error
+	if (numPlays == 0 || W == NULL || W->Error != Valid_WAVE_File) return;
 
 	// If numPlays is negative, set it to REPEAT_ALWAYS (-1)
 	// This allows interrupt to call this function with a decrement
@@ -171,15 +174,22 @@ void WAV_Play(WAV_Format* W, int numPlays)
 	/* Save data for DMA interrupt */
 	numberPlays = numPlays;
 
+	/* Save the transfer size of the current WAV file */
+	transferSize = playingWav->BitsPerSample;
+
 	/* Deinitialize everything */
     HAL_DAC_Stop(&hdac, DAC_CHANNEL_1);
     HAL_DAC_Stop_DMA(&hdac, DAC_CHANNEL_1);
+	HAL_DAC_DeInit(&hdac);
 
 	// Set period based on sample rate
 	HAL_TIM_Base_DeInit(&htim6); // deinit
 	htim6.Init.Period = W->TIM6ARRValue; // set ARR value
 	HAL_TIM_Base_Init(&htim6); // init
 	
+	// Initialize DAC with correct transfer size
+	HAL_DAC_Init(&hdac);
+
 	// Start TIM6 and turn on amplifier
 	WAV_Resume();
 
@@ -189,7 +199,7 @@ void WAV_Play(WAV_Format* W, int numPlays)
 	// Start DAC with DMA (12 Bit DAC)
 	// 12 bit left alignment ignores 4 lsb of 16 bit data
 	HAL_DAC_Start_DMA(&hdac, DAC_CHANNEL_1, (uint32_t*)audioBuffer,
-		playingWav->DataSize / 2, DAC_ALIGN_12B_L);
+		playingWav->DataSize / 2, DAC_ADDR);
 }
 
 void WAV_Pause(void)
@@ -234,14 +244,14 @@ void WavePlayer_ReadAndParse(WAV_Format* WAVE_Format)
 
 	res = f_open(&F, WAVE_Format->Filename, FA_READ);
 	if (res) {
-		WAVE_Format->Error = FileReadFailed;
+		WAVE_Format->Error = Bad_FileRead;
 		return;
 	}
 
 	
 	res = f_read(&F, TempBuffer, _MAX_SS, &BytesRead);
 	if (res) {
-		WAVE_Format->Error = FileReadFailed;
+		WAVE_Format->Error = Bad_FileRead;
 		return;
 	}
 
@@ -249,7 +259,7 @@ void WavePlayer_ReadAndParse(WAV_Format* WAVE_Format)
 	temp = ReadUnit((uint8_t*)TempBuffer, 0, 4, BigEndian);
 	if(temp != CHUNK_ID){
 		f_close(&F);
-		WAVE_Format->Error = Unvalid_RIFF_ID;
+		WAVE_Format->Error = Bad_RIFF_ID;
 		return;
 	}
 
@@ -260,7 +270,7 @@ void WavePlayer_ReadAndParse(WAV_Format* WAVE_Format)
 	temp = ReadUnit((uint8_t*)TempBuffer, 8, 4, BigEndian);
 	if(temp != FILE_FORMAT){
 		f_close(&F);
-		WAVE_Format->Error = Unvalid_WAVE_Format;
+		WAVE_Format->Error = Bad_WAVE_Format;
 		return;
 	}
 
@@ -268,7 +278,7 @@ void WavePlayer_ReadAndParse(WAV_Format* WAVE_Format)
 	temp = ReadUnit((uint8_t*)TempBuffer, 12, 4, BigEndian);
 	if(temp != FORMAT_ID){
 		f_close(&F);
-		WAVE_Format->Error = Unvalid_FormatChunk_ID;
+		WAVE_Format->Error = Bad_FormatChunk_ID;
 		return;
 	}
 	/* Read the length of the 'fmt' data, must be 0x10 -------------------------*/
@@ -280,7 +290,7 @@ void WavePlayer_ReadAndParse(WAV_Format* WAVE_Format)
 	WAVE_Format->FormatTag = ReadUnit((uint8_t*)TempBuffer, 20, 2, LittleEndian);
 	if(WAVE_Format->FormatTag != WAVE_FORMAT_PCM){
 		f_close(&F);
-		WAVE_Format->Error = Unsupporetd_FormatTag;
+		WAVE_Format->Error = Bad_FormatTag;
 		return;
 	}
 
@@ -289,7 +299,7 @@ void WavePlayer_ReadAndParse(WAV_Format* WAVE_Format)
 	
 	if(WAVE_Format->NumChannels != CHANNEL_MONO){
 		f_close(&F);
-		WAVE_Format->Error = Unsupporetd_Number_Of_Channel;
+		WAVE_Format->Error = Bad_Number_Of_Channel;
 		return;
 	}
 
@@ -297,9 +307,10 @@ void WavePlayer_ReadAndParse(WAV_Format* WAVE_Format)
 	WAVE_Format->SampleRate = ReadUnit((uint8_t*)TempBuffer, 24, 4, LittleEndian);
 	/* Update the OCA value according to the .WAV file Sample Rate */
 	// Only allow up to 50 ksps rate to ensure buffer has enough time to update
-	if (WAVE_Format->SampleRate < 6000 || WAVE_Format->SampleRate > 50000) {
+	if (WAVE_Format->SampleRate < SAMPLE_RATE_MIN || 
+		WAVE_Format->SampleRate > SAMPLE_RATE_MAX) {
 			f_close(&F);
-			WAVE_Format->Error = Unsupporetd_Sample_Rate;
+			WAVE_Format->Error = Bad_Sample_Rate;
 			return;
 	}
 	
@@ -315,9 +326,10 @@ void WavePlayer_ReadAndParse(WAV_Format* WAVE_Format)
 	/* Read the number of bits per sample --------------------------------------*/
 	WAVE_Format->BitsPerSample = ReadUnit((uint8_t*)TempBuffer, 34, 2, LittleEndian);
 	
-	if (WAVE_Format->BitsPerSample != BITS_PER_SAMPLE_16) {
+	if (WAVE_Format->BitsPerSample != BITS_PER_SAMPLE_16 &&
+		WAVE_Format->BitsPerSample != BITS_PER_SAMPLE_8) {
 		f_close(&F);
-		WAVE_Format->Error = Unsupporetd_Bits_Per_Sample;
+		WAVE_Format->Error = Bad_Bits_Per_Sample;
 		return;
 	}
 	WAVE_Format->SpeechDataOffset = 36;
@@ -327,14 +339,14 @@ void WavePlayer_ReadAndParse(WAV_Format* WAVE_Format)
 		temp = ReadUnit((uint8_t*)TempBuffer, 36, 2, LittleEndian);
 		if(temp != 0x00){
 			f_close(&F);
-			WAVE_Format->Error = Unsupporetd_ExtraFormatBytes;
+			WAVE_Format->Error = Bad_ExtraFormatBytes;
                         return;
 		}
 		/* Read the Fact chunk, must be 'fact' -----------------------------------*/
 		temp = ReadUnit((uint8_t*)TempBuffer, 38, 4, BigEndian);
 		if(temp != FACT_ID){
 			f_close(&F);
-			WAVE_Format->Error = Unvalid_FactChunk_ID;
+			WAVE_Format->Error = Bad_FactChunk_ID;
                         return;
 		}
 		/* Read Fact chunk data Size ---------------------------------------------*/
@@ -346,7 +358,7 @@ void WavePlayer_ReadAndParse(WAV_Format* WAVE_Format)
 	WAVE_Format->SpeechDataOffset += 4;
 	if(temp != DATA_ID){
 		f_close(&F);
-		WAVE_Format->Error = Unvalid_DataChunk_ID;
+		WAVE_Format->Error = Bad_DataChunk_ID;
 		return;
 	}
 
@@ -355,7 +367,7 @@ void WavePlayer_ReadAndParse(WAV_Format* WAVE_Format)
 
 	if (temp > 50000 || temp < 0) {
 		f_close(&F);
-		WAVE_Format->Error = Unvalid_DataSize;
+		WAVE_Format->Error = Bad_DataSize;
 		return;
 	}
 	WAVE_Format->DataSize = temp;
