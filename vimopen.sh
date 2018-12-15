@@ -26,4 +26,6 @@ do
 	fi
 done
 
+result+=" -c 'tabn'"
+
 eval $result

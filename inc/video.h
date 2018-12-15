@@ -13,7 +13,7 @@
 
 // Number of rows per transfer
 // NOTE: Use a multiple of 2
-#define LCD_TRANSFER_ROWS 2
+#define LCD_TRANSFER_ROWS 8
 
 // Number of buffer transfers to fill LCD
 #define NUM_TRANSFERS (LCD_HEIGHT / LCD_TRANSFER_ROWS)
@@ -44,6 +44,5 @@ extern spriteList layers;
 
 int8_t initVideo(void);
 void updateFrame(void);
-uint8_t getNextRows(void);
 
 #endif

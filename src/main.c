@@ -76,19 +76,19 @@ void systemInit(void) {
 
 void lcdTest(void) {
 	uint8_t leds = 0x00;
-	sprite testSprite, topSprite;
+	sprite playerSprite, topSprite;
 
-	if (initSprite(&topSprite, "wolf.spr")){
+	if (initSprite(&topSprite, "colorTest.spr")){
 		// ERROR
 		ledError(LED_ERROR);
 	}
 
-	if (initSprite(&testSprite, "doggo.spr")){
+	if (initSprite(&playerSprite, "dog.spr")){
 		// ERROR
 		ledError(LED_ERROR);
 	}
 
-	drawSpriteDebug(&testSprite);
+	drawSpriteDebug(&playerSprite);
 
 	while (!readButton());
 	delayms(50);
@@ -97,22 +97,25 @@ void lcdTest(void) {
 	// Test getting a row for video
 	topSprite.ypos = (LCD_HEIGHT - topSprite.height)/2;
 	topSprite.xpos = (LCD_WIDTH - topSprite.width)/2;
-	testSprite.xpos = 220;
-	testSprite.ypos = 170;
+	playerSprite.xpos = 220;
+	playerSprite.ypos = 170;
 	spriteLayersAdd(&topSprite);
-	spriteLayersAdd(&testSprite);
+	spriteLayersAdd(&playerSprite);
 	delayms(1000);
 
-	testSprite.curFrame = 0;
+	playerSprite.curFrame = 0;
 
 	// Test frame updating with DMA
 	while (!readButton()) {
-		testSprite.xvelocity = (BUTTON_RIGHT - BUTTON_LEFT)*5;
-		testSprite.yvelocity = (BUTTON_DOWN - BUTTON_UP)*5;
+		playerSprite.xvelocity = (BUTTON_RIGHT - BUTTON_LEFT)*5;
+		playerSprite.yvelocity = (BUTTON_DOWN - BUTTON_UP)*5;
+		topSprite.xvelocity = (BUTTON_B - BUTTON_A)*5;
+		topSprite.yvelocity = (BUTTON_X - BUTTON_Y)*5;
 		updateFrame();
 		ledMap(leds++);
 		delayms(5);
 	}
+
 	delayms(50);
 	while (readButton());
 	ledAllOff();
