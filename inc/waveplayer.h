@@ -9,7 +9,7 @@
  * These functions are used to play a .WAV file using the FatFs library.
  *
  * Pins in use:
- * 
+ *
  * | Name | Pin | Use               |
  * |------|-----|:-----------------:|
  * | DAC1 | PA4 | DAC 1 output      |
@@ -26,8 +26,28 @@
 #include "clock.h"
 #include "ff.h"
 
+/*! 6ksps ensures no distortion of 3kHz audio (specification max) */
+#define SAMPLE_RATE_MIN 6000
+/*! DVDs have rate of 48000, rounded to 50000 to support this */
+#define SAMPLE_RATE_MAX 50000
+
+/*! Constant for repeating until WAV_Pause() is called */
+#define REPEAT_ALWAYS -1
+
+/*! Clock frequency of Timer 6 */
+#define TIM6FREQ 84000000UL
+
+/*! Size of the buffer allocated for audio files */
+#define AUD_BUF_BYTES 25000
+#define AUD_BUF_SAMPLES (AUD_BUF_BYTES / 2)
+
+/*! 16 bit data, left align. 8 bit data, right align */
+#define DAC_ADDR (transferSize==BITS_PER_SAMPLE_8 ? \
+DAC_ALIGN_12B_R: DAC_ALIGN_12B_L)
+
 /*!
- * @name Defines and Enumerations provided in waveplayer demo by STM
+ * @name Defines and Enumerations from STM's waveplayer demo for STM32072B-EVAL,
+ * and sparkbox employees claim no credit for them
  * @{
  */
 
@@ -65,7 +85,7 @@ typedef struct
 typedef enum
 {
 	Valid_WAVE_File = 0, /*!< No error */
-	Bad_RIFF_ID, /*!< "RIFF" text invalid */ 
+	Bad_RIFF_ID, /*!< "RIFF" text invalid */
 	Bad_WAVE_Format, /*!< "WAVE" text invalid */
 	Bad_FormatChunk_ID, /*!< "fmt" text invalid */
 	Bad_FormatTag, /*!< Compressed audio not supported */
@@ -99,34 +119,54 @@ typedef enum
 #define BITS_PER_SAMPLE_8 8
 #define BITS_PER_SAMPLE_16 16
 
-/* 6ksps ensures no distortion of 3kHz audio (specification max) */
-#define SAMPLE_RATE_MIN 6000
-/* DVDs have rate of 48000, rounded to 50000 to support this */
-#define SAMPLE_RATE_MAX 50000
+/* @} */
 
-/* Constant for repeating until WAV_Pause() is called */
-#define REPEAT_ALWAYS -1
-
-/*! Clock frequency of Timer 6 */
-#define TIM6FREQ 84000000UL
-
-/*! Size of the buffer allocated for audio files */
-#define AUD_BUF_BYTES 25000
-#define AUD_BUF_SAMPLES (AUD_BUF_BYTES / 2)
-
-/* 16 bit data, left align. 8 bit data, right align */
-#define DAC_ADDR (transferSize==BITS_PER_SAMPLE_8 ? \
-DAC_ALIGN_12B_R: DAC_ALIGN_12B_L)
 
 /*!
- * @brief Initializes wave player peripherals and allocates memory for audio
- *
- * 
+ * @brief Initializes wave player and allocates memory for audio buffer
  */
 void WAV_Init(void);
+
+/*!
+ * @brief Import a .WAV file from a FatFs file system
+ *
+ * This function reads a .WAV file header into WAVE_Format struct
+ * to which W points. With no errors and a size of less than 25 kB,
+ * the full audio data is read into memory
+ *
+ * @param FileName Full path to the specified .WAV file
+ * @param W Pointer to corresponding WAVE_Format struct
+ *
+ * @return Error code specified by the ErrorCode enum
+ */
 uint8_t WAV_Import(const char* FileName, WAV_Format* W);
+
+/*!
+ * @brief Play a .WAV file that has been successfully imported
+ *
+ * This function plays a .WAV file imported with WAV_Import(). If numPlays is
+ * 0, nothing will happen. If numPlays is negative, the .WAV file will repeat
+ * until WAV_Pause() or WAV_Destroy() are called.
+ *
+ * @param W Pointer to a WAVE_Format previously imported
+ * @param numPlays Number of times to repeat the .WAV file
+ *
+ */
 void WAV_Play(WAV_Format* W, int numPlays);
+
+/*!
+ * @brief Pauses the currently playing .WAV file and turns off the audio amp
+ */
 void WAV_Pause(void);
+
+/*!
+ * @brief Resumes playing the imported .WAV file and turns on the audio amp
+ */
 void WAV_Resume(void);
+
+/*!
+ * @brief Stops playing the .WAV file and deinitializes the .WAV peripherals
+ */
+void WAV_Destroy(void);
 
 #endif

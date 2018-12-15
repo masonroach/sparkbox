@@ -49,7 +49,7 @@ grid on;
 
 % Generate WAV file data here
 % Find subchunksize and chunksize
-subchunkSize = length(y) * 2 - 2;
+subchunkSize = length(y) * 2;
 chunkSize = 36 + subchunkSize;
 
 % Always overwrite previously existing file
