@@ -8,6 +8,8 @@ static FRESULT readToVideoBuffer(void);
 uint16_t *videoBuffer1;
 uint16_t *videoBuffer2;
 
+uint32_t **fetched;
+
 // 0 if currently playing buffer 2 (reading 1)
 // 1 if currently playing buffer 1 (reading 2)
 uint8_t videoBuffer = 0;
@@ -30,15 +32,25 @@ FIL BUF;
 int8_t initVideo(void)
 {
 	TIM_MasterConfigTypeDef sMasterConfig;
+	uint8_t i;
 
 	// Allocate memory for video buffers
 	videoBuffer1 = (uint16_t*)malloc(sizeof(uint8_t) * VID_BUF_BYTES);
 	videoBuffer2 = (uint16_t*)malloc(sizeof(uint8_t) * VID_BUF_BYTES);
 
+	// Allocate first dimension of 2D array
+	fetched = (uint32_t**)malloc(sizeof(uint32_t*) * MAX_LAYERS);
+
+	// Allocate second dimension of 2D array
+	for (i=0; i<MAX_LAYERS; i++) {
+		fetched[i] = (uint32_t*)malloc(sizeof(uint8_t) * (LCD_WIDTH / 2));
+		if (fetched[i] == NULL) return -1;
+	}
+
 	// If memory allocation failed, stop here and return
 	if (videoBuffer1 == NULL
 		|| videoBuffer2 == NULL
-//		|| indexBuffer == NULL
+		|| fetched == NULL
 	) return -1;
 
 	// Initialize DMA for video
@@ -199,7 +211,7 @@ void TIM7_IRQHandler(void)
     bufferTransfers++;
 
 	// Determine if we need to read more data or if we are done
-    if (bufferTransfers < NUM_TRANSFERS) {
+    if (bufferTransfers <= NUM_TRANSFERS) {
         // Read new data into other buffer
         readToVideoBuffer();
     } else {
@@ -224,27 +236,26 @@ static uint8_t getNextRows(void) {
 	uint8_t l;
 	uint16_t pixel;
 	uint8_t lcdRow;
-	uint8_t paletteIndex;
-	static uint32_t fetched[MAX_LAYERS];
-	static uint8_t index[MAX_LAYERS] = {0};
-
-	if (bufferTransfers == 0) {
-		for (l = 0; l < MAX_LAYERS; l++) {
-			fetched[l] = 0;
-			index[l] = 0;
-		}
-	}
+	uint32_t paletteIndex;
 
 	// Do 2 rows at a time
 	for (row = 0; row < LCD_TRANSFER_ROWS; row++) {
 	
 		lcdRow = bufferTransfers*LCD_TRANSFER_ROWS + row;
-	
-		// Iterate through finding the value fo each pixel in the row
-		for (pixel = 0; pixel < LCD_WIDTH; pixel++) {
 
-			// Initial value
-			READ_BUFFER[pixel + LCD_WIDTH*row] = VIDEO_BG;
+		// Read a row of pixels for all sprites with a row on this row
+		for (l = 0; l<layers.size; l++) {		
+			if ((lcdRow >= layers.spr[l]->ypos) &&
+		 	 (lcdRow < layers.spr[l]->ypos + layers.spr[l]->height)) {
+				if (f_read(&layers.spr[l]->file, fetched[l], layers.spr[l]->width / 2, NULL)) {
+					ledError(LED_ERROR);
+					while(1);
+				}
+			}
+		}
+
+		// Iterate through finding the value for each pixel in the row
+		for (pixel = 0; pixel < LCD_WIDTH; pixel++) {
 
 			// Check each layer for a valid pixel
 			for (l = 0; l < layers.size; l++) {
@@ -255,19 +266,8 @@ static uint8_t getNextRows(void) {
 				 (pixel >= layers.spr[l]->xpos) &&
 				 (pixel < layers.spr[l]->xpos + layers.spr[l]->width)) {
 
-					// Valid bounds, fetch the pixel of the sprite
-					if (index[l] == 0) {
-						if (f_read(&layers.spr[l]->file, &fetched[l], 4, NULL)) {	// Fetch 8 pixels of data
-							ledError(LED_ERROR);
-							while(1);
-						}
-						index[l] = 7;	// Reset the index value
-					} else {
-						// Shift the index before checking the pixel
-						index[l]--;
-					}
-
-					paletteIndex = (fetched[l] >> ((7-index[l])*4)) & 0x0F;
+					// Find pallette index from previously read values
+					paletteIndex = (fetched[l][(pixel-(layers.spr[l]->xpos))/8] >> ((pixel % 8)*4)) & 0x000F;
 
 					// Check the alpha value of the pixel
 					if (paletteIndex) {
@@ -275,34 +275,17 @@ static uint8_t getNextRows(void) {
 						// Pixel is valid, get the color
 						READ_BUFFER[pixel + LCD_WIDTH*row] = layers.spr[l]->palette[paletteIndex - 1];
 						break;
+					} else {
+						// Default background color
+						READ_BUFFER[pixel + LCD_WIDTH*row] = VIDEO_BG;
 					}
 
+				} else {
+					// Default background color
+					READ_BUFFER[pixel + LCD_WIDTH*row] = VIDEO_BG;
 				}
+				
 			
-			}
-
-			// For the rest of the pixels, increment index but don't check color
-			for (l++ ; l < layers.size; l++) {
-				// Check bounds of the sprite
-				if ((lcdRow >= layers.spr[l]->ypos) &&
-				 (lcdRow < layers.spr[l]->ypos + layers.spr[l]->height) &&
-				 (pixel >= layers.spr[l]->xpos) &&
-				 (pixel < layers.spr[l]->xpos + layers.spr[l]->width)) {
-
-					// Valid bounds, fetch the pixel of the sprite
-					if (index[l] == 0) {
-						if (f_read(&layers.spr[l]->file, &fetched[l], 4, NULL)) {	// Fetch 8 pixels of data
-							ledError(LED_ERROR);
-							while(1);
-						}
-						index[l] = 7;	// Reset the index value
-					} else {
-						// Shift the index before checking the pixel
-						index[l]--;
-					}		
-
-				}
-	
 			}
 
 		}

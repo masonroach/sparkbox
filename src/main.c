@@ -113,7 +113,7 @@ void lcdTest(void) {
 		topSprite.yvelocity = (BUTTON_X - BUTTON_Y)*5;
 		updateFrame();
 		ledMap(leds++);
-		delayms(5);
+		delayms(20);
 	}
 
 	delayms(50);

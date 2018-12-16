@@ -528,12 +528,19 @@ uint8_t spriteLayersRemove(sprite *inSprite) {
 uint8_t seekStartOfFrames(void) {
 	uint32_t offset;
 	uint8_t layer;
+	uint32_t yAdjust = 0;
 
 	for (layer = 0; layer < layers.size; layer++){
-
 		// Move file pointer to beginning of sprite frame
 		offset = ((layers.spr[layer]->width * layers.spr[layer]->height) + 1) / 2;
-		f_lseek(&layers.spr[layer]->file, 44 + layers.spr[layer]->curFrame * offset);
+		
+		yAdjust = 0;
+		if (layers.spr[layer]->ypos < 0) {
+			yAdjust = (layers.spr[layer]->ypos * layers.spr[layer]->width) / 2;
+		}
+
+		f_lseek(&layers.spr[layer]->file, 
+		 44 + layers.spr[layer]->curFrame * offset - yAdjust);
 	}
 
 	return 0;
