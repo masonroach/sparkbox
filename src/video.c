@@ -267,7 +267,7 @@ static uint8_t getNextRows(void) {
 				 (pixel < layers.spr[l]->xpos + layers.spr[l]->width)) {
 
 					// Find pallette index from previously read values
-					paletteIndex = (fetched[l][(pixel-(layers.spr[l]->xpos))/8] >> ((pixel % 8)*4)) & 0x000F;
+					paletteIndex = (fetched[l][(pixel-(layers.spr[l]->xpos))/8] >> (((pixel-layers.spr[l]->xpos) % 8)*4)) & 0x000F;
 
 					// Check the alpha value of the pixel
 					if (paletteIndex) {
