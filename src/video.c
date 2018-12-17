@@ -1,13 +1,35 @@
 #include "video.h"
 
 // Static function prototypes
+/*!
+ * @brief Fills a video buffer with data to be sent to the LCD
+ *
+ * @note This function reads from the FatFs file system. On a read fail,
+ * the error LED on the Sparkbox turns on and this program hangs in a 
+ * dead loop
+ *
+ * @return 0 on success
+ */
 static uint8_t getNextRows(void);
+
+/*!
+ * @brief Toggles the video buffers currently playing and reading
+ */
 static void toggleVideoBuffers(void);
+
+/*!
+ * @brief Fills a video buffer using the getNextRows function and
+ * controls flags for read complete 
+ *
+ * @return 0 on success
+ */
 static FRESULT readToVideoBuffer(void);
 
+// Video buffers containing data for the LCD
 uint16_t *videoBuffer1;
 uint16_t *videoBuffer2;
 
+// 2D array storing sprite pallete indexes read from FatFs 
 uint32_t **fetched;
 
 
@@ -21,17 +43,28 @@ uint8_t bufferTransfers = 0;
 #define READ_BUFFER (videoBuffer ? videoBuffer2 : videoBuffer1)
 #define PLAY_BUFFER (videoBuffer ? videoBuffer1 : videoBuffer2)
 
+// Flags used to prevent data writing and reading errors
 uint8_t frameUpdate = 0;
 uint8_t transferComplete = 0;
 uint8_t frameComplete = 0;
 uint8_t readComplete = 0;
 
+// Handles for initialization
 DMA_HandleTypeDef hdma_memtomem_dma2_stream5;
 TIM_HandleTypeDef htim7;
 TIM_HandleTypeDef htim10;
-FIL BUF;
 
-// Initialize timers, DMA, and allocate memory for video buffers
+/*!
+ * @brief Initializes video peripherals
+ *
+ * This function allocates required memory and initializes video peripherals.
+ * These peripherals include Timers 7 and 10 as well as DMA transfers. 
+ *
+ * @note This function allocates memory for both video buffers and a buffer
+ * for reading sprite pixels from the FatFs file system
+ *
+ * @return 0 on success, -1 on failure
+ */
 int8_t initVideo(void)
 {
 	TIM_MasterConfigTypeDef sMasterConfig;
@@ -114,9 +147,9 @@ int8_t initVideo(void)
 }
 
 
-/**
-* @brief This function handles TIM1 update interrupt and TIM10 global interrupt.
-*/
+/*!
+ * @brief This function handles TIM1 update interrupt and TIM10 interrupt
+ */
 void TIM1_UP_TIM10_IRQHandler(void)
 {
 
@@ -126,44 +159,61 @@ void TIM1_UP_TIM10_IRQHandler(void)
 	if (frameUpdate) updateFrame();
 }
 
+/*!
+ * @brief Turn on automatically updating frames
+ *
+ * Calling this function will activate automatically updating frames 
+ * at the frame rate specified by the FPS define statement
+ *
+ */
 void frameUpdateOn(void)
 {
 	frameUpdate = 1;
 }
 
+/*!
+ * @brief Turn off automatically updating frames
+ *
+ * Calling this function will deactivate automatically updating frames.
+ * To update a frame, the user must now call updateFrame() for each new frame
+ *
+ */
 void frameUpdateOff(void)
 {
 	frameUpdate = 0;
 }
 
-
-/*
- * @brief Reads the corrct data into the correct video buffer
+/*!
+ * @brief Fills a video buffer using the getNextRows function and
+ * controls flags for read complete 
  *
- *
+ * @return 0 on success
  */
 static FRESULT readToVideoBuffer(void)
 {
-	// Based on number of transfers left, read correct data into READ_BUFFER
-	// bufferTransfers stores number of unfinished transfers to LCD with DMA
-
-	// Read indexes into indexBuffer from SD
-
-	// Write actual colors to READ_BUFFER
-	
+	// Signal read not complete
 	readComplete = 0;
 
+	// Read
 	getNextRows();
 	
+	// Signal read complete
 	readComplete = 1;
 
 	return FR_OK;
 }
 
-/*
- * @brief Update the frame on the LCD
+/*!
+ * @brief Updates a frame using sprite data and reading from FatFs file system
  *
+ * This function is used to update the frame on screen using two buffers.
+ * While one buffer is filling with new pixel data, the other is sent with DMA
+ * to the LCD. Timer 7 is used to generate interrupts that will read new data if
+ * neccessary.
  *
+ * @note This function will set up interrupts to trigger that will periodically
+ * read from the FatFs file system. The user should not be accessing the FatFs
+ * file system during the time the frame is updating.
  */
 void updateFrame(void)
 {
@@ -185,6 +235,8 @@ void updateFrame(void)
 
 	// read new frame into one videoBuffer
 	readToVideoBuffer();
+
+	// Swap read and play buffers
 	toggleVideoBuffers();
 	
 	// Enable timer 7
@@ -204,23 +256,22 @@ void updateFrame(void)
 	// Increment number of transfers that have started
     bufferTransfers++;
 
+	// Read to the other video buffer
 	readToVideoBuffer();
 
 }
 
-/*
- * Toggles which buffer is being filled and which is being played
+/*!
+ * @brief Toggles the video buffers currently playing and reading
  */
 static void toggleVideoBuffers(void)
 {
     videoBuffer = !videoBuffer;
 }
 
-/**
-	* @brief DMA transfer complete
-	*
-	*
-	*/
+/*!
+ * @brief DMA transfer complete
+ */
 void DMA2_Stream5_IRQHandler(void)
 {
 	// Use HAL library to handle lower level interrupt
@@ -230,7 +281,9 @@ void DMA2_Stream5_IRQHandler(void)
 	transferComplete = 1;
 }
 
-// Time for another DMA transfer
+/*!
+ * @brief Timer 7 interrupt handler
+ */
 void TIM7_IRQHandler(void)
 {
 	HAL_TIM_IRQHandler(&htim7);
@@ -275,6 +328,15 @@ void TIM7_IRQHandler(void)
 
 }
 
+/*!
+ * @brief Fills a video buffer with data to be sent to the LCD
+ *
+ * @note This function reads from the FatFs file system. On a read fail,
+ * the error LED on the Sparkbox turns on and this program hangs in a 
+ * dead loop
+ *
+ * @return 0 on success
+ */
 static uint8_t getNextRows(void) {
 	uint8_t row;
 	uint8_t l;
@@ -291,7 +353,8 @@ static uint8_t getNextRows(void) {
 		for (l = 0; l<layers.size; l++) {		
 			if ((lcdRow >= layers.spr[l]->ypos) &&
 		 	 (lcdRow < layers.spr[l]->ypos + layers.spr[l]->height)) {
-				if (f_read(&layers.spr[l]->file, fetched[l], layers.spr[l]->width / 2, NULL)) {
+				if (f_read(&layers.spr[l]->file, fetched[l], 
+				           layers.spr[l]->width / 2, NULL)) {
 					ledError(LED_ERROR);
 					while(1);
 				}
@@ -311,13 +374,17 @@ static uint8_t getNextRows(void) {
 				 (pixel < layers.spr[l]->xpos + layers.spr[l]->width)) {
 
 					// Find pallette index from previously read values
-					paletteIndex = (fetched[l][(pixel-(layers.spr[l]->xpos))/8] >> (((pixel-layers.spr[l]->xpos) % 8)*4)) & 0x000F;
+					paletteIndex = (fetched[l][(pixel-(layers.spr[l]->xpos))/8] >> 
+					               (((pixel-layers.spr[l]->xpos) % 8)*4)) & 0x000F;
 
 					// Check the alpha value of the pixel
 					if (paletteIndex) {
 
 						// Pixel is valid, get the color
-						READ_BUFFER[pixel + LCD_WIDTH*row] = layers.spr[l]->palette[paletteIndex - 1];
+						READ_BUFFER[pixel+LCD_WIDTH*row] = 	
+						  layers.spr[l]->palette[paletteIndex-1];
+
+						// Found a non transparent pixel, skip to next pixel
 						break;
 					} else {
 						// Default background color

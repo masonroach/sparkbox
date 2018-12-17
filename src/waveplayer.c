@@ -1,3 +1,13 @@
+/*!
+ * @file waveplayer.c
+ * @author Mason Roach
+ * @author Patrick Roy
+ * @date Dec 13 2018
+ *
+ * @brief Functions to control audio
+ *
+ * These functions import and play audio files from the SD card
+ */
 #include "waveplayer.h"
 
 /*!

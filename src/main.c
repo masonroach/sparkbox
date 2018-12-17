@@ -85,7 +85,7 @@ void lcdTest(void) {
 		ledError(LED_ERROR);
 	}
 
-	if (initSprite(&sprite3, "wolf.spr")){
+	if (initSprite(&sprite3, "colorTest.spr")){
 		// ERROR
 		ledError(LED_ERROR);
 	}
