@@ -1,3 +1,7 @@
+/*!
+ *
+ *
+ */
 #include "video.h"
 
 // Static function prototypes

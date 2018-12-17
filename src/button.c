@@ -1,7 +1,32 @@
+/*!
+ * @file button.c
+ * @author Mason Roach
+ * @author Patrick Roy
+ * @date Dec 13 2018
+ *
+ * @brief Functions and define statements to interact with the buttons
+ *
+ * After initializing the buttons, the interrupt handlers will automatically
+ * update the values of all buttons except the start button as they change
+ * state. 
+ *
+ */
+
 #include "button.h"
 
+/*!
+ * @brief Global variable with one bit storing the state of one button
+ */
 volatile uint8_t buttons = 0x00;
 
+/*!
+ * @brief Initialize all buttons
+ *
+ * This function initializes the button GPIO pins to inputs and configures
+ * external interrupts to trigger when the state of the left, right, up, down,
+ * a, b, x, or y buttons change.
+ *
+ */
 void initButtons(void){
 
     // Enable clock of PORTF, PORTA, and SYSCFG
@@ -51,6 +76,7 @@ void initButtons(void){
     // Get initial values
     buttons = (uint8_t)(GPIOF->IDR);
 
+	// Set priority of all interrupts to unused values
     NVIC_SetPriority(EXTI0_IRQn, 0x20);
     NVIC_SetPriority(EXTI1_IRQn, 0x21);
 	NVIC_SetPriority(EXTI2_IRQn, 0x22);
@@ -58,15 +84,20 @@ void initButtons(void){
     NVIC_SetPriority(EXTI4_IRQn, 0x24);
     NVIC_SetPriority(EXTI9_5_IRQn, 0x25);
 
+	// Enable all the external interrupts required (EXTI 1-9)
     NVIC_EnableIRQ(EXTI0_IRQn);
     NVIC_EnableIRQ(EXTI1_IRQn);
     NVIC_EnableIRQ(EXTI2_IRQn);
     NVIC_EnableIRQ(EXTI3_IRQn);
     NVIC_EnableIRQ(EXTI4_IRQn);
-    NVIC_EnableIRQ(EXTI9_5_IRQn); // EXTI lines 1-9
+    NVIC_EnableIRQ(EXTI9_5_IRQn);
 }
 
-// Read the value of the button
+/*!
+ * @brief Read the status of the start button
+ *
+ * @return 0 for not pushed, 1 for pushed
+ */
 uint8_t readButton(void) {
 	if (GPIOA->IDR & GPIO_IDR_IDR_0) {
 		return 1;
@@ -75,8 +106,9 @@ uint8_t readButton(void) {
 	}
 }
 
-
-// Interrupt handler for all buttons except start button
+/*!
+ * @brief External interrupt handler for pin 0
+ */
 void EXTI0_IRQHandler(void) {
     // ack interrupt, update button values
     EXTI->PR |= EXTI_PR_PR0;
@@ -84,6 +116,9 @@ void EXTI0_IRQHandler(void) {
     buttons = (uint8_t)(GPIOF->IDR);
 }
 
+/*!
+ * @brief External interrupt handler for pin 1
+ */
 void EXTI1_IRQHandler(void) {
     // ack interrupt, update button values
     EXTI->PR |= EXTI_PR_PR1;
@@ -91,6 +126,9 @@ void EXTI1_IRQHandler(void) {
     buttons = (uint8_t)(GPIOF->IDR);
 }
 
+/*!
+ * @brief External interrupt handler for pin 2
+ */
 void EXTI2_IRQHandler(void) {
     // ack interrupt, update button values
     EXTI->PR |= EXTI_PR_PR2;
@@ -98,6 +136,9 @@ void EXTI2_IRQHandler(void) {
     buttons = (uint8_t)(GPIOF->IDR);
 }
 
+/*!
+ * @brief External interrupt handler for pin 3
+ */
 void EXTI3_IRQHandler(void) {
     // ack interrupt, update button values
     EXTI->PR |= EXTI_PR_PR3;
@@ -105,6 +146,9 @@ void EXTI3_IRQHandler(void) {
     buttons = (uint8_t)(GPIOF->IDR);
 }
 
+/*!
+ * @brief External interrupt handler for pin 4
+ */
 void EXTI4_IRQHandler(void) {
     // ack interrupt, update button values
     EXTI->PR |= EXTI_PR_PR4;
@@ -112,6 +156,9 @@ void EXTI4_IRQHandler(void) {
     buttons = (uint8_t)(GPIOF->IDR);
 }
 
+/*!
+ * @brief External interrupt handler for pins 5-9
+ */
 void EXTI9_5_IRQHandler(void){
     // ack correct interrupts, update button values
     if (EXTI->PR & EXTI_PR_PR5) {
