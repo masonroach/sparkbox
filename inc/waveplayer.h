@@ -24,6 +24,7 @@
 #include "stm32f4xx_hal.h"
 #include <string.h>
 #include "clock.h"
+#include "video.h"
 #include "ff.h"
 
 /*! 6ksps ensures no distortion of 3kHz audio (specification max) */

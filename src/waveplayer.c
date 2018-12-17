@@ -103,8 +103,13 @@ uint8_t WAV_Import(const char* FileName, WAV_Format* W)
 	UINT BytesRead;
 	FRESULT res;
 
-	//
+	// Check for Null struct
 	if (FileName == NULL || W == NULL) return -1;
+
+	// Make sure video does not read from SD
+	frameUpdateOff();
+	
+	delayms(50);
 
 	// Copy Filename to WAV_Format struct
 	strcpy(W->Filename, FileName);
@@ -134,6 +139,9 @@ uint8_t WAV_Import(const char* FileName, WAV_Format* W)
 
 	// Close file
 	f_close(&F);
+
+	// Video can now read from SD
+	frameUpdateOn();
 
 	// Convert 16 bit signed to 16 bit unsigned
 	ToggleBufferSign((uint32_t*)audioBuffer, W->DataSize / 4);

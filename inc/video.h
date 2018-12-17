@@ -39,10 +39,20 @@
 #define TIM7PSC 99
 #define TIM7ARR (75 * LCD_TRANSFER_ROWS - 1)
 
+#define FPS 20
+
+#define TIM10PSC 4199
+#define TIM10ARR (40000 / FPS - 1)
+
+
+
 extern volatile uint16_t * const fsmc_data;
 extern spriteList layers;
 
 int8_t initVideo(void);
 void updateFrame(void);
+
+void frameUpdateOn(void);
+void frameUpdateOff(void);
 
 #endif

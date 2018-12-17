@@ -15,12 +15,10 @@ int main(void) {
 	
 	systemInit();
 	
- 	lcdTest();
 
-	if (!sdTest()) {
-		ledError(1);
-		WAV_test();
-	}
+	WAV_test();
+
+ 	lcdTest();
 
 //	buttonTest();
 	
@@ -74,9 +72,8 @@ void systemInit(void) {
 	while (readButton());
 }
 
+sprite playerSprite, topSprite, sprite3;
 void lcdTest(void) {
-	uint8_t leds = 0x00;
-	sprite playerSprite, topSprite;
 
 	if (initSprite(&topSprite, "colorTest.spr")){
 		// ERROR
@@ -88,32 +85,34 @@ void lcdTest(void) {
 		ledError(LED_ERROR);
 	}
 
-	drawSpriteDebug(&playerSprite);
-
-	while (!readButton());
-	delayms(50);
-	while (readButton());
+	if (initSprite(&sprite3, "wolf.spr")){
+		// ERROR
+		ledError(LED_ERROR);
+	}
 
 	// Test getting a row for video
 	topSprite.ypos = (LCD_HEIGHT - topSprite.height)/2;
 	topSprite.xpos = (LCD_WIDTH - topSprite.width)/2;
 	playerSprite.xpos = 220;
 	playerSprite.ypos = 170;
+	sprite3.xpos = 20;
+	sprite3.ypos = 20;
 	spriteLayersAdd(&topSprite);
 	spriteLayersAdd(&playerSprite);
+	spriteLayersAdd(&sprite3);
 	delayms(1000);
 
 	playerSprite.curFrame = 0;
 
+	// Turn on auto frame updating
+	frameUpdateOn();
+	
 	// Test frame updating with DMA
 	while (!readButton()) {
 		playerSprite.xvelocity = (BUTTON_RIGHT - BUTTON_LEFT)*5;
 		playerSprite.yvelocity = (BUTTON_DOWN - BUTTON_UP)*5;
 		topSprite.xvelocity = (BUTTON_B - BUTTON_A)*5;
 		topSprite.yvelocity = (BUTTON_X - BUTTON_Y)*5;
-		updateFrame();
-		ledMap(leds++);
-		delayms(20);
 	}
 
 	delayms(50);
@@ -207,11 +206,6 @@ void WAV_test(void)
 		return;
 	}
 	
-	// Wait for button to be pressed
-	while (readButton());
-	while (!readButton());
-	WAV_Pause();
-
 	// Don't want to free memory the DMA is transferring
 	// WAV_Destroy(WAV);
 

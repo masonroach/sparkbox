@@ -10,6 +10,7 @@ uint16_t *videoBuffer2;
 
 uint32_t **fetched;
 
+
 // 0 if currently playing buffer 2 (reading 1)
 // 1 if currently playing buffer 1 (reading 2)
 uint8_t videoBuffer = 0;
@@ -20,12 +21,14 @@ uint8_t bufferTransfers = 0;
 #define READ_BUFFER (videoBuffer ? videoBuffer2 : videoBuffer1)
 #define PLAY_BUFFER (videoBuffer ? videoBuffer1 : videoBuffer2)
 
+uint8_t frameUpdate = 0;
 uint8_t transferComplete = 0;
 uint8_t frameComplete = 0;
 uint8_t readComplete = 0;
 
 DMA_HandleTypeDef hdma_memtomem_dma2_stream5;
 TIM_HandleTypeDef htim7;
+TIM_HandleTypeDef htim10;
 FIL BUF;
 
 // Initialize timers, DMA, and allocate memory for video buffers
@@ -89,12 +92,51 @@ int8_t initVideo(void)
 	sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
 	HAL_TIMEx_MasterConfigSynchronization(&htim7, &sMasterConfig);
 
+	// Initialize TIM 10 to trigger at 20 Hz
+	htim10.Instance = TIM10;
+	htim10.Init.Prescaler = TIM10PSC;
+	htim10.Init.CounterMode = TIM_COUNTERMODE_UP;
+	htim10.Init.Period = TIM10ARR;
+	htim10.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+	HAL_TIM_Base_Init(&htim10);
+	
+	// Turn off frame updating
+	frameUpdateOff();
+
+	// Start timer 10
+	HAL_TIM_Base_Start_IT(&htim10);
+
 	transferComplete = 1;
 	frameComplete = 1;
 	readComplete = 1;
 	
 	return 0;
 }
+
+
+/**
+* @brief This function handles TIM1 update interrupt and TIM10 global interrupt.
+*/
+void TIM1_UP_TIM10_IRQHandler(void)
+{
+
+	HAL_TIM_IRQHandler(&htim10);
+
+	// Update the frame if it is on
+	if (frameUpdate) updateFrame();
+}
+
+void frameUpdateOn(void)
+{
+	frameUpdate = 1;
+}
+
+void frameUpdateOff(void)
+{
+	frameUpdate = 0;
+}
+
+
 /*
  * @brief Reads the corrct data into the correct video buffer
  *
@@ -212,8 +254,10 @@ void TIM7_IRQHandler(void)
 
 	// Determine if we need to read more data or if we are done
     if (bufferTransfers <= NUM_TRANSFERS) {
-        // Read new data into other buffer
-        readToVideoBuffer();
+		if (bufferTransfers != NUM_TRANSFERS) {
+        	// Read new data into other buffer
+        	readToVideoBuffer();
+		}
     } else {
         // Frame is completely written to LCD, get ready for next transfer
         // Reset buffer transfer counter
@@ -236,7 +280,7 @@ static uint8_t getNextRows(void) {
 	uint8_t l;
 	uint16_t pixel;
 	uint8_t lcdRow;
-	uint32_t paletteIndex;
+	uint8_t paletteIndex;
 
 	// Do 2 rows at a time
 	for (row = 0; row < LCD_TRANSFER_ROWS; row++) {
