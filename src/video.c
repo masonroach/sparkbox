@@ -1,5 +1,12 @@
 /*!
+ * @file video.c
+ * @author Mason Roach
+ * @author Patrick Roy
+ * @date Dec 13 2018
+ * 
+ * @brief This file contains functions to control Sparkbox video buffering
  *
+ * These functions control the video buffering on the sparkbox LCD.
  *
  */
 #include "video.h"
