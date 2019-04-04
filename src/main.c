@@ -76,35 +76,52 @@ void playGame(void)
 			score++;
 		}
 
-		if (rain1.xvelocity < -150) rain1.xvelocity = -150;
-		if (rain2.xvelocity < -150) rain2.xvelocity = -150;
+			if (rain1.xvelocity < -150) rain1.xvelocity = -150;
+			if (rain2.xvelocity < -150) rain2.xvelocity = -150;
 
-		// User moves the dog
-		dog.yvelocity = (BUTTON_DOWN - BUTTON_UP)*7;
+			// User moves the dog
+			dog.yvelocity = (BUTTON_DOWN - BUTTON_UP)*7;
 
-		// Bounds check the dog up and down
-		if (dog.ypos + dog.yvelocity <= dog.height + 7) {
-			dog.ypos = dog.height - dog.yvelocity + 7;
-		}
-		if (dog.ypos + dog.yvelocity >= LCD_HEIGHT - dog.height - dog.height) {
-			dog.ypos = LCD_HEIGHT - dog.height - dog.height - dog.yvelocity;
-		}
+			// Bounds check the dog up and down
+			if (dog.ypos + dog.yvelocity <= dog.height + 7) {
+				dog.ypos = dog.height - dog.yvelocity + 7;
+			}
+			if (dog.ypos + dog.yvelocity >= LCD_HEIGHT - dog.height - dog.height) {
+				dog.ypos = LCD_HEIGHT - dog.height - dog.height - dog.yvelocity;
+			}
 
-		
-		// Check for collisions with rainbow 1
-		x = dog.xpos + dog.width / 2;
-		y = dog.ypos + dog.height / 2;
+			
+			// Check for collisions with rainbow 1
+			x = dog.xpos + dog.width / 2;
+			y = dog.ypos + dog.height / 2;
 
-		if (x >= rain1.xpos && x <= rain1.xpos + rain1.width - rain1.xvelocity
-		    && y >= rain1.ypos && y <= rain1.ypos + rain1.height) {
+			if (x >= rain1.xpos && 
+				x <= rain1.xpos + rain1.width - rain1.xvelocity &&
+				((y >= rain1.ypos &&
+			      y <= rain1.ypos + rain1.height) ||
+			     (dog.ypos >= rain1.ypos &&
+			      dog.ypos <= rain1.ypos + rain1.height) ||
+			     (dog.ypos+dog.height >= rain1.ypos &&
+			      dog.ypos+dog.height <= rain1.ypos+rain1.height))) {
+
+				done = 1;
+
+			}
+
+			// Check for collisions with rainbow 2
+			if (x >= rain2.xpos && 
+				x <= rain2.xpos + rain2.width - rain2.xvelocity &&
+				((y >= rain2.ypos &&
+			      y <= rain2.ypos + rain2.height) ||
+				 (dog.ypos >= rain2.ypos &&
+			      dog.ypos <= rain2.ypos + rain2.height) ||
+			     (dog.ypos+dog.height >= rain2.ypos &&
+			      dog.ypos+dog.height <= rain2.ypos+rain2.height))) {
+
 			done = 1;
+
 		}
 
-		// Check for collisions with rainbow 2
-		if (x >= rain2.xpos && x <= rain2.xpos + rain2.width - rain2.xvelocity
-		    && y >= rain2.ypos && y <= rain2.ypos + rain2.height) {
-			done = 1;
-		}
 	}
 
 
