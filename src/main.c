@@ -99,10 +99,10 @@ void playGame(void)
 				x <= rain1.xpos + rain1.width - rain1.xvelocity &&
 				((y >= rain1.ypos &&
 			      y <= rain1.ypos + rain1.height) ||
-			     (dog.ypos >= rain1.ypos &&
-			      dog.ypos <= rain1.ypos + rain1.height) ||
-			     (dog.ypos+dog.height >= rain1.ypos &&
-			      dog.ypos+dog.height <= rain1.ypos+rain1.height))) {
+			     (dog.ypos+2 >= rain1.ypos &&
+			      dog.ypos+2 <= rain1.ypos + rain1.height) ||
+			     (dog.ypos+dog.height-2 >= rain1.ypos &&
+			      dog.ypos+dog.height-2 <= rain1.ypos+rain1.height))) {
 
 				done = 1;
 
@@ -113,10 +113,10 @@ void playGame(void)
 				x <= rain2.xpos + rain2.width - rain2.xvelocity &&
 				((y >= rain2.ypos &&
 			      y <= rain2.ypos + rain2.height) ||
-				 (dog.ypos >= rain2.ypos &&
-			      dog.ypos <= rain2.ypos + rain2.height) ||
-			     (dog.ypos+dog.height >= rain2.ypos &&
-			      dog.ypos+dog.height <= rain2.ypos+rain2.height))) {
+				 (dog.ypos+2 >= rain2.ypos &&
+			      dog.ypos+2 <= rain2.ypos + rain2.height) ||
+			     (dog.ypos+dog.height-2 >= rain2.ypos &&
+			      dog.ypos+dog.height-2 <= rain2.ypos+rain2.height))) {
 
 			done = 1;
 
