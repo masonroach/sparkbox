@@ -6,10 +6,12 @@ void lcdTest(void);
 uint8_t sdTest(void);
 void WAV_test(void);
 void buttonTest(void);
+void playGame(void);
 
 FATFS SDFatFs;  /* File system object for SD card logical drive */
 char SDPath[4]; /* SD card logical drive path */
 FIL MyFile;     /* File object */
+volatile sprite dog, rain1, rain2;
 
 int main(void) {
 	
@@ -20,10 +22,103 @@ int main(void) {
 
  	lcdTest();
 
-//	buttonTest();
+	WAV_Pause();
+
+	playGame();
 	
 	while(1);
 	return 1;
+}
+
+
+void playGame(void)
+{
+	uint32_t rand = 34;
+	uint32_t done = 0;
+	uint16_t x, y;
+	uint32_t score = 0;
+	WAV_Format* WAV;
+
+	WAV_Import("fused.wav", WAV);
+	if (WAV->Error != 0) {
+		ledError(2);
+	}
+
+	WAV_Play(WAV, -1);
+
+	dog.xpos = 10;
+	dog.ypos = 100;
+
+	rain1.xpos = 220;
+	rain1.ypos = 20;
+
+	rain2.xpos = 200;
+	rain2.ypos = 150;
+
+	rain1.xvelocity = -5;
+	rain2.xvelocity = -5;
+	frameUpdateOn();
+
+	while(!done) {
+		// Reset rainbows
+		if (rain1.xpos < -10) {
+			rand = (50021 * rand + 50023) % 50051;
+			rain1.ypos = rand % 160 + 40;
+			rain1.xpos = LCD_WIDTH + rand % 100;
+			rain1.xvelocity -= 1;
+			score++;
+		}
+		if (rain2.xpos < -10) {
+			rand = (50021 * rand + 50023) % 50051;
+			rain2.ypos = rand % 160 + 40;
+			rain2.xpos = LCD_WIDTH + rand % 101;
+			rain2.xvelocity -= 1;
+			score++;
+		}
+
+		if (rain1.xvelocity < -150) rain1.xvelocity = -150;
+		if (rain2.xvelocity < -150) rain2.xvelocity = -150;
+
+		// User moves the dog
+		dog.yvelocity = (BUTTON_DOWN - BUTTON_UP)*7;
+
+		// Bounds check the dog up and down
+		if (dog.ypos + dog.yvelocity <= dog.height + 7) {
+			dog.ypos = dog.height - dog.yvelocity + 7;
+		}
+		if (dog.ypos + dog.yvelocity >= LCD_HEIGHT - dog.height - dog.height) {
+			dog.ypos = LCD_HEIGHT - dog.height - dog.height - dog.yvelocity;
+		}
+
+		
+		// Check for collisions with rainbow 1
+		x = dog.xpos + dog.width / 2;
+		y = dog.ypos + dog.height / 2;
+
+		if (x >= rain1.xpos && x <= rain1.xpos + rain1.width
+		    && y >= rain1.ypos && y <= rain1.ypos + rain1.height) {
+			done = 1;
+		}
+
+		// Check for collisions with rainbow 2
+		if (x >= rain2.xpos && x <= rain2.xpos + rain2.width
+		    && y >= rain2.ypos && y <= rain2.ypos + rain2.height) {
+			done = 1;
+		}
+	}
+
+	frameUpdateOff();
+
+	delayms(100);
+
+	LcdFillScreen(LCD_COLOR_BLACK);
+
+	LcdDrawInt(200, 100, score, LCD_COLOR_WHITE, LCD_COLOR_BLACK);
+
+	LcdDrawString(100, 100, "YOU ONLY GOT", LCD_COLOR_WHITE, LCD_COLOR_BLACK);
+	LcdDrawString(100, 150, "GOODBYE LOSER", LCD_COLOR_WHITE, LCD_COLOR_BLACK);
+
+	return;
 }
 
 void systemInit(void) {
@@ -40,7 +135,7 @@ void systemInit(void) {
 	/* Configure the system clock to 168 MHz */
 	initSystemClock();
 
-//	initUsart();
+
 	initLeds();
 	initButtons();
 	WAV_Init();
@@ -49,9 +144,6 @@ void systemInit(void) {
 
 	FATFS_LinkDriver(&SD_Driver, SDPath);
     f_mount(&SDFatFs, (TCHAR const*)SDPath, 0);
-//	initSdSpi();
-	// RCC->AHB1ENR    |=   RCC_AHB1ENR_GPIODEN;
-	// RCC->AHB1ENR    |=   RCC_AHB1ENR_GPIOCEN;
 	
 
 	/*
@@ -59,11 +151,9 @@ void systemInit(void) {
 	 * any time. Until then, a single serial message will be sent, and the
 	 * LEDs will continue to light up in a circle.
 	 */
-//	usartSendString("Initialized. Press button to continue.\r\n");
 	while (!readButton()) {
 		i > 8 ? i = 0 : i++;
 		ledMap((0xFF >> (8-i)) & 0xFF);
-//		ledMap(0xFF & rand32());
 		ledError(e > 2 ? e = 0 : e++);
 		delayms(100);
 	}
@@ -72,47 +162,46 @@ void systemInit(void) {
 	while (readButton());
 }
 
-sprite playerSprite, topSprite, sprite3;
 void lcdTest(void) {
 
-	if (initSprite(&topSprite, "colorTest.spr")){
+	if (initSprite(&rain1, "colorTest.spr")){
 		// ERROR
 		ledError(LED_ERROR);
 	}
 
-	if (initSprite(&playerSprite, "dog.spr")){
+	if (initSprite(&dog, "dog.spr")){
 		// ERROR
 		ledError(LED_ERROR);
 	}
 
-	if (initSprite(&sprite3, "colorTest.spr")){
+	if (initSprite(&rain2, "colorTest.spr")){
 		// ERROR
 		ledError(LED_ERROR);
 	}
 
 	// Test getting a row for video
-	topSprite.ypos = (LCD_HEIGHT - topSprite.height)/2;
-	topSprite.xpos = (LCD_WIDTH - topSprite.width)/2;
-	playerSprite.xpos = 220;
-	playerSprite.ypos = 170;
-	sprite3.xpos = 20;
-	sprite3.ypos = 20;
-	spriteLayersAdd(&topSprite);
-	spriteLayersAdd(&playerSprite);
-	spriteLayersAdd(&sprite3);
+	rain1.ypos = (LCD_HEIGHT - rain1.height)/2;
+	rain1.xpos = (LCD_WIDTH - rain1.width)/2;
+	dog.xpos = 220;
+	dog.ypos = 170;
+	rain2.xpos = 20;
+	rain2.ypos = 20;
+	spriteLayersAdd(&rain1);
+	spriteLayersAdd(&dog);
+	spriteLayersAdd(&rain2);
 	delayms(1000);
 
-	playerSprite.curFrame = 0;
+	dog.curFrame = 0;
 
 	// Turn on auto frame updating
 	frameUpdateOn();
 	
 	// Test frame updating with DMA
 	while (!readButton()) {
-		playerSprite.xvelocity = (BUTTON_RIGHT - BUTTON_LEFT)*5;
-		playerSprite.yvelocity = (BUTTON_DOWN - BUTTON_UP)*5;
-		topSprite.xvelocity = (BUTTON_B - BUTTON_A)*5;
-		topSprite.yvelocity = (BUTTON_X - BUTTON_Y)*5;
+		dog.xvelocity = (BUTTON_RIGHT - BUTTON_LEFT)*5;
+		dog.yvelocity = (BUTTON_DOWN - BUTTON_UP)*5;
+		rain1.xvelocity = (BUTTON_B - BUTTON_A)*5;
+		rain1.yvelocity = (BUTTON_X - BUTTON_Y)*5;
 	}
 
 	delayms(50);

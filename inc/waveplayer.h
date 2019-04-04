@@ -39,7 +39,7 @@
 #define TIM6FREQ 84000000UL
 
 /*! Size of the buffer allocated for audio files */
-#define AUD_BUF_BYTES 25000
+#define AUD_BUF_BYTES 30000
 #define AUD_BUF_SAMPLES (AUD_BUF_BYTES / 2)
 
 /*! 16 bit data, left align. 8 bit data, right align */
