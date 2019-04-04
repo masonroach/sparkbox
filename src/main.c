@@ -33,7 +33,7 @@ int main(void) {
 
 void playGame(void)
 {
-	uint32_t rand = 34;
+	uint32_t rand = 87;
 	uint32_t done = 0;
 	uint16_t x, y;
 	uint32_t score = 0;
@@ -46,11 +46,11 @@ void playGame(void)
 
 	WAV_Play(WAV, -1);
 
-	dog.xpos = 10;
+	dog.xpos = 30;
 	dog.ypos = 100;
 
 	rain1.xpos = 220;
-	rain1.ypos = 20;
+	rain1.ypos = 110;
 
 	rain2.xpos = 200;
 	rain2.ypos = 150;
@@ -61,14 +61,14 @@ void playGame(void)
 
 	while(!done) {
 		// Reset rainbows
-		if (rain1.xpos < -10) {
+		if (rain1.xpos < rain1.xvelocity) {
 			rand = (50021 * rand + 50023) % 50051;
 			rain1.ypos = rand % 160 + 40;
 			rain1.xpos = LCD_WIDTH + rand % 100;
 			rain1.xvelocity -= 1;
 			score++;
 		}
-		if (rain2.xpos < -10) {
+		if (rain2.xpos < rain1.xvelocity) {
 			rand = (50021 * rand + 50023) % 50051;
 			rain2.ypos = rand % 160 + 40;
 			rain2.xpos = LCD_WIDTH + rand % 101;
@@ -95,18 +95,20 @@ void playGame(void)
 		x = dog.xpos + dog.width / 2;
 		y = dog.ypos + dog.height / 2;
 
-		if (x >= rain1.xpos && x <= rain1.xpos + rain1.width
+		if (x >= rain1.xpos && x <= rain1.xpos + rain1.width - rain1.xvelocity
 		    && y >= rain1.ypos && y <= rain1.ypos + rain1.height) {
 			done = 1;
 		}
 
 		// Check for collisions with rainbow 2
-		if (x >= rain2.xpos && x <= rain2.xpos + rain2.width
+		if (x >= rain2.xpos && x <= rain2.xpos + rain2.width - rain2.xvelocity
 		    && y >= rain2.ypos && y <= rain2.ypos + rain2.height) {
 			done = 1;
 		}
 	}
 
+
+	// End game
 	frameUpdateOff();
 
 	delayms(100);
@@ -116,7 +118,7 @@ void playGame(void)
 	LcdDrawInt(200, 100, score, LCD_COLOR_WHITE, LCD_COLOR_BLACK);
 
 	LcdDrawString(100, 100, "YOU ONLY GOT", LCD_COLOR_WHITE, LCD_COLOR_BLACK);
-	LcdDrawString(100, 150, "GOODBYE LOSER", LCD_COLOR_WHITE, LCD_COLOR_BLACK);
+	LcdDrawString(100, 150, "GOODBYE", LCD_COLOR_WHITE, LCD_COLOR_BLACK);
 
 	return;
 }
