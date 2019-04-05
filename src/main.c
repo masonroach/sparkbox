@@ -39,9 +39,16 @@ void playGame(void)
 	uint32_t score = 0;
 	WAV_Format* WAV;
 
+	// Allocate memory for wav file
+	WAV = (WAV_Format*)malloc(sizeof(WAV_Format));
 	WAV_Import("fused.wav", WAV);
 	if (WAV->Error != 0) {
-		ledError(2);
+		for (x = 0; x < WAV->Error; x++) {
+			ledError(2);
+			delayms(200);
+			ledError(0);
+			delayms(200);
+		}
 	}
 
 	WAV_Play(WAV, -1);
@@ -127,15 +134,16 @@ void playGame(void)
 
 	// End game
 	frameUpdateOff();
+	WAV_Pause();
 
 	delayms(100);
 
 	LcdFillScreen(LCD_COLOR_BLACK);
 
-	LcdDrawInt(200, 100, score, LCD_COLOR_WHITE, LCD_COLOR_BLACK);
+	LcdDrawInt(205, 100, score, LCD_COLOR_WHITE, LCD_COLOR_BLACK);
 
 	LcdDrawString(100, 100, "YOU ONLY GOT", LCD_COLOR_WHITE, LCD_COLOR_BLACK);
-	LcdDrawString(100, 150, "GOODBYE", LCD_COLOR_WHITE, LCD_COLOR_BLACK);
+	LcdDrawString(125, 150, "GOODBYE", LCD_COLOR_WHITE, LCD_COLOR_BLACK);
 
 	return;
 }
