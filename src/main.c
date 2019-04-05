@@ -51,7 +51,6 @@ void playGame(void)
 		}
 	}
 
-	WAV_Play(WAV, -1);
 
 	dog.xpos = 30;
 	dog.ypos = 100;
@@ -74,6 +73,8 @@ void playGame(void)
 			rain1.xpos = LCD_WIDTH + rand % 100;
 			rain1.xvelocity -= 1;
 			score++;
+			WAV_Pause();
+			WAV_Play(WAV, 1);
 		}
 		if (rain2.xpos < rain1.xvelocity) {
 			rand = (50021 * rand + 50023) % 50051;
@@ -81,6 +82,8 @@ void playGame(void)
 			rain2.xpos = LCD_WIDTH + rand % 101;
 			rain2.xvelocity -= 1;
 			score++;
+			WAV_Pause();
+			WAV_Play(WAV, 1);
 		}
 
 			if (rain1.xvelocity < -150) rain1.xvelocity = -150;
