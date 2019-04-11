@@ -139,14 +139,18 @@ void playGame(void)
 	frameUpdateOff();
 	WAV_Pause();
 
-	delayms(100);
+	delayms(50);
 
-	LcdFillScreen(LCD_COLOR_BLACK);
+	LcdInvertDisplay(1);
 
-	LcdDrawInt(205, 100, score, LCD_COLOR_WHITE, LCD_COLOR_BLACK);
+	delayms(1500);
 
-	LcdDrawString(100, 100, "YOU ONLY GOT", LCD_COLOR_WHITE, LCD_COLOR_BLACK);
-	LcdDrawString(125, 150, "GOODBYE", LCD_COLOR_WHITE, LCD_COLOR_BLACK);
+	LcdFillScreen(LCD_COLOR_WHITE);
+
+	LcdDrawInt(205, 100, score, LCD_COLOR_BLACK, LCD_COLOR_WHITE);
+
+	LcdDrawString(100, 100, "YOU ONLY GOT", LCD_COLOR_BLACK, LCD_COLOR_WHITE);
+	LcdDrawString(125, 150, "GOODBYE", LCD_COLOR_BLACK, LCD_COLOR_WHITE);
 
 	return;
 }
